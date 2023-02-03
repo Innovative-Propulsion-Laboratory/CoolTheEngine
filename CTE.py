@@ -4,7 +4,7 @@ Created on Fri Nov 27 14:47:27 2020
 
 @author: julien
 
-rewritten: mehdi
+Rewritten: mehdi
 
 WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
@@ -24,7 +24,7 @@ from volume3d import *
 from CoolProp.CoolProp import PropsSI
 from IA import *
 
-print("██████████████████████████ Cool The Engine V 1.1.5 █████████████████████████")
+print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 # %% Engine initialisation
 "Viserion settings"
