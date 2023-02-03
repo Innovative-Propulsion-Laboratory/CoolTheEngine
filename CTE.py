@@ -2,9 +2,9 @@
 """
 Created on Fri Nov 27 14:47:27 2020
 
-@author: julien
+@author: Julien
 
-Rewritten: mehdi
+Rewritten: Mehdi
 
 WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
@@ -28,9 +28,9 @@ print("████████████████████████�
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 # %% Engine initialisation
 "Viserion settings"
-plagex = "Viserion_X.txt"           # X coordinates of the Viserion
-plagey = "Viserion_Y.txt"           # Y coordinates of the Viserion
-plageinit = "Viserion_2023.txt"     # Viserion's parameters (found with CEA)
+plagex = "Viserion_X.txt"  # X coordinates of the Viserion
+plagey = "Viserion_Y.txt"  # Y coordinates of the Viserion
+plageinit = "Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
 "Constant value"
 lim22 = 600
@@ -49,24 +49,24 @@ for row in crinit:
     value.append(row[1])
 
 "Reading: Changeable variable according to CEA"
-c_init = float(value[0])        # Sound's velocity in the chamber
-c_col = float(value[1])         # Sound's velocity in the throat
-debit_LOX = float(value[2])     # LOX debit
-debit_LCH4 = float(value[3])    # CH4 debit
-rho_init = float(value[4])      # Initial volumic mass of the gases
-Pc = float(value[5])            # Pressure in the chamber
-Tc = float(value[6])            # Combustion temperature (in the chamber?)
-gamma_c = float(value[7])       # Gamma in the chamber
-gamma_t = float(value[8])       # Gamma in the throat
-gamma_e = float(value[9])       # Gamma at the exit
-M = float(value[10])            # Molar mass of the gases
-Cstar = float(value[11])        # caracteristic velocity
+c_init = float(value[0])  # Sound velocity in the chamber
+c_col = float(value[1])  # Sound velocity in the throat
+debit_LOX = float(value[2])  # LOX debit
+debit_LCH4 = float(value[3])  # CH4 debit
+rho_init = float(value[4])  # Initial density of the gases
+Pc = float(value[5])  # Pressure in the chamber
+Tc = float(value[6])  # Combustion temperature (in the chamber?)
+gamma_c = float(value[7])  # Gamma in the chamber
+gamma_t = float(value[8])  # Gamma in the throat
+gamma_e = float(value[9])  # Gamma at the exit
+M = float(value[10])  # Molar mass of the gases
+Cstar = float(value[11])  # caracteristic velocity
 
 "Reading: Constant variable -- DO NOT CHANGE"
-Dcol = float(value[12])         # Convergent radius of curvature
-Rcol = float(value[13])         # Throat radius of curvature
-Ac = float(value[14])           # Throat diameter
-DiamCol = float(value[15])      # Throat diameter
+Dcol = float(value[12])  # Convergent radius of curvature
+Rcol = float(value[13])  # Throat radius of curvature
+Ac = float(value[14])  # Throat diameter
+DiamCol = float(value[15])  # Throat diameter
 
 # %% Import of the (X,Y) coordinates of the Viserion
 "Reading the files"
@@ -141,7 +141,7 @@ while a == b:
     b = y_value[i]
 
 gamma = []
-for j in range(0,i,1):
+for j in range(0, i, 1):
     gamma.append(gamma_c)
 
 j = y_value.index(min(y_value))
@@ -196,13 +196,13 @@ for i in range(0, long - 1, 1):
 
 # Plots of the Mach number in the engine (2D/3D)
 plt.figure(dpi=200)
-plt.plot(x_value,mach_function,color='gold')
+plt.plot(x_value, mach_function, color='gold')
 plt.title("Mach number as a function of the engine axis")
 plt.show()
 
-colooo=plt.cm.Spectral
-inv=1,1,1
-view3d(inv,x_value,y_value,mach_function,colooo,'Mach number',size2-2,limitation)
+colooo = plt.cm.Spectral
+inv = 1, 1, 1
+view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2 - 2, limitation)
 
 print()
 
@@ -230,13 +230,13 @@ for i in range(0, long - 1, 1):
 
 # Plot of the static pressure (2D/3D)
 plt.figure(dpi=200)
-plt.plot(x_value,pressure_function,color='gold')
+plt.plot(x_value, pressure_function, color='gold')
 plt.title("Static pressure as a function of the engine axis")
 plt.show()
 
-colooo=plt.cm.gist_rainbow_r
-inv=1,1,1
-view3d(inv,x_value,y_value,pressure_function,colooo,'Static pressure',size2-2,limitation)
+colooo = plt.cm.gist_rainbow_r
+inv = 1, 1, 1
+view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size2 - 2, limitation)
 
 print()
 
@@ -245,7 +245,7 @@ print()
 temperature_function = []
 temperature_function.append(Tc)
 b = 0
-Bar = ProgressBar(100, 30, "Temperature computation")
+Bar = ProgressBar(100, 30, "Temperature computation         ")
 ay = 100 / (long - 1)
 
 "Temperature computations along the engine"
@@ -290,7 +290,7 @@ Celerite_function = [c_init]
 Gaz_velocity = [v_init]
 Ptotale_function = [pressure_function[0] + 0.5 * rho_init * v_init ** 2]
 b = 0
-Bar = ProgressBar(100, 30, "Total pressure computation")
+Bar = ProgressBar(100, 30, "Total pressure computation      ")
 ay = 100 / (long - 1)
 
 "Total pressure computations along the engine"
@@ -325,25 +325,25 @@ print("█                                                                      
 
 # %% Canal parameters
 """Number of canal and tore position"""
-nbc = 40            # Number of canal
-tore = 0.068        # Position of the tore from the throat (in m)
+nbc = 40  # Number of canal
+tore = 0.068  # Position of the tore from the throat (in m)
 
 "Width of the canal"
-lrg_c2 = 0.003      # Width of the canal in the high section of the chamber (in m)
-lrg_c = 0.003       # Width of the canal in the low section of the chamber (in m)
-lrg_col = 0.0035    # Width of the canal in the throat (in m)
-lrg_div = 0.003     # Width of the canal in the divergent (in m)
+lrg_c2 = 0.003  # Width of the canal in the high section of the chamber (in m)
+lrg_c = 0.003  # Width of the canal in the low section of the chamber (in m)
+lrg_col = 0.0035  # Width of the canal in the throat (in m)
+lrg_div = 0.003  # Width of the canal in the divergent (in m)
 
 "Height of the canal"
-ht_c2 = 0.003       # Height of the canal in the high section of the chamber (in m)
-ht_c = 0.003        # Height of the canal in the low section of the chamber (in m)
-ht = 0.0035         # Height of the canal in the throat (in m)
-ht_div = 0.003      # Height of the canal in the divergent (in m)
+ht_c2 = 0.003  # Height of the canal in the high section of the chamber (in m)
+ht_c = 0.003  # Height of the canal in the low section of the chamber (in m)
+ht = 0.0035  # Height of the canal in the throat (in m)
+ht_div = 0.003  # Height of the canal in the divergent (in m)
 
 # %% Thickness
-e_c = 0.001         # Thickness of the chamber (in m)
-e_col = 0.001       # Thickness of the throat (in m)
-e_div = 0.001       # Thickness of the divergent (in m)
+e_c = 0.001  # Thickness of the chamber (in m)
+e_col = 0.001  # Thickness of the throat (in m)
+e_div = 0.001  # Thickness of the divergent (in m)
 
 # %% Growth factors
 n1 = 1  # Width convergent
@@ -360,14 +360,14 @@ condcoeff2 = 421.82710859
 
 # %% Coolant
 "Properties of the CH4"
-debit_LCH4 =debit_LCH4
+debit_LCH4 = debit_LCH4
 fluid = "Methane"
-rho_initCH4 = 425                       # Volumic mass of the CH4 -- Not necessary
-If_reg = debit_LCH4                     # Total debit (in kg/s)
-Tl_init = 111                           # Initial temperature of the coolant (in K)
-debit_total = If_reg / rho_initCH4      # Total volumic debit of the coolant (in m3/s)
-Pl_init = 3700000                       # Initial pressure of the coolant (in Pa)
-Ro = 3                                  # UNKNOWN?????
+rho_initCH4 = 425  # Volumic mass of the CH4 -- Not necessary
+If_reg = debit_LCH4  # Total debit (in kg/s)
+Tl_init = 111  # Initial temperature of the coolant (in K)
+debit_total = If_reg / rho_initCH4  # Total volumic debit of the coolant (in m3/s)
+Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
+Ro = 3  # UNKNOWN?????
 
 # %% Computation
 """Methode 2"""
@@ -376,7 +376,7 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise = canaux
                                                                                  debit_total, n1, n2, n3, n4, e_col,
                                                                                  e_div, e_c, n5, n6, lrg_c2, ht_c2)
 """Methode 1"""
-Bar = ProgressBar(100, 30, "Canal geometric computations")
+Bar = ProgressBar(100, 30, "Canal geometric computations    ")
 Bar.update(100)
 print()
 print("█                                                                          █")
@@ -401,6 +401,8 @@ gamma.reverse()
 mach_function.reverse()
 aire.reverse()
 temperature_function.reverse()
+
+
 def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
     def downsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
         pos = 0
@@ -653,6 +655,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
                outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
                Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
+
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
     outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
     Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = downsolver(
@@ -660,6 +663,8 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
            outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
            Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
+
+
 Sig = []
 Tcoolant = []
 Pcoolant = []
