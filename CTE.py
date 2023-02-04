@@ -296,7 +296,7 @@ ay = 100 / (long - 1)
 
 "Total pressure computations along the engine"
 for i in range(0, long - 1, 1):
-    if (i == long + 1):
+    if i == long + 1:
         M1 = mach_function[i]
         M2 = mach_function[i]
     else:
