@@ -23,6 +23,7 @@ from heatequationsolve import *
 from volume3d import *
 from CoolProp.CoolProp import PropsSI
 from IA import *
+import matplotlib.pyplot as plt
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
