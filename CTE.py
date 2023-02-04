@@ -22,7 +22,9 @@ from graphic3d import view3d
 from heatequationsolve import *
 from volume3d import *
 from CoolProp.CoolProp import PropsSI
-from IA import *
+from math import *
+from sympy import Symbol, nsolve
+import sympy as mp
 import matplotlib.pyplot as plt
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
@@ -333,18 +335,18 @@ print("█                                                                      
 # %% Canal parameters
 """Number of canal and tore position"""
 nbc = 40  # Number of canal
-tore = 0.068  # Position of the tore from the throat (in m)
+tore = 0.1  # Position of the tore from the throat (in m)
 
 "Width of the canal"
 lrg_c2 = 0.003  # Width of the canal in the high section of the chamber (in m)
 lrg_c = 0.003  # Width of the canal in the low section of the chamber (in m)
-lrg_col = 0.0035  # Width of the canal in the throat (in m)
+lrg_col = 0.002  # Width of the canal in the throat (in m)
 lrg_div = 0.003  # Width of the canal in the divergent (in m)
 
 "Height of the canal"
 ht_c2 = 0.003  # Height of the canal in the high section of the chamber (in m)
 ht_c = 0.003  # Height of the canal in the low section of the chamber (in m)
-ht = 0.0035  # Height of the canal in the throat (in m)
+ht = 0.002  # Height of the canal in the throat (in m)
 ht_div = 0.003  # Height of the canal in the divergent (in m)
 
 # %% Thickness
@@ -367,14 +369,13 @@ condcoeff2 = 421.82710859
 
 # %% Coolant
 "Properties of the CH4"
-debit_LCH4 = debit_LCH4
 fluid = "Methane"
-rho_initCH4 = 425  # Volumic mass of the CH4 -- Not necessary
-If_reg = debit_LCH4  # Total debit (in kg/s)
-Tl_init = 111  # Initial temperature of the coolant (in K)
-debit_total = If_reg / rho_initCH4  # Total volumic debit of the coolant (in m3/s)
+rho_initCH4 = 425  # Density of the CH4
+If_reg = debit_LCH4  # Total mass flow rate (in kg/s)
+Tl_init = 110  # Initial temperature of the coolant (in K)
+debit_total = If_reg / rho_initCH4  # Total volumic flow rate of the coolant (in m3/s)
 Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
-Ro = 3  # UNKNOWN?????
+Ro = 3  # Roughness (micrometers)
 
 # %% Computation
 """Methode 2"""
@@ -531,7 +532,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             cx2 = Symbol('cx2')
             f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
             f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
-            x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
+            x_, y_ = nsolve((f1, f2), (cx1, cx2), (700, 500))
             inwall_temperature.append(x_)
             outwall_temperature.append(y_)
             flux = hl * (y_ - Tcoolant[i]) * 0.000001

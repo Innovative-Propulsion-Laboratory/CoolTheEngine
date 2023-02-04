@@ -339,15 +339,15 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             a2 = 0.00025
             a3 = 0.00025
             a4 = -0.0015
-        plt.figure(dpi=200)
-        p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='flag')  # rainbow#prism#flag
-        plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
-        plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-
-        plt.title("Distribution 2D des températures", fontsize=15)
-        plt.axis("equal")
-        plt.colorbar(p, shrink=0.4, aspect=15)
-        plt.show()
+        # plt.figure(dpi=200)
+        # p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='flag')  # rainbow#prism#flag
+        # plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
+        # plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
+        #
+        # plt.title("Distribution 2D des températures", fontsize=15)
+        # plt.axis("equal")
+        # plt.colorbar(p, shrink=0.4, aspect=15)
+        # plt.show()
 
         plt.figure(dpi=200)
         p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag
