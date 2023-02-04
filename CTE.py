@@ -29,9 +29,12 @@ print("████████████████████████�
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 # %% Engine initialisation
 "Viserion settings"
-plagex = "Viserion_X.txt"  # X coordinates of the Viserion
-plagey = "Viserion_Y.txt"  # Y coordinates of the Viserion
-plageinit = "Viserion_2023.txt"  # Viserion's parameters (found with CEA)
+
+mesh_size = 0.25
+
+plagex = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
+plagey = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
+plageinit = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
 "Constant value"
 lim22 = 600
@@ -133,20 +136,23 @@ print()
 
 # %% Adiabatic constant parametrization
 "Computation of gamma  --  Not much information"
-i = 0
+i = 0  # Index où la valeur de y n'est plus constante (début du convergent)
 a = 1
 b = 1
+
+# On lit les lignes 2 par 2 jusqu'à détecter une différence entre les 2
 while a == b:
     a = y_value[i]
     i = i + 1
     b = y_value[i]
 
+# On fixe gamma comme constant tout le long de la chambre cylindrique (les i premiers points)
 gamma = []
 for j in range(0, i, 1):
     gamma.append(gamma_c)
 
-j = y_value.index(min(y_value))
-k = j - i
+j = y_value.index(min(y_value))  # Index du col
+k = j - i  # Nombre de points dans le convergent
 c = gamma_c
 a = -1
 for m in range(0, k, 1):
