@@ -10,20 +10,24 @@ WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
 """
 import csv
+import matplotlib.pyplot as plt
 from pylab import *
+from math import *
 from machsolve import Mach_solv
 from pressuresolve import Pressure_solv
 from temperaturesolve import Temperature_solv
 from musolve import mu
 from Tcorsolve import tempcorrige
+from ProgressBar import *
 from Canaux import canaux
+from sympy import Symbol, nsolve
+import sympy as mp
 from methan import *
 from graphic3d import view3d
 from heatequationsolve import *
 from volume3d import *
 from CoolProp.CoolProp import PropsSI
-from IA import *
-import matplotlib.pyplot as plt
+
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
