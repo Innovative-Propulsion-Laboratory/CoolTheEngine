@@ -666,16 +666,9 @@ colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
 view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
+Cel03 = [x * 0.3 for x in Celerite]
 """
 plt.figure(dpi=200)
-=======
->>>>>>> Stashed changes
-Cel03 = [x * 0.3 for x in Celerite]
-"""plt.figure(dpi=200)
->>>>>>> 2cd87dfd8548e515421c5ca08c8fed188b80932e
 plt.plot(xcanauxre, Re_function, color='blue')
 plt.title("Reynolds number as a function of the engine axis")
 plt.show()
