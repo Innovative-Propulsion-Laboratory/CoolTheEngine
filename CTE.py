@@ -92,6 +92,7 @@ plt.show()
 
 # Plot of the mesh density of the engine
 """
+R = [abs(x_value[i] - x_value[i + 1]) for i in range(0, len(x_value) - 1)]
 R.append(R[-1])
 colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
