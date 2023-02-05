@@ -4,7 +4,7 @@ Created on Fri Nov 27 14:47:27 2020
 
 @author: Julien
 
-Rewritten: Mehdi
+Rewritten: Mehdi, Paul.B, Paul.M, Eve, Antoine.R
 
 WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
@@ -34,6 +34,7 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 "Viserion settings"
 
 mesh_size = 0.25  # Distance between two points of calculation
+
 x_coords_filename = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
 y_coords_filename = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
 input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
@@ -41,11 +42,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 "Constant input_data_list"
 lim22 = 600  # Not used anymore
 size2 = 18  # Used for the height of the display in 3D view
-ange = -18.884  # Not used anymore
-lim11 = 200  # Not used anymore
-epso = 10  # Not used anymore
+ange = -18.884  # Not used anymore ?
+lim11 = 200  # Not used anymore ?
+epso = 10  # Not used anymore ?
 machtype = 0  # 0 for one equation and else for another equation in calculation of mach
-limitation = 0.05
+limitation = 0.05  # used to build the scales in 3D view
 
 # %% Reading Viserion_2023.txt
 crinit = csv.reader(open(input_CEA_data, "r"))
@@ -181,12 +182,11 @@ print()
 
 # %% Static pressure computation
 "Static pressure computation"
-pressure_function = []
-pressure_function.append(Pc)
 c = 0
 Bar = ProgressBar(100, 30, "Static pressure computation")
 ac = (long - 1) / 100
 
+pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
 for i in range(0, long - 1, 1):
     if (i == long + 1):
@@ -348,6 +348,8 @@ Bar = ProgressBar(100, 30, "Canal geometric computations    ")
 Bar.update(100)
 print()
 print("█                                                                          █")
+
+# We reverse many function in order to calculate canals from the tore to the injection (x is in reverse)
 epaiss_chemise.reverse()
 xcanauxre.reverse()
 larg_canalre.reverse()
