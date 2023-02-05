@@ -34,11 +34,11 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 "Viserion settings"
 
 mesh_size = 0.25  # Distance between two points of calculation
-plagex = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
-plagey = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
-plageinit = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
+x_coords_filename = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
+y_coords_filename = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
+input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
-"Constant value"
+"Constant input_data_list"
 lim22 = 600  # Not used anymore
 size2 = 18  # Used for the height of the display in 3D view
 ange = -18.884  # Not used anymore
@@ -48,62 +48,38 @@ machtype = 0  # 0 for one equation and else for another equation in calculation 
 limitation = 0.05
 
 # %% Reading Viserion_2023.txt
-"Reading of the file"
-crinit = csv.reader(open(plageinit, "r"))
-value = []
-for row in crinit:
-    value.append(row[1])
+crinit = csv.reader(open(input_CEA_data, "r"))
+input_data_list = [row[1] for row in crinit]
 
-"Reading: Changeable variable according to CEA"
-c_init = float(value[0])  # Sound velocity in the chamber
-c_col = float(value[1])  # Sound velocity in the throat
-debit_LOX = float(value[2])  # LOX debit
-debit_LCH4 = float(value[3])  # CH4 debit
-rho_init = float(value[4])  # Initial density of the gases
-Pc = float(value[5])  # Pressure in the chamber
-Tc = float(value[6])  # Combustion temperature (in the chamber?)
-gamma_c = float(value[7])  # Gamma in the chamber
-gamma_t = float(value[8])  # Gamma in the throat
-gamma_e = float(value[9])  # Gamma at the exit
-M = float(value[10])  # Molar mass of the gases
-Cstar = float(value[11])  # Caracteristic velocity
+# Store CEA output in lists
+c_init = float(input_data_list[0])  # Sound velocity in the chamber
+c_col = float(input_data_list[1])  # Sound velocity in the throat
+debit_LOX = float(input_data_list[2])  # LOX debit
+debit_LCH4 = float(input_data_list[3])  # CH4 debit
+rho_init = float(input_data_list[4])  # Initial density of the gases
+Pc = float(input_data_list[5])  # Pressure in the chamber
+Tc = float(input_data_list[6])  # Combustion temperature (in the chamber?)
+gamma_c = float(input_data_list[7])  # Gamma in the chamber
+gamma_t = float(input_data_list[8])  # Gamma in the throat
+gamma_e = float(input_data_list[9])  # Gamma at the exit
+M = float(input_data_list[10])  # Molar mass of the gases
+Cstar = float(input_data_list[11])  # Caracteristic velocity
 
-"Reading: Constant variable -- DO NOT CHANGE"
-Dcol = float(value[12])  # Convergent radius of curvature
-Rcol = float(value[13])  # Throat radius of curvature
-Ac = float(value[14])  # Throat diameter
-DiamCol = float(value[15])  # Throat diameter
+# Store input dimensions in lists
+Dcol = float(input_data_list[12])  # Convergent radius of curvature
+Rcol = float(input_data_list[13])  # Throat radius of curvature
+Ac = float(input_data_list[14])  # Throat diameter
+DiamCol = float(input_data_list[15])  # Throat diameter
 
 # %% Import of the (X,Y) coordinates of the Viserion
-"Reading the files"
-crx = csv.reader(open(plagex, "r"))
-cry = csv.reader(open(plagey, "r"))
 
-print("█                                                                          █")
-Bar = ProgressBar(100, 30, "Import of the coordinates       ")
+# Reading the coordinate files
+crx = csv.reader(open(x_coords_filename, "r"))
+cry = csv.reader(open(y_coords_filename, "r"))
 
-"Importing X coordinates in a list"
-x_value = []
-for row in crx:
-    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
-    x_value.append(a)
-ax = 100 / (len(x_value) - 1)
-
-"Importing Y coordinates in a list"
-y_value = []
-b = 0
-for row in cry:
-    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
-    y_value.append(a)
-    b = b + ax
-    Bar.update(b)
-
-"Creation of the mesh"
-R = []
-for i in range(0, len(x_value) - 1, 1):
-    mesh = abs(x_value[i] - x_value[i + 1])
-    R.append(mesh)
-R.append(R[-1])
+# Storing the X,Y coordinates in lists
+x_value = [float(row[0]) / 1000 for row in crx]
+y_value = [float(row[0]) / 1000 for row in cry]
 
 # Plot of the upper profile of the engine
 """
@@ -119,55 +95,45 @@ colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
 """
+# %% Computation of the cross-sectional areas of the engine
+aire = [pi * r ** 2 for r in y_value]
 
-print()
-
-# %% Areas computation
-"Computation of the cross-sectional areas of the engine"
-long = len(x_value)
-
-Bar = ProgressBar(100, 30, "Computation of the areas        ")
-aw = 100 / (long)
-b = 0
-
-aire = []
-for i in range(0, long, 1):
-    a = pi * (y_value[i]) ** 2
-    aire.append(a)
-    b = b + aw
-    Bar.update(b)
-
-print()
+print("█ Computed the cross-sectionnal areas                                      █")
 
 # %% Adiabatic constant (gamma) parametrization
-"Computation of gamma  --  Not much information"
-i = 0
+"Linear interpolation of gamma"
+
+i = 0  # Index of the beginning of the convergent
 a = 1
 b = 1
-
-while a == b:  # Read y values two per two in order to detect the beginning of the convergent -> i at the end of the while
+while a == b:  # Read y values two per two in order to detect the beginning of the convergent
     a = y_value[i]
     i = i + 1
     b = y_value[i]
-
+# Gamma in the cylindrical chamber
 gamma = []
-for j in range(0, i, 1):  # Gamma is a constant before the beginning of the convergent along the chamber
+for i_throat in range(0, i):  # Gamma is constant before the beginning of the convergent along the chamber
     gamma.append(gamma_c)
 
-j = y_value.index(min(y_value))  # Throat index
-k = j - i  # Number of points in the convergent
+# Gamma in the convergent
+i_throat = y_value.index(min(y_value))  # Throat index
+k = i_throat - i  # Number of points in the convergent
 c = gamma_c
-for m in range(-1, k-1, 1):  # Linear interpolation between beginning and end of convergent: (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi)) 
-    l = ((gamma_t - gamma_c) / (x_value[j] - x_value[i])) * abs(x_value[i + 1 + m] - x_value[i + m])
+for m in range(-1, k - 1):
+    # Linear interpolation between beginning and end of convergent:
+    # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
+    l = ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i])) * abs(x_value[i + 1 + m] - x_value[i + m])
     c = c + l
     gamma.append(c)
 
-p = len(x_value) - j  # Number of points in the divergent
-c = gamma_t
-for q in range(-1, p-1, 1):  # Linear interpolation between beginning and end of divergent
-    n = ((gamma_e - gamma_t) / (x_value[-1] - x_value[j])) * abs(x_value[j + 1 + q] - x_value[j + q])
-    c = c + n
-    gamma.append(c)
+# Gamma in the divergent nozzle
+p = len(x_value) - i_throat  # Number of points in the divergent
+t = gamma_t
+for q in range(-1, p - 1):  # Linear interpolation between beginning and end of divergent
+    n = ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(
+        x_value[i_throat + 1 + q] - x_value[i_throat + q])
+    t = t + n
+    gamma.append(t)
 
 # Plot of the gamma linearisation
 """
@@ -181,12 +147,13 @@ plt.show()
 
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
-v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # initial velocity of the gases
-M_init = v_init / c_init
+v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # Initial velocity of the gases
+M_init = v_init / c_init  # Initial mach number
 M1 = M_init
 mach_function = [M_init]
 b = 0
 Bar = ProgressBar(100, 30, "Gamma, Mach number and pressure computations")
+long = len(x_value)
 av = 100 / (long - 1)
 
 "Mach number computations along the engine"
@@ -248,42 +215,37 @@ print()
 
 # %% Temperature computation
 "Temperature computation"
-temperature_function = []
-temperature_function.append(Tc)
+hotgas_temperature = [Tc]
 b = 0
 Bar = ProgressBar(100, 30, "Temperature computation         ")
 ay = 100 / (long - 1)
 
-"Temperature computations along the engine"
-for i in range(0, long - 1, 1):
-    if (i == long + 1):
+# Temperature computations along the engine"
+for i in range(0, long - 1):
+    if i == long + 1:
         M1 = mach_function[i]
         M2 = mach_function[i]
     else:
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
-    T1 = temperature_function[i]
+    T1 = hotgas_temperature[i]
     T2 = Temperature_solv(M1, M2, T1, gamma[i])
-    temperature_function.append(T2)
+    hotgas_temperature.append(T2)
     b = b + ay
     Bar.update(b)
 
-"import temperature,gamma and mach number values in a list"
-Tg_function = []
-for i in range(0, long, 1):
-    Tg = tempcorrige(temperature_function[i], gamma[i], mach_function[i])
-    Tg_function.append(Tg)
+# List of corrected gas temperatures (max diff with original is about 75K)
+hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_function[i]) for i in range(0, long)]
 
-# Plot of the temperature (2D/3D)
 """
 plt.figure(dpi=200)
-plt.plot(x_value,temperature_function,color='gold')
+plt.plot(x_value,hotgas_temperature,color='gold')
 plt.title("Temperature as a function of the engine axis")
 plt.show()
 
 colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv,x_value,y_value,temperature_function,colooo,'Temperature of the gases',size2-2,limitation)
+view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases',size2-2,limitation)
 """
 
 print()
@@ -307,7 +269,7 @@ for i in range(0, long - 1, 1):
     else:
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
-    Cele = (gamma[i] * 434.47 * temperature_function[i]) ** 0.5
+    Cele = (gamma[i] * 434.47 * hotgas_temperature[i]) ** 0.5
     Gaz_velo = Cele * mach_function[i]
     Celerite_function.append(Cele)
     Gaz_velocity.append(Gaz_velo)
@@ -376,7 +338,8 @@ Ro = 3  # Roughness (micrometers)
 
 # %% Computation
 """Methode 2"""
-xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise = canaux(plagex, plagey, nbc, lrg_col, lrg_c,
+xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise = canaux(x_coords_filename, y_coords_filename,
+                                                                                 nbc, lrg_col, lrg_c,
                                                                                  lrg_div, ht, ht_c, ht_div, tore,
                                                                                  debit_total, n1, n2, n3, n4, e_col,
                                                                                  e_div, e_c, n5, n6, lrg_c2, ht_c2)
@@ -392,12 +355,12 @@ Areare.reverse()
 htre.reverse()
 ycanauxre.reverse()
 fin = (len(xcanauxre))
-Stemperature_function = temperature_function[:]
+Stemperature_function = hotgas_temperature[:]
 Saire = aire[:]
 Smach_function = mach_function[:]
 Sgamma = gamma[:]
-while temperature_function.index(temperature_function[-1]) >= fin:
-    temperature_function.pop()
+while hotgas_temperature.index(hotgas_temperature[-1]) >= fin:
+    hotgas_temperature.pop()
     aire.pop()
     mach_function.pop()
     gamma.pop()
@@ -405,7 +368,7 @@ while temperature_function.index(temperature_function[-1]) >= fin:
 gamma.reverse()
 mach_function.reverse()
 aire.reverse()
-temperature_function.reverse()
+hotgas_temperature.reverse()
 
 
 def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
@@ -445,14 +408,14 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             Re = (V * Dhy * rho[i]) / visccoolant[i]
             Re_function.append(Re)
             Pr_cool = (visccoolant[i] * Cpmeth[i]) / condcoolant[i]
-            T1 = temperature_function[i]
+            T1 = hotgas_temperature[i]
             viscosite, cp, lamb, Pr = mu(T1, M, gamma[i])
             visc_function.append(viscosite)
             cp_function.append(cp)
             lamb_function.append(lamb)
             Prandtl_function.append(Pr)
             A = aire[i]
-            hg = ((0.026 / ((2 * ((Ac / pi) ** 0.5)) ** 0.2)) * (((viscosite ** 0.2) * cp) / (Pr ** 0.6)) * (
+            hg = (0.026 / (DiamCol ** 0.2) * (((viscosite ** 0.2) * cp) / (Pr ** 0.6)) * (
                     (Pc / Cstar) ** 0.8) * ((DiamCol / Dcol) ** 0.1) * ((Ac / A) ** 0.9)) * Sig[i]
             hg_function.append(hg)
             Tg = T1
@@ -535,7 +498,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             flux = hl * (y_ - Tcoolant[i]) * 0.000001
             fluxsolved.append(flux)
             Tw = inwall_temperature[i]
-            Ts = temperature_function[positioncol]
+            Ts = hotgas_temperature[positioncol]
             Mak = mach_function[i]
             sigm = 1 / ((((Tw / (2 * Ts)) * (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) + 0.5) ** (0.68)) * (
                     (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) ** 0.12))
@@ -848,7 +811,7 @@ epaisseur = e_c
 hauteur = htre[-1]
 largeur = larg_canalre[-1]
 Hg = hg_function[-1]
-Tg = temperature_function[-1]
+Tg = hotgas_temperature[-1]
 Hl = hlnormal[-1]
 Tl = Tcoolant[-1]
 dx = 0.00004  # *3.5
@@ -860,7 +823,7 @@ epaisseur = e_col
 hauteur = htre[poscol]
 largeur = larg_canalre[poscol]
 Hg = hg_function[poscol]
-Tg = temperature_function[poscol]
+Tg = hotgas_temperature[poscol]
 Hl = hlnormal[poscol]
 Tl = Tcoolant[poscol]
 dx = 0.000025  # *3.5
@@ -871,7 +834,7 @@ epaisseur = e_div
 hauteur = htre[0]
 largeur = larg_canalre[0]
 Hg = hg_function[0]
-Tg = temperature_function[0]
+Tg = hotgas_temperature[0]
 Hl = hlnormal[0]
 Tl = Tcoolant[0]
 dx = 0.00004
@@ -889,7 +852,7 @@ for i in range(0, len(xcanauxre), 1):
     hauteur = htre[i]
     largeur = larg_canalre[i]
     Hg = hg_function[i]
-    Tg = temperature_function[i]
+    Tg = hotgas_temperature[i]
     Hl = hlnormal[i]
     Tl = Tcoolant[i]
     if i <= lim2 and i >= lim1:
@@ -913,7 +876,7 @@ for i in range(0, len(xcanauxre), 1):
 aire.reverse()
 gamma.reverse()
 mach_function.reverse()
-temperature_function.reverse()
+hotgas_temperature.reverse()
 xcanauxre.reverse()
 ycanauxre.reverse()
 larg_canalre.reverse()

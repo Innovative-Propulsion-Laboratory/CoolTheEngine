@@ -9,7 +9,7 @@ import csv
 import matplotlib.pyplot as plt
 
 
-# plagex,plagey
+# x_coords_filename,y_coords_filename
 def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total, epaisseur_chemise, e_col, e_div, e_c):
     crx = csv.reader(open(plagex, "r"))  # ouverture des x
     cry = csv.reader(open(plagey, "r"))  # ouverture des y
