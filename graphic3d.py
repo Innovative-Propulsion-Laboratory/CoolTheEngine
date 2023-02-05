@@ -20,7 +20,7 @@ def view3d(inv, x, yprim, temp, col, title, size2, limitation):
     if inv[2] == 1:
         temp.reverse()
     b = 0
-    Bar = ProgressBar(100, 30, "Visualisation des résultats     ")
+    Bar = ProgressBar(100, 30, "Results visualization           ")
     ay = 100 / ((len(x) / 5) * 40 + len(x))
     fig = plt.figure(figsize=(10, size2), dpi=200)
     ax = fig.add_subplot(111, projection='3d')

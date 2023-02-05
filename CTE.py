@@ -30,7 +30,11 @@ from CoolProp.CoolProp import PropsSI
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
+print("█                                                                          █")
+print("█                                                                          █")
 # %% Engine initialisation
+Bar = ProgressBar(100, 30, "Initialization                  ")
+
 "Viserion settings"
 
 mesh_size = 0.25  # Distance between two points of calculation
@@ -72,7 +76,12 @@ Rcol = float(input_data_list[13])  # Throat radius of curvature
 Ac = float(input_data_list[14])  # Throat diameter
 DiamCol = float(input_data_list[15])  # Throat diameter
 
+Bar.update(100)
+print()
+print("█                                                                          █")
+
 # %% Import of the (X,Y) coordinates of the Viserion
+Bar = ProgressBar(100, 30, "Import of (X,Y) coordinates     ")
 
 # Reading the coordinate files
 crx = csv.reader(open(x_coords_filename, "r"))
@@ -81,6 +90,10 @@ cry = csv.reader(open(y_coords_filename, "r"))
 # Storing the X,Y coordinates in lists
 x_value = [float(row[0]) / 1000 for row in crx]
 y_value = [float(row[0]) / 1000 for row in cry]
+
+Bar.update(100)
+print()
+print("█                                                                          █")
 
 # Plot of the upper profile of the engine
 """
@@ -100,12 +113,17 @@ view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
 """
 
 # %% Computation of the cross-sectional areas of the engine
-aire = [pi * r ** 2 for r in y_value]
+Bar = ProgressBar(100, 30, "Sectionnal areas computation    ")   
 
-print("█ Computed the cross-sectionnal areas                                      █")
+aire = [pi * r ** 2 for r in y_value]
+             
+Bar.update(100)
+print()
+print("█                                                                          █")
 
 # %% Adiabatic constant (gamma) parametrization
 "Linear interpolation of gamma"
+Bar = ProgressBar(100, 30, "Gamma computation               ")
 
 i = 0  # Index of the beginning of the convergent
 a = 1
@@ -138,6 +156,10 @@ for q in range(-1, p - 1):  # Linear interpolation between beginning and end of 
         x_value[i_throat + 1 + q] - x_value[i_throat + q])
     t += n
     gamma.append(t)
+    
+Bar.update(100)
+print()
+print("█                                                                          █")
 
 # Plot of the gamma linearisation
 """
@@ -156,7 +178,7 @@ M_init = v_init / c_init  # Initial mach number
 M1 = M_init
 mach_function = [M_init]
 b = 0
-Bar = ProgressBar(100, 30, "Gamma, Mach number and pressure computations")
+Bar = ProgressBar(100, 30, "Mach number computation         ")
 long = len(x_value)
 av = 100 / (long - 1)
 
@@ -171,6 +193,8 @@ for i in range(0, long - 1):
     b += av
     Bar.update(b)
 
+print()
+
 # Plots of the Mach number in the engine (2D/3D)
 plt.figure(dpi=200)
 plt.plot(x_value, mach_function, color='gold')
@@ -181,13 +205,13 @@ colooo = plt.cm.Spectral
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2 - 2, limitation)
 
-print()
+print("█                                                                          █")
 
 # %% Static pressure computation
 "Static pressure computation"
 c = 0
-Bar = ProgressBar(100, 30, "Static pressure computation")
-ac = (long - 1) / 100
+Bar = ProgressBar(100, 30, "Static pressure computation     ")
+ac = 100 / (long - 1)
 
 pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
@@ -203,6 +227,8 @@ for i in range(0, long - 1):
     pressure_function.append(P2)
     c += ac
     Bar.update(c)
+    
+print()
 
 # Plot of the static pressure (2D/3D)
 plt.figure(dpi=200)
@@ -214,7 +240,7 @@ colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size2 - 2, limitation)
 
-print()
+print("█                                                                          █")
 
 # %% Temperature computation
 hotgas_temperature = [Tc]
@@ -235,7 +261,8 @@ for i in range(0, long - 1):
     hotgas_temperature.append(T2)
     b += ay
     Bar.update(b)
-
+    
+print()
 # List of corrected gas temperatures (max diff with original is about 75K)
 hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_function[i]) for i in range(0, long)]
 
@@ -249,7 +276,8 @@ colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases',size2-2,limitation)
 """
-print()
+
+print("█                                                                          █")
 
 # %% Canal parameters
 "Number of channels and tore position"
@@ -301,7 +329,9 @@ debit_total = If_reg / rho_initCH4  # Total volumic flow rate of the coolant (in
 Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
 Ro = 3  # Roughness (micrometers)
 
-# %% Computation
+# %% Computation of canals
+Bar = ProgressBar(100, 30, "Canal geometric computation     ")
+
 """Methode 2"""
 xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise = canaux(x_coords_filename, y_coords_filename,
                                                                                  nbc, lrg_col, lrg_c,
@@ -309,7 +339,13 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise = canaux
                                                                                  debit_total, n1, n2, n3, n4, e_col,
                                                                                  e_div, e_c, n5, n6, lrg_c2, ht_c2)
 """Methode 1"""
-Bar = ProgressBar(100, 30, "Canal geometric computations    ")
+"""
+xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
+                                                              nbc, lrg_col, ht, ht_c, ht_div, tore,
+                                                              debit_total, epaisseur_chemise)
+"""
+
+
 Bar.update(100)
 print()
 print("█                                                                          █")
@@ -587,7 +623,7 @@ LambdaTC = [330]
 entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 b = 0
 rep = 2
-Bar = ProgressBar(100, 30, "Résolution globale en cours...  ")
+Bar = ProgressBar(100, 30, "Résolution globale              ")
 ay = 100 / ((1 + rep) * len(xcanauxre))
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
@@ -623,12 +659,23 @@ print("█                                                                      
 
 # %% Display of the first results
 "Display of the results"
+print("█ Display of results in 2D :                                               █")
+print("█                                                                          █")
+
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
 view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+"""
+plt.figure(dpi=200)
+=======
+>>>>>>> Stashed changes
 Cel03 = [x * 0.3 for x in Celerite]
 """plt.figure(dpi=200)
+>>>>>>> 2cd87dfd8548e515421c5ca08c8fed188b80932e
 plt.plot(xcanauxre, Re_function, color='blue')
 plt.title("Reynolds number as a function of the engine axis")
 plt.show()
@@ -664,7 +711,8 @@ plt.figure(dpi=200)
 Sig.pop()
 plt.plot(xcanauxre, Sig, color='orangered')
 plt.title("Sigma as a function of the engine axis")
-plt.show()"""
+plt.show()
+"""
 
 plt.figure(dpi=200)
 plt.plot(xcanauxre, inwall_temperature, color='magenta', label='Twg')
@@ -870,6 +918,8 @@ plt.show()
 
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
+Bar = ProgressBar(100, 30, "Writting results in CSV files    ")
+
 file_name = "valuexport.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
@@ -921,6 +971,7 @@ for i in range(len(xcanauxre), len(x_value)):
                      ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
 file.close()
 
+Bar.update(100)
 print()
 print("█                                                                          █")
 print("███████████████████████████████████ FIN ████████████████████████████████████")
