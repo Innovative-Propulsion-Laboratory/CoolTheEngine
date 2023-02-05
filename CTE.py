@@ -4,7 +4,7 @@ Created on Fri Nov 27 14:47:27 2020
 
 @author: Julien
 
-Rewritten: Mehdi
+Rewritten: Mehdi, Paul.B, Paul.M, Eve, Antoine.R
 
 WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
@@ -34,18 +34,18 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 "Viserion settings"
 
 mesh_size = 0.25  # Distance between two points of calculation
-plagex = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
-plagey = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
+plagex = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion (in mm)
+plagey = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion (in mm)
 plageinit = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
-"Constant value"
-lim22 = 600  # Not used anymore
+"Useful value"
+lim22 = 600  # Not used anymore ?
 size2 = 18  # Used for the height of the display in 3D view
-ange = -18.884  # Not used anymore
-lim11 = 200  # Not used anymore
-epso = 10  # Not used anymore
+ange = -18.884  # Not used anymore ?
+lim11 = 200  # Not used anymore ?
+epso = 10  # Not used anymore ?
 machtype = 0  # 0 for one equation and else for another equation in calculation of mach
-limitation = 0.05
+limitation = 0.05 # used to build the scales in 3D view
 
 # %% Reading Viserion_2023.txt
 "Reading of the file"
@@ -55,24 +55,24 @@ for row in crinit:
     value.append(row[1])
 
 "Reading: Changeable variable according to CEA"
-c_init = float(value[0])  # Sound velocity in the chamber
-c_col = float(value[1])  # Sound velocity in the throat
-debit_LOX = float(value[2])  # LOX debit
-debit_LCH4 = float(value[3])  # CH4 debit
-rho_init = float(value[4])  # Initial density of the gases
-Pc = float(value[5])  # Pressure in the chamber
-Tc = float(value[6])  # Combustion temperature (in the chamber?)
+c_init = float(value[0])  # Sound velocity in the chamber (in m/s)
+c_col = float(value[1])  # Sound velocity in the throat (in m/s)
+debit_LOX = float(value[2])  # LOX debit (in kg/s)
+debit_LCH4 = float(value[3])  # CH4 debit (in kg/s)
+rho_init = float(value[4])  # Initial density of the gases (in kg.m**-3)
+Pc = float(value[5])  # Pressure in the chamber (in Pa)
+Tc = float(value[6])  # Combustion temperature in the chamber (in K)
 gamma_c = float(value[7])  # Gamma in the chamber
 gamma_t = float(value[8])  # Gamma in the throat
 gamma_e = float(value[9])  # Gamma at the exit
-M = float(value[10])  # Molar mass of the gases
-Cstar = float(value[11])  # Caracteristic velocity
+M = float(value[10])  # Molar mass of the gases (in g/mol)
+Cstar = float(value[11])  # Caracteristic velocity (in m/s)
 
 "Reading: Constant variable -- DO NOT CHANGE"
-Dcol = float(value[12])  # Convergent radius of curvature
-Rcol = float(value[13])  # Throat radius of curvature
-Ac = float(value[14])  # Throat diameter
-DiamCol = float(value[15])  # Throat diameter
+Dcol = float(value[12])  # Convergent radius of curvature (in m)
+Rcol = float(value[13])  # Throat radius of curvature (in m)
+Ac = float(value[14])  # Throat section (in m**2)
+DiamCol = float(value[15])  # Throat diameter (in m)
 
 # %% Import of the (X,Y) coordinates of the Viserion
 "Reading the files"
@@ -83,23 +83,23 @@ print("█                                                                      
 Bar = ProgressBar(100, 30, "Import of the coordinates       ")
 
 "Importing X coordinates in a list"
-x_value = []
+x_value = [] # (in m)
 for row in crx:
-    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
+    a = float(row[0]) / 1000  # Divided by 1000 to get meters
     x_value.append(a)
 ax = 100 / (len(x_value) - 1)
 
 "Importing Y coordinates in a list"
-y_value = []
+y_value = [] # (in m)
 b = 0
 for row in cry:
-    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
+    a = float(row[0]) / 1000  # Divided by 1000 to get meters
     y_value.append(a)
     b = b + ax
     Bar.update(b)
 
 "Creation of the mesh"
-R = []
+R = [] # (in m)
 for i in range(0, len(x_value) - 1, 1):
     mesh = abs(x_value[i] - x_value[i + 1])
     R.append(mesh)
@@ -124,13 +124,13 @@ print()
 
 # %% Areas computation
 "Computation of the cross-sectional areas of the engine"
-long = len(x_value)
+long = len(x_value)  # Number of points studied
 
 Bar = ProgressBar(100, 30, "Computation of the areas        ")
 aw = 100 / (long)
 b = 0
 
-aire = []
+aire = [] # (in m**2)
 for i in range(0, long, 1):
     a = pi * (y_value[i]) ** 2
     aire.append(a)
@@ -181,14 +181,14 @@ plt.show()
 
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
-v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # initial velocity of the gases
-M_init = v_init / c_init
-M1 = M_init
-mach_function = [M_init]
 b = 0
 Bar = ProgressBar(100, 30, "Gamma, Mach number and pressure computations")
 av = 100 / (long - 1)
 
+v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # Initial velocity of the gases (in m/s)
+M_init = v_init / c_init
+M1 = M_init
+mach_function = [M1]
 "Mach number computations along the engine"
 for i in range(0, long - 1, 1):
     A1 = aire[i]
@@ -214,12 +214,11 @@ print()
 
 # %% Static pressure computation
 "Static pressure computation"
-pressure_function = []
-pressure_function.append(Pc)
 c = 0
 Bar = ProgressBar(100, 30, "Static pressure computation")
 ac = (long - 1) / 100
 
+pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
 for i in range(0, long - 1, 1):
     if (i == long + 1):
@@ -385,6 +384,8 @@ Bar = ProgressBar(100, 30, "Canal geometric computations    ")
 Bar.update(100)
 print()
 print("█                                                                          █")
+
+# We reverse many function in order to calculate canals from the tore to the injection (x is in reverse)
 epaiss_chemise.reverse()
 xcanauxre.reverse()
 larg_canalre.reverse()
