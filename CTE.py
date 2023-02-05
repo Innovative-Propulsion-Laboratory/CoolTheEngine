@@ -157,31 +157,27 @@ for j in range(0, i, 1):  # Gamma is a constant before the beginning of the conv
 j = y_value.index(min(y_value))  # Throat index
 k = j - i  # Number of points in the convergent
 c = gamma_c
-a = -1
-for m in range(0, k, 1):  # Linear interpolation between beginning and end of convergent
-    l = (gamma_c - gamma_t) / ((x_value[j] - x_value[i]) / abs(x_value[i + 1 + a] - x_value[i + a])) 
-    c = c - l
-    a = a + 1
+for m in range(-1, k-1, 1):  # Linear interpolation between beginning and end of convergent: (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi)) 
+    l = ((gamma_t - gamma_c) / (x_value[j] - x_value[i])) * abs(x_value[i + 1 + m] - x_value[i + m])
+    c = c + l
     gamma.append(c)
 
-p = len(x_value) - j
+p = len(x_value) - j  # Number of points in the divergent
 c = gamma_t
-a = -1
-for q in range(0, p, 1):  # Linear interpolation between beginning and end of divergent
-    n = (gamma_t - gamma_e) / ((y_value[-1] - y_value[j]) / abs(y_value[j + 1 + a] - y_value[j + a]))
-    c = c - n
-    a = a + 1
+for q in range(-1, p-1, 1):  # Linear interpolation between beginning and end of divergent
+    n = ((gamma_e - gamma_t) / (x_value[-1] - x_value[j])) * abs(x_value[j + 1 + q] - x_value[j + q])
+    c = c + n
     gamma.append(c)
 
 # Plot of the gamma linearisation
-
+"""
 #print(gamma)
 #print(len(gamma))
 plt.figure(dpi=200)
 plt.plot(x_value,gamma,color='gold')
 plt.title("Gamma linearisation")
 plt.show()
-
+"""
 
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
