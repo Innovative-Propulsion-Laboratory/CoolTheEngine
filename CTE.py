@@ -92,10 +92,12 @@ plt.show()
 
 # Plot of the mesh density of the engine
 """
+R.append(R[-1])
 colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
 """
+
 # %% Computation of the cross-sectional areas of the engine
 aire = [pi * r ** 2 for r in y_value]
 
@@ -109,7 +111,7 @@ a = 1
 b = 1
 while a == b:  # Read y values two per two in order to detect the beginning of the convergent
     a = y_value[i]
-    i = i + 1
+    i += 1
     b = y_value[i]
 # Gamma in the cylindrical chamber
 gamma = []
@@ -189,7 +191,7 @@ ac = (long - 1) / 100
 pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
 for i in range(0, long - 1):
-    if (i == long + 1):
+    if i == long + 1:
         M1 = mach_function[i]
         M2 = mach_function[i]
     else:
@@ -214,13 +216,12 @@ view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size
 print()
 
 # %% Temperature computation
-"Temperature computation"
 hotgas_temperature = [Tc]
 b = 0
 Bar = ProgressBar(100, 30, "Temperature computation         ")
 ay = 100 / (long - 1)
 
-# Temperature computations along the engine
+# Hot gas temperature computations along the engine
 for i in range(0, long - 1):
     if i == long + 1:
         M1 = mach_function[i]
@@ -254,13 +255,13 @@ print()
 nbc = 40  # Number of channels
 tore = 0.103  # Position of the manifol from the throat (in m)
 
-"Width of the canal"
+"Width of the channels"
 lrg_c2 = 0.003  # Width of the canal in at the injection plate (in m)
 lrg_c = 0.003  # Width of the canal at the end of the cylindrical chamber (in m)
 lrg_col = 0.002  # Width of the canal in the throat (in m)
 lrg_div = 0.003  # Width of the canal at the extremity of the nozzle (in m)
 
-"Height of the canal"
+"Height of the channels"
 ht_c2 = 0.003  # Height of the canal at the injection plate (in m)
 ht_c = 0.003  # Height of the canal at the end of the cylindrical chamber (in m)
 ht = 0.002  # Height of the canal in the throat (in m)
@@ -352,10 +353,8 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
     hlnormal = []
     error_D_ = []
     singpertes = [Pcoolant[0]]
-    totalpha = 0
     Pcoolant2 = [Pcoolant[0]]
     phase = 0
-    Quality = -1
     positioncol = ycanauxre.index(min(ycanauxre))
     for i in range(0, len(xcanauxre)):
         Lambda_tc = LambdaTC[i]
@@ -626,11 +625,8 @@ print("█                                                                      
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
 view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
-Cel03 = []
-for x in Celerite:
-    x *= 0.3
-    Cel03.append(x)
 
+Cel03 = [x * 0.3 for x in Celerite]
 """plt.figure(dpi=200)
 plt.plot(xcanauxre, Re_function, color='blue')
 plt.title("Reynolds number as a function of the engine axis")
