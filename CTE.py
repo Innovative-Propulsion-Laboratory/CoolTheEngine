@@ -337,249 +337,230 @@ hotgas_temperature.reverse()
 
 
 def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
-    def downsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
-        pos = 0
-        hlcor = []
-        visc_function = []
-        cp_function = []
-        Re_function = []
-        lamb_function = []
-        Prandtl_function = []
-        hg_function = []
-        inwall_temperature = []
-        outwall_temperature = []
-        fluxsolved = []
-        Vitesse = []
-        Celerite = []
-        hlnormal = []
-        error_D_ = []
-        singpertes = [Pcoolant[0]]
-        totalpha = 0
-        Pcoolant2 = [Pcoolant[0]]
-        phase = 0
-        Quality = -1
-        positioncol = ycanauxre.index(min(ycanauxre))
-        for i in range(0, len(xcanauxre)):
-            Lambda_tc = LambdaTC[i]
-            x = xcanauxre[i]
-            c = larg_canalre[i]
-            Dhy = (2 * htre[i] * c) / (htre[i] + c)
-            V = ((debit_LCH4 / (nbc * rho[i])) / Areare[i])
-            Vitesse.append(V)
-            Re = (V * Dhy * rho[i]) / visccoolant[i]
-            Re_function.append(Re)
-            Pr_cool = (visccoolant[i] * Cpmeth[i]) / condcoolant[i]
-            T1 = hotgas_temperature[i]
-            viscosite, cp, lamb, Pr = mu(T1, M, gamma[i])
-            visc_function.append(viscosite)
-            cp_function.append(cp)
-            lamb_function.append(lamb)
-            Prandtl_function.append(Pr)
-            A = aire[i]
-            hg = (0.026 / (DiamCol ** 0.2) * (((viscosite ** 0.2) * cp) / (Pr ** 0.6)) * (
-                    (Pc / Cstar) ** 0.8) * ((DiamCol / Dcol) ** 0.1) * ((Ac / A) ** 0.9)) * Sig[i]
-            hg_function.append(hg)
-            Tg = T1
-            steff = 5.6697 * 10 ** (-8)
-            emissivity = 0.02
-            qr = emissivity * steff * (T1 ** 4)
-            if i + 1 == len(xcanauxre):
-                EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
-            else:
-                EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
-            Gdeb = debit_LCH4 / (Areare[i] * nbc)
-            if phase == 0 or phase == 2:
-                f = (1.82 * log10(Re) - 1.64) ** (-2)
-                Nu = ((f / 8) * (Re - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
-                hl = Nu * (condcoolant[i] / Dhy)
-                Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
-            else:
-                Base0 = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-                Base1 = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-                Xqual = (H2 - Base0) / (Base1 - Base0)
-                rhogp = PropsSI("D", "Q", 1, "P", Pcoolant[i], fluid)
-                rholp = PropsSI("D", "Q", 0, "P", Pcoolant[i], fluid)
-                mugp = PropsSI("V", "Q", 1, "P", Pcoolant[i], fluid)
-                mulp = PropsSI("V", "Q", 0, "P", Pcoolant[i], fluid)
-                Xeq = (((1 - Xqual) / Xqual) ** 0.9) * ((rhogp / rholp) ** 0.5) * ((mugp / mulp) ** 0.1)
-                SurfaceT = PropsSI("I", "Q", 0, "P", Pcoolant[i], fluid)
-                Kp = float(Pcoolant[i]) / ((SurfaceT * 9.81 * (rholp - rhogp)) ** 0.5)
-                We = (Gdeb ** 2) * Dhy / (rholp * SurfaceT)
-                HVP = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-                HLP = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-                HHV = HVP - HLP
-                flux1 = flux + 0.5
-                flux2 = flux
-                while (abs(flux1 - flux2) / flux2) > 0.000001:
-                    flux1 = (flux1 + flux2) / 2
-                    Bo = 1000000 * flux1 / (Gdeb * HHV)
-                    if Xqual < 0.6:
-                        Nu = 12.46 * (Bo ** 0.544) * (We ** 0.035) * (Kp ** 0.614) * (Xeq ** 0.031)
-                    else:
-                        Nu = 0.00136 * (Bo ** (-1.442)) * (We ** 0.074)
-                    hl = Nu * (condcoolant[i] / Dhy)
-                    D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-                    d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-                    m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
-                    hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * (
-                            (2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * ((tanh(m * htre[i])) / (pi * D))
-                    hg = hg_function[i]
-                    hl = hl_cor
-                    Tl = Tcoolant[i]
-                    e = epaiss_chemise[i]
-                    L = Lambda_tc
-                    mp.dps = 150
-                    cx1 = Symbol('cx1')
-                    cx2 = Symbol('cx2')
-                    f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
-                    f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
-                    x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
-                    flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
+    hlcor = []
+    visc_function = []
+    cp_function = []
+    Re_function = []
+    lamb_function = []
+    Prandtl_function = []
+    hg_function = []
+    inwall_temperature = []
+    outwall_temperature = []
+    fluxsolved = []
+    Vitesse = []
+    Celerite = []
+    hlnormal = []
+    error_D_ = []
+    singpertes = [Pcoolant[0]]
+    totalpha = 0
+    Pcoolant2 = [Pcoolant[0]]
+    phase = 0
+    Quality = -1
+    positioncol = ycanauxre.index(min(ycanauxre))
+    for i in range(0, len(xcanauxre)):
+        Lambda_tc = LambdaTC[i]
+        x = xcanauxre[i]
+        c = larg_canalre[i]
+        Dhy = (2 * htre[i] * c) / (htre[i] + c)
+        V = ((debit_LCH4 / (nbc * rho[i])) / Areare[i])
+        Vitesse.append(V)
+        Re = (V * Dhy * rho[i]) / visccoolant[i]
+        Re_function.append(Re)
+        Pr_cool = (visccoolant[i] * Cpmeth[i]) / condcoolant[i]
+        T1 = hotgas_temperature[i]
+        viscosite, cp, lamb, Pr = mu(T1, M, gamma[i])
+        visc_function.append(viscosite)
+        cp_function.append(cp)
+        lamb_function.append(lamb)
+        Prandtl_function.append(Pr)
+        A = aire[i]
+        hg = (0.026 / (DiamCol ** 0.2) * (((viscosite ** 0.2) * cp) / (Pr ** 0.6)) * (
+                (Pc / Cstar) ** 0.8) * ((DiamCol / Dcol) ** 0.1) * ((Ac / A) ** 0.9)) * Sig[i]
+        hg_function.append(hg)
+        Tg = T1
+        steff = 5.6697 * 10 ** (-8)
+        emissivity = 0.02
+        qr = emissivity * steff * (T1 ** 4)
+        if i + 1 == len(xcanauxre):
+            EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
+        else:
+            EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
+        Gdeb = debit_LCH4 / (Areare[i] * nbc)
+        if phase == 0 or phase == 2:
+            f = (1.82 * log10(Re) - 1.64) ** (-2)
+            Nu = ((f / 8) * (Re - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
             hl = Nu * (condcoolant[i] / Dhy)
-            hlnormal.append(hl)
-            D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-            d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-            m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
-            hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * ((2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * (
-                    (tanh(m * htre[i])) / (pi * D))
-            hlcor.append(hl_cor)
-            hg = hg_function[i]
-            hl = hlcor[i]
-            Tl = Tcoolant[i]
-            e = epaiss_chemise[i]
-            L = Lambda_tc
-            mp.dps = 150
-            cx1 = Symbol('cx1')
-            cx2 = Symbol('cx2')
-            f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
-            f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
-            x_, y_ = nsolve((f1, f2), (cx1, cx2), (700, 500))
-            inwall_temperature.append(x_)
-            outwall_temperature.append(y_)
-            flux = hl * (y_ - Tcoolant[i]) * 0.000001
-            fluxsolved.append(flux)
-            Tw = inwall_temperature[i]
-            Ts = hotgas_temperature[positioncol]
-            Mak = mach_function[i]
-            sigm = 1 / ((((Tw / (2 * Ts)) * (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) + 0.5) ** (0.68)) * (
-                    (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) ** 0.12))
-            Sig.append(sigm)
-            Lambdatc = (condcoeff1 * ((Tw + outwall_temperature[i]) * 0.5) + condcoeff2)  # 16.87
-            LambdaTC.append(Lambdatc)
-            if i == xcanauxre.index(xcanauxre[-1]):
-                Distance = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
-                xa = Distance
-                ya = (2 * pi * ycanauxre[i - 1]) / nbc
-                za = (2 * pi * ycanauxre[i]) / nbc
-                perim = (2 * pi * ((A / pi) ** 0.5)) / nbc
-                dA = xa * (2 * c + 2 * htre[i])
-                timer = (((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5) / V
-            else:
-                Distance = ((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5
-                xa = Distance
-                ya = (2 * pi * ycanauxre[i + 1]) / nbc
-                za = (2 * pi * ycanauxre[i]) / nbc
-                perim = (2 * pi * ((A / pi) ** 0.5)) / nbc
-                dA = xa * (2 * c + 2 * htre[i])
-                timer = (((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5) / V
-            Q = abs(flux) * 1000000 * abs(dA)
-            density = rho[i]
-            debitmass = debit_LCH4 / nbc
-            Tfu = (Q / (debitmass * Cpmeth[i])) + Tcoolant[i]
-            if phase == 0 or phase == 2:
-                rho2 = PropsSI("D", "P", Pcoolant[i], "T", Tfu, fluid)
-                if (rho[i] / rho2) > 1.5:
-                    rho2 = PropsSI("D", "Q", 0, "T", Tfu, fluid)
-                Re_sp = Dhy * Gdeb / visccoolant[i]
-                fsp1 = 1
+            Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
+        else:
+            Base0 = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
+            Base1 = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
+            Xqual = (H2 - Base0) / (Base1 - Base0)
+            rhogp = PropsSI("D", "Q", 1, "P", Pcoolant[i], fluid)
+            rholp = PropsSI("D", "Q", 0, "P", Pcoolant[i], fluid)
+            mugp = PropsSI("V", "Q", 1, "P", Pcoolant[i], fluid)
+            mulp = PropsSI("V", "Q", 0, "P", Pcoolant[i], fluid)
+            Xeq = (((1 - Xqual) / Xqual) ** 0.9) * ((rhogp / rholp) ** 0.5) * ((mugp / mulp) ** 0.1)
+            SurfaceT = PropsSI("I", "Q", 0, "P", Pcoolant[i], fluid)
+            Kp = float(Pcoolant[i]) / ((SurfaceT * 9.81 * (rholp - rhogp)) ** 0.5)
+            We = (Gdeb ** 2) * Dhy / (rholp * SurfaceT)
+            HVP = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
+            HLP = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
+            HHV = HVP - HLP
+            flux1 = flux + 0.5
+            flux2 = flux
+            while (abs(flux1 - flux2) / flux2) > 0.000001:
+                flux1 = (flux1 + flux2) / 2
+                Bo = 1000000 * flux1 / (Gdeb * HHV)
+                if Xqual < 0.6:
+                    Nu = 12.46 * (Bo ** 0.544) * (We ** 0.035) * (Kp ** 0.614) * (Xeq ** 0.031)
+                else:
+                    Nu = 0.00136 * (Bo ** (-1.442)) * (We ** 0.074)
+                hl = Nu * (condcoolant[i] / Dhy)
+                D = 2 * (ycanauxre[i] - epaiss_chemise[i])
+                d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
+                m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
+                hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * (
+                        (2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * ((tanh(m * htre[i])) / (pi * D))
+                hg = hg_function[i]
+                hl = hl_cor
+                Tl = Tcoolant[i]
+                e = epaiss_chemise[i]
+                L = Lambda_tc
+                mp.dps = 150
+                cx1 = Symbol('cx1')
+                cx2 = Symbol('cx2')
+                f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
+                f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
+                x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
+                flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
+        hl = Nu * (condcoolant[i] / Dhy)
+        hlnormal.append(hl)
+        D = 2 * (ycanauxre[i] - epaiss_chemise[i])
+        d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
+        m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
+        hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * ((2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * (
+                (tanh(m * htre[i])) / (pi * D))
+        hlcor.append(hl_cor)
+        hg = hg_function[i]
+        hl = hlcor[i]
+        Tl = Tcoolant[i]
+        e = epaiss_chemise[i]
+        L = Lambda_tc
+        mp.dps = 150
+        cx1 = Symbol('cx1')
+        cx2 = Symbol('cx2')
+        f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
+        f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
+        x_, y_ = nsolve((f1, f2), (cx1, cx2), (700, 500))
+        inwall_temperature.append(x_)
+        outwall_temperature.append(y_)
+        flux = hl * (y_ - Tcoolant[i]) * 0.000001
+        fluxsolved.append(flux)
+        Tw = inwall_temperature[i]
+        Ts = hotgas_temperature[positioncol]
+        Mak = mach_function[i]
+        sigm = 1 / ((((Tw / (2 * Ts)) * (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) + 0.5) ** (0.68)) * (
+                (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) ** 0.12))
+        Sig.append(sigm)
+        Lambdatc = (condcoeff1 * ((Tw + outwall_temperature[i]) * 0.5) + condcoeff2)  # 16.87
+        LambdaTC.append(Lambdatc)
+        if i == xcanauxre.index(xcanauxre[-1]):
+            Distance = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
+            xa = Distance
+            ya = (2 * pi * ycanauxre[i - 1]) / nbc
+            za = (2 * pi * ycanauxre[i]) / nbc
+            perim = (2 * pi * ((A / pi) ** 0.5)) / nbc
+            dA = xa * (2 * c + 2 * htre[i])
+            timer = (((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5) / V
+        else:
+            Distance = ((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5
+            xa = Distance
+            ya = (2 * pi * ycanauxre[i + 1]) / nbc
+            za = (2 * pi * ycanauxre[i]) / nbc
+            perim = (2 * pi * ((A / pi) ** 0.5)) / nbc
+            dA = xa * (2 * c + 2 * htre[i])
+            timer = (((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5) / V
+        Q = abs(flux) * 1000000 * abs(dA)
+        density = rho[i]
+        debitmass = debit_LCH4 / nbc
+        Tfu = (Q / (debitmass * Cpmeth[i])) + Tcoolant[i]
+        if phase == 0 or phase == 2:
+            rho2 = PropsSI("D", "P", Pcoolant[i], "T", Tfu, fluid)
+            if (rho[i] / rho2) > 1.5:
+                rho2 = PropsSI("D", "Q", 0, "T", Tfu, fluid)
+            Re_sp = Dhy * Gdeb / visccoolant[i]
+            fsp1 = 1
+            fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+            while abs((fsp1 / fsp2) - 1) > 0.0000001:
+                fsp1 = fsp2
                 fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
-                while abs((fsp1 / fsp2) - 1) > 0.0000001:
-                    fsp1 = fsp2
-                    fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
-                DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rho[i] * Dhy)
-                DeltaPac = ((Gdeb ** 2) / (2 * rho[i])) * ((rho[i] / rho2) - 1)
-            else:
-                Re_tp = Dhy * Gdeb / visccoolant[i]
-                eps_prim = (rholp / rhogp) / ((1 / Xqual) + ((rholp / rhogp) - 1))
-                DeltaPac = (Gdeb ** 2) * Distance * (
-                        (((1 - Xqual) ** 2) / (rholp * (1 - eps_prim))) + ((Xqual ** 2) / (rhogp * eps_prim)))
-                rhotp = (rhogp * rholp) / (rhogp * (1 - Xqual) + rholp * Xqual)
-                fsp1 = 1
+            DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rho[i] * Dhy)
+            DeltaPac = ((Gdeb ** 2) / (2 * rho[i])) * ((rho[i] / rho2) - 1)
+        else:
+            Re_tp = Dhy * Gdeb / visccoolant[i]
+            eps_prim = (rholp / rhogp) / ((1 / Xqual) + ((rholp / rhogp) - 1))
+            DeltaPac = (Gdeb ** 2) * Distance * (
+                    (((1 - Xqual) ** 2) / (rholp * (1 - eps_prim))) + ((Xqual ** 2) / (rhogp * eps_prim)))
+            rhotp = (rhogp * rholp) / (rhogp * (1 - Xqual) + rholp * Xqual)
+            fsp1 = 1
+            fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+            while abs((fsp1 / fsp2) - 1) > 0.0000001:
+                fsp1 = fsp2
                 fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
-                while abs((fsp1 / fsp2) - 1) > 0.0000001:
-                    fsp1 = fsp2
-                    fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
-                DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rhotp * Dhy)
-            NewPressure = Pcoolant[i] - (DeltaPfr + DeltaPac)
-            Pcoolant.append(NewPressure)
-            if phase == 0:
-                H1 = PropsSI("H", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
-                H2 = H1 + Q / debitmass
-                Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-                if 0 < Quality < 1:
-                    phase = 1
-                else:
-                    phase = 0
+            DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rhotp * Dhy)
+        NewPressure = Pcoolant[i] - (DeltaPfr + DeltaPac)
+        Pcoolant.append(NewPressure)
+        if phase == 0:
+            H1 = PropsSI("H", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
+            H2 = H1 + Q / debitmass
+            Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
+            if 0 < Quality < 1:
+                phase = 1
             else:
-                H1 = H2
-                H2 = H1 + Q / debitmass
-                Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-                if 0 < Quality < 1:
-                    phase = 1
-                else:
-                    phase = 2
-            if phase == 0 or phase == 2:
-                Tcoolant.append(Tfu)
+                phase = 0
+        else:
+            H1 = H2
+            H2 = H1 + Q / debitmass
+            Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
+            if 0 < Quality < 1:
+                phase = 1
             else:
-                Tcoolant.append(Tcoolant[i])
-            if phase == 0 or phase == 2:
-                newvisc = PropsSI("V", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                visccoolant.append(newvisc)
-                newcond = PropsSI("L", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                condcoolant.append(newcond)
-                newcp = PropsSI("C", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                Cpmeth.append(newcp)
-                dens = PropsSI("D", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                rho.append(dens)
-                cele = PropsSI("A", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                Celerite.append(cele)
-            else:
-                newvisc1 = PropsSI("V", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                newcond1 = PropsSI("L", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                newcp1 = PropsSI("C", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                dens1 = PropsSI("D", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                newvisc2 = PropsSI("V", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                newcond2 = PropsSI("L", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                newcp2 = PropsSI("C", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                dens2 = PropsSI("D", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                visccoolant.append(Quality * newvisc1 + (1 - Quality) * newvisc2)
-                condcoolant.append(Quality * newcond1 + (1 - Quality) * newcond2)
-                Cpmeth.append(Quality * newcp1 + (1 - Quality) * newcp2)
-                rho.append(Quality * dens1 + (1 - Quality) * dens2)
-                cele1 = PropsSI("A", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                cele2 = PropsSI("A", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                cele = Quality * cele1 + (1 - Quality) * cele2
-                Celerite.append(cele)
+                phase = 2
+        if phase == 0 or phase == 2:
+            Tcoolant.append(Tfu)
+        else:
+            Tcoolant.append(Tcoolant[i])
+        if phase == 0 or phase == 2:
+            newvisc = PropsSI("V", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            visccoolant.append(newvisc)
+            newcond = PropsSI("L", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            condcoolant.append(newcond)
+            newcp = PropsSI("C", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            Cpmeth.append(newcp)
+            dens = PropsSI("D", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            rho.append(dens)
+            cele = PropsSI("A", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            Celerite.append(cele)
+        else:
+            newvisc1 = PropsSI("V", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            newcond1 = PropsSI("L", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            newcp1 = PropsSI("C", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            dens1 = PropsSI("D", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            newvisc2 = PropsSI("V", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            newcond2 = PropsSI("L", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            newcp2 = PropsSI("C", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            dens2 = PropsSI("D", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            visccoolant.append(Quality * newvisc1 + (1 - Quality) * newvisc2)
+            condcoolant.append(Quality * newcond1 + (1 - Quality) * newcond2)
+            Cpmeth.append(Quality * newcp1 + (1 - Quality) * newcp2)
+            rho.append(Quality * dens1 + (1 - Quality) * dens2)
+            cele1 = PropsSI("A", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            cele2 = PropsSI("A", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            cele = Quality * cele1 + (1 - Quality) * cele2
+            Celerite.append(cele)
 
-            b = b + ay
-            Bar.update(b)
-
-        return hlcor, visc_function, cp_function, lamb_function, \
-               Prandtl_function, hg_function, inwall_temperature, \
-               outwall_temperature, fluxsolved, Sig, b, Re_function, \
-               Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-               Vitesse, Pcoolant, LambdaTC, \
-               Celerite, hlnormal, error_D_, singpertes, Pcoolant2
-
-    hlcor, visc_function, cp_function, lamb_function, \
-    Prandtl_function, hg_function, inwall_temperature, \
-    outwall_temperature, fluxsolved, Sig, b, Re_function, \
-    Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-    Pcoolant, LambdaTC, Celerite, hlnormal, \
-    error_D_, singpertes, Pcoolant2 = downsolver(Sig, b, rho, Tcoolant,
-                                                 visccoolant, condcoolant,
-                                                 Cpmeth, ay, Pcoolant,
-                                                 LambdaTC, entropy)
+        b = b + ay
+        Bar.update(b)
 
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
            outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
