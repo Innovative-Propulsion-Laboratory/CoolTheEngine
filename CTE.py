@@ -158,7 +158,7 @@ long = len(x_value)
 av = 100 / (long - 1)
 
 "Mach number computations along the engine"
-for i in range(0, long - 1, 1):
+for i in range(0, long - 1):
     A1 = aire[i]
     A2 = aire[i + 1]
     pos = i
@@ -188,7 +188,7 @@ ac = (long - 1) / 100
 
 pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
-for i in range(0, long - 1, 1):
+for i in range(0, long - 1):
     if (i == long + 1):
         M1 = mach_function[i]
         M2 = mach_function[i]
@@ -220,7 +220,7 @@ b = 0
 Bar = ProgressBar(100, 30, "Temperature computation         ")
 ay = 100 / (long - 1)
 
-# Temperature computations along the engine"
+# Temperature computations along the engine
 for i in range(0, long - 1):
     if i == long + 1:
         M1 = mach_function[i]
@@ -247,27 +247,26 @@ colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases',size2-2,limitation)
 """
-
 print()
 
 # %% Canal parameters
-"Number of canal and tore position"
-nbc = 40  # Number of canal
-tore = 0.1  # Position of the tore from the throat (in m)
+"Number of channels and tore position"
+nbc = 40  # Number of channels
+tore = 0.103  # Position of the manifol from the throat (in m)
 
 "Width of the canal"
-lrg_c2 = 0.003  # Width of the canal in the high section of the chamber (in m)
-lrg_c = 0.003  # Width of the canal in the low section of the chamber (in m)
+lrg_c2 = 0.003  # Width of the canal in at the injection plate (in m)
+lrg_c = 0.003  # Width of the canal at the end of the cylindrical chamber (in m)
 lrg_col = 0.002  # Width of the canal in the throat (in m)
-lrg_div = 0.003  # Width of the canal in the divergent (in m)
+lrg_div = 0.003  # Width of the canal at the extremity of the nozzle (in m)
 
 "Height of the canal"
-ht_c2 = 0.003  # Height of the canal in the high section of the chamber (in m)
-ht_c = 0.003  # Height of the canal in the low section of the chamber (in m)
+ht_c2 = 0.003  # Height of the canal at the injection plate (in m)
+ht_c = 0.003  # Height of the canal at the end of the cylindrical chamber (in m)
 ht = 0.002  # Height of the canal in the throat (in m)
-ht_div = 0.003  # Height of the canal in the divergent (in m)
+ht_div = 0.003  # Height of the canal at the extremity of the nozzle (in m)
 
-# %% Thickness
+# %% Thicknesses
 e_c = 0.001  # Thickness of the chamber (in m)
 e_col = 0.001  # Thickness of the throat (in m)
 e_div = 0.001  # Thickness of the divergent (in m)
@@ -281,12 +280,17 @@ n5 = 1  # Thickness convergent
 n6 = 1  # Thickness divergent
 
 # %% Material
-"Properties of the copper"
-condcoeff1 = -0.065665283166
-condcoeff2 = 421.82710859
+"Thermal conductivity of the material"
+material = 0
+if material == 0:  # Pure copper
+    condcoeff1 = -0.065665283166
+    condcoeff2 = 421.82710859
+elif material == 1:  # CuCrZr
+    condcoeff1 = -0.0269
+    condcoeff2 = 365.33
 
 # %% Coolant
-"Properties of the CH4"
+"Properties of the coolant"
 fluid = "Methane"
 rho_initCH4 = 425  # Density of the CH4
 If_reg = debit_LCH4  # Total mass flow rate (in kg/s)
@@ -308,14 +312,14 @@ Bar.update(100)
 print()
 print("█                                                                          █")
 
-# We reverse many function in order to calculate canals from the tore to the injection (x is in reverse)
+# We reverse many lists in order to calculate canals from the manifold to the injection (x is in reverse)
 epaiss_chemise.reverse()
 xcanauxre.reverse()
 larg_canalre.reverse()
 Areare.reverse()
 htre.reverse()
 ycanauxre.reverse()
-fin = (len(xcanauxre))
+fin = len(xcanauxre)
 Stemperature_function = hotgas_temperature[:]
 Saire = aire[:]
 Smach_function = mach_function[:]
@@ -359,7 +363,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         phase = 0
         Quality = -1
         positioncol = ycanauxre.index(min(ycanauxre))
-        for i in range(0, len(xcanauxre), 1):
+        for i in range(0, len(xcanauxre)):
             Lambda_tc = LambdaTC[i]
             x = xcanauxre[i]
             c = larg_canalre[i]
@@ -383,7 +387,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             steff = 5.6697 * 10 ** (-8)
             emissivity = 0.02
             qr = emissivity * steff * (T1 ** 4)
-            if (i + 1) == (len(xcanauxre)):
+            if i + 1 == len(xcanauxre):
                 EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
             else:
                 EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
@@ -466,7 +470,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             Sig.append(sigm)
             Lambdatc = (condcoeff1 * ((Tw + outwall_temperature[i]) * 0.5) + condcoeff2)  # 16.87
             LambdaTC.append(Lambdatc)
-            if (i == xcanauxre.index(xcanauxre[-1])):
+            if i == xcanauxre.index(xcanauxre[-1]):
                 Distance = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
                 xa = Distance
                 ya = (2 * pi * ycanauxre[i - 1]) / nbc
@@ -516,7 +520,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 H1 = PropsSI("H", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
                 H2 = H1 + Q / debitmass
                 Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-                if Quality > 0 and Quality < 1:
+                if 0 < Quality < 1:
                     phase = 1
                 else:
                     phase = 0
@@ -524,7 +528,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 H1 = H2
                 H2 = H1 + Q / debitmass
                 Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-                if Quality > 0 and Quality < 1:
+                if 0 < Quality < 1:
                     phase = 1
                 else:
                     phase = 2
@@ -581,14 +585,23 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             Bar.update(b)
         Burnout2.append(Burnoutplus1)
         Burnout2.append(Burnoutplus2)
-        return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-               outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-               Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
+        return hlcor, visc_function, cp_function, lamb_function, \
+               Prandtl_function, hg_function, inwall_temperature, \
+               outwall_temperature, fluxsolved, Sig, b, Re_function, \
+               Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+               Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, \
+               Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
-    hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-    outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-    Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = downsolver(
-        Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
+    hlcor, visc_function, cp_function, lamb_function, \
+    Prandtl_function, hg_function, inwall_temperature, \
+    outwall_temperature, fluxsolved, Sig, b, Re_function, \
+    Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
+    Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, \
+    error_D_, singpertes, Pcoolant2 = downsolver(Sig, b, rho, Tcoolant,
+                                                 visccoolant, condcoolant,
+                                                 Cpmeth, ay, Pcoolant,
+                                                 LambdaTC, entropy)
+
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
            outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
            Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
@@ -620,7 +633,7 @@ hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function,
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
 Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
     Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
-for i in range(0, rep, 1):
+for i in range(0, rep):
     newa = Sig[2]
     Sig = []
     Tcoolant = []
@@ -641,9 +654,9 @@ for i in range(0, rep, 1):
     rho.append(rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
     entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-    outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-    Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
-        Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
+    outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+    Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
+        mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
 
 print()
 print("█                                                                          █")
@@ -655,7 +668,7 @@ inv = 0, 0, 0  # 1 means should be reversed
 view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
 Cel03 = []
 for x in Celerite:
-    x = x * 0.3
+    x *= 0.3
     Cel03.append(x)
 
 """plt.figure(dpi=200)
@@ -804,7 +817,7 @@ t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 
 
 "Computation for 3D graph"
 eachT = []
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     # print(i)
     lim1 = 0
     lim2 = 650
@@ -816,7 +829,7 @@ for i in range(0, len(xcanauxre), 1):
     Tg = hotgas_temperature[i]
     Hl = hlnormal[i]
     Tl = Tcoolant[i]
-    if i <= lim2 and i >= lim1:
+    if lim2 >= i >= lim1:
         dx = 0.0001
     else:
         dx = 0.0001
@@ -867,7 +880,7 @@ Pcoolant.reverse()
 angles = []
 newxhtre = []
 newyhtre = []
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     if i == 0:
         angle = 0
         angles.append(angle)
@@ -890,7 +903,7 @@ for i in range(0, len(xcanauxre), 1):
 
 "checking the height"
 verification = []
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     verifhtre = (((newxhtre[i] - xcanauxre[i]) ** 2) + ((newyhtre[i] - ycanauxre[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
 plt.plot(newxhtre, newyhtre)
@@ -914,16 +927,16 @@ writer.writerow(("Axe x moteur", "Diamètre moteur", "Aire gaz moteur", "Gamma g
                  "Coeff Hl", "Rho coolant", "Viscosité CH4", "Conductivité CH4", "Cp CH4", "Vitesse du coolant",
                  "Pression du coolant", "Conductivité de la paroi", "x hauteur réelle",
                  "y hauteur réelle"))
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     writer.writerow((x_value[i], y_value[i], Saire[i], Sgamma[i], Smach_function[i], pressure_function[i],
-                     Ptotale_function[i], Stemperature_function[i], xcanauxre[i], ycanauxre[i], larg_canalre[i],
+                     Stemperature_function[i], xcanauxre[i], ycanauxre[i], larg_canalre[i],
                      htre[i], Areare[i], visc_function[i], cp_function[i], lamb_function[i], Prandtl_function[i],
                      hg_function[i], Sig[i], inwall_temperature[i], outwall_temperature[i], fluxsolved[i], Tcoolant[i],
                      Vitesse[i], Re_function[i], hlnormal[i], rho[i], visccoolant[i], condcoolant[i], Cpmeth[i],
                      Vitesse[i], Pcoolant[i], LambdaTC[i], newxhtre[i], newyhtre[i]))
-for i in range(len(xcanauxre), len(x_value), 1):
+for i in range(len(xcanauxre), len(x_value)):
     writer.writerow((x_value[i], y_value[i], Saire[i], Sgamma[i], Smach_function[i], pressure_function[i],
-                     Ptotale_function[i], Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+                     Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
                      ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
 file.close()
 
@@ -933,11 +946,11 @@ file_name = "geometry1.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
 writer.writerow(("x hauteur réelle", "y hauteur réelle"))
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
-for i in range(len(xcanauxre), len(x_value), 1):
+for i in range(len(xcanauxre), len(x_value)):
     writer.writerow((x_value[i], y_value[i], Saire[i], Sgamma[i], Smach_function[i], pressure_function[i],
-                     Ptotale_function[i], Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+                     Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
                      ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
 file.close()
 
@@ -947,11 +960,11 @@ file_name = "geometry2.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
 writer.writerow(("Diamètre moteur+chemise", "x hauteur réelle"))
-for i in range(0, len(xcanauxre), 1):
+for i in range(0, len(xcanauxre)):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
-for i in range(len(xcanauxre), len(x_value), 1):
+for i in range(len(xcanauxre), len(x_value)):
     writer.writerow((x_value[i], y_value[i], Saire[i], Sgamma[i], Smach_function[i], pressure_function[i],
-                     Ptotale_function[i], Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+                     Stemperature_function[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
                      ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
 file.close()
 
