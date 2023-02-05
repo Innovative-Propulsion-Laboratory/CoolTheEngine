@@ -2,9 +2,9 @@
 """
 Created on Fri Nov 27 14:47:27 2020
 
-@author: Julien
+Original author: Julien S
 
-Rewritten: Mehdi, Paul.B, Paul.M, Eve, Antoine.R
+Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R
 
 WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
@@ -250,49 +250,8 @@ view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases',
 
 print()
 
-# %% Total pressure computation
-"Total pressure computation"
-rho_function = []
-rho_function.append(rho_init)
-Celerite_function = [c_init]
-Gaz_velocity = [v_init]
-Ptotale_function = [pressure_function[0] + 0.5 * rho_init * v_init ** 2]
-b = 0
-Bar = ProgressBar(100, 30, "Total pressure computation      ")
-ay = 100 / (long - 1)
-
-"Total pressure computations along the engine"
-for i in range(0, long - 1, 1):
-    if i == long + 1:
-        M1 = mach_function[i]
-        M2 = mach_function[i]
-    else:
-        M1 = mach_function[i]
-        M2 = mach_function[i + 1]
-    Cele = (gamma[i] * 434.47 * hotgas_temperature[i]) ** 0.5
-    Gaz_velo = Cele * mach_function[i]
-    Celerite_function.append(Cele)
-    Gaz_velocity.append(Gaz_velo)
-    R1 = rho_function[i]
-    R2 = Pressure_solv(M1, M2, R1, gamma[i])
-    rho_function.append(R2)
-    Ptot = pressure_function[i] + 0.5 * R2 * Gaz_velo ** 2
-    Ptotale_function.append(Ptot)
-    b = b + ay
-    Bar.update(b)
-
-# Plot of the total pressure (2D/3D)
-"""
-plt.plot(x_value,Ptotale_function,color='red')
-plt.title("Pression totale des gaz en fonction de l'axe moteur")
-plt.show()
-"""
-
-print()
-print("█                                                                          █")
-
 # %% Canal parameters
-"""Number of canal and tore position"""
+"Number of canal and tore position"
 nbc = 40  # Number of canal
 tore = 0.1  # Position of the tore from the throat (in m)
 
