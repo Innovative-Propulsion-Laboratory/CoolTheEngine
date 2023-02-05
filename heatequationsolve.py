@@ -38,11 +38,11 @@ Tl=125
 def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg):
     # def de la zone paroi
     npxp = round(pas / (2 * dx) + 1, 0)
-    npyp = round((epaisseur) / dx + 1, 0)
+    npyp = round(epaisseur / dx + 1, 0)
     # print(npxp,npyp)
     # def de la zone ailette
     npxa = round(((pas - largeur) / (2 * dx)) + 1, 0)
-    npya = round((hauteur) / dx, 0)
+    npya = round(hauteur / dx, 0)
     # print(npxa,npya)
     # def du nombre de point à chercher
     nbp = npxp * npyp + npxa * npya
@@ -218,7 +218,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
     # print(len(listing))
     # print(listing)
 
-    ###résolution de la matrice inversible
+    # résolution de la matrice inversible
     # shaping de la matrice inversible
     reso = np.zeros(shape=(int(nbp), int(nbp)))
     membre = np.zeros(shape=(int(nbp), 1))
@@ -275,7 +275,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         insert = []
         pos = 1
         for z in listing[k][3]:
-            if z >= 0 and z <= (nbp - 1):
+            if 0 <= z <= (nbp - 1):
                 if pos == 1:
                     inn = [coef1, z]
                     insert.append(inn)
@@ -290,7 +290,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
                     insert.append(inn)
                 else:
                     print("error placing")
-            pos = pos + 1
+            pos += 1
 
         # introduction des coefs dans la matrice
         for values in insert:
@@ -321,7 +321,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         temperature.append(t[0])
         if bis <= npxp:
             paroigas = paroigas + t[0]
-        bis = bis + 1
+        bis += 1
     if oui == 1:
         print("█ Température moyenne à la paroi gas =", round(temperature[0]),
               "K                              █")

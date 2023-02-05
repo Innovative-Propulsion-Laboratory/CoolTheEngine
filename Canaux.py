@@ -27,10 +27,10 @@ def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total
     xcanauxre = []
     ycanauxre = []
     i = 0
-    while (x_value[i] <= tore):
+    while x_value[i] <= tore:
         xcanauxre.append(x_value[i])
         ycanauxre.append(y_value[i] + epaisseur_chemise)
-        i = i + 1
+        i += 1
     # print(xcanauxre,ycanauxre)
     longcanal = len(xcanauxre)
 
@@ -50,14 +50,14 @@ def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total
     # print(larg_canalre)
 
     n = 1
-    while (ycanauxre[n] == ycanauxre[n - 1]):
+    while ycanauxre[n] == ycanauxre[n - 1]:
         n = n + 1
     # print(n)
     htre = []
     for i in range(0, longcanal, 1):
-        if (ycanauxre[i] == ycanauxre[0]):
+        if ycanauxre[i] == ycanauxre[0]:
             htre.append(ht_c)
-        elif (i <= poscol):
+        elif i <= poscol:
             adcoef = (ht - ht_c) / (xcanauxre[poscol] - xcanauxre[n])
             # print(adcoef)
             hauteur = ht + adcoef * xcanauxre[i]
@@ -119,13 +119,13 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     i = 0
     xcanauxre = []  # allé
     ycanauxre = []
-    while (x_value[i] <= tore):
+    while x_value[i] <= tore:
         xcanauxre.append(x_value[i])
         ycanauxre.append(y_value[i])
-        i = i + 1
+        i += 1
     section = 0
-    while (y_value[section] == y_value[section + 1]):
-        section = section + 1
+    while y_value[section] == y_value[section + 1]:
+        section += 1
     """
     angles=[]
     newxhtre=[]
@@ -162,8 +162,8 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         r = ycanauxre[pos]  # position considérée
         p = pi * 2 * r / nbc  #
 
-        if ((ycanauxre.index(ycanauxre[pos])) > col):  # Calcul largeur transition
-            acc = ((e_div - e_col)) / ((ycanauxre[-1] - ycanauxre[col]))
+        if (ycanauxre.index(ycanauxre[pos])) > col:  # Calcul largeur transition
+            acc = (e_div - e_col) / (ycanauxre[-1] - ycanauxre[col])
             aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
             epp_x = ((1 - aug) ** n5) * (r - ycanauxre[col]) * acc + e_col
         else:
@@ -220,8 +220,8 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         # print(xcanauxre[section])
         # print(xcanauxre[0])
         pente = (lrg_c - lrg_c2) / (xcanauxre[section] - xcanauxre[0])
-        if ((ycanauxre.index(ycanauxre[pos])) > col):  # Calcul largeur transition
-            acc = ((lrg_div - lrg)) / ((ycanauxre[-1] - ycanauxre[col]))
+        if (ycanauxre.index(ycanauxre[pos])) > col:  # Calcul largeur transition
+            acc = (lrg_div - lrg) / (ycanauxre[-1] - ycanauxre[col])
             aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
             lrg_x = ((1 - aug) ** n2) * (r - ycanauxre[col]) * acc + lrg
             lrg_aill = (r * 2 * pi / nbc) - lrg_x
@@ -244,7 +244,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         r = ycanauxre[pos]  # position considérée
         p = pi * 2 * r / nbc  #
         pente = (ht_c - ht_c2) / (xcanauxre[section] - xcanauxre[0])
-        if ((xcanauxre[pos]) >= 0):  # Calcul largeur transition
+        if (xcanauxre[pos]) >= 0:  # Calcul largeur transition
             acc = (ht_div - ht) / (ycanauxre[-1] - ycanauxre[col])
             aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
             htr_x = ((1 - aug) ** n4) * (r - ycanauxre[col]) * acc + ht
@@ -274,7 +274,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         Areare.append(aire)  #
         v = debitcanal / aire  #
         vitessere.append(v)
-        rang = rang + 1
+        rang += 1
 
         #
 

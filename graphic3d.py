@@ -41,7 +41,7 @@ def view3d(inv, x, yprim, temp, col, title, size2, limitation):
             xu.append(xo)
             co = temp[i]
             cu.append(co)
-            b = b + ay
+            b += ay
             Bar.update(b)
     print()
     mi = min(cu)
@@ -54,7 +54,7 @@ def view3d(inv, x, yprim, temp, col, title, size2, limitation):
         T = cu[i]
 
         Tcolor.append(T)
-        b = b + ay
+        b += ay
         Bar.update(b)
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=60, cmap=col)
     mis = min(xu)
