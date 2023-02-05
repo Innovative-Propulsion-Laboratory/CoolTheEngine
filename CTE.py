@@ -34,19 +34,18 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 # %% Engine initialisation
 "Viserion settings"
 
-mesh_size = 0.25
-
+mesh_size = 0.25  # Distance between two points of calculation
 plagex = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
 plagey = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
 plageinit = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
 "Constant value"
-lim22 = 600
-size2 = 18
-ange = -18.884
-lim11 = 200
-epso = 10
-machtype = 0
+lim22 = 600  # Not used anymore
+size2 = 18  # Used for the height of the display in 3D view
+ange = -18.884  # Not used anymore
+lim11 = 200  # Not used anymore
+epso = 10  # Not used anymore
+machtype = 0  # 0 for one equation and else for another equation in calculation of mach
 limitation = 0.05
 
 # %% Reading Viserion_2023.txt
@@ -68,7 +67,7 @@ gamma_c = float(value[7])  # Gamma in the chamber
 gamma_t = float(value[8])  # Gamma in the throat
 gamma_e = float(value[9])  # Gamma at the exit
 M = float(value[10])  # Molar mass of the gases
-Cstar = float(value[11])  # caracteristic velocity
+Cstar = float(value[11])  # Caracteristic velocity
 
 "Reading: Constant variable -- DO NOT CHANGE"
 Dcol = float(value[12])  # Convergent radius of curvature
@@ -80,22 +79,22 @@ DiamCol = float(value[15])  # Throat diameter
 "Reading the files"
 crx = csv.reader(open(plagex, "r"))
 cry = csv.reader(open(plagey, "r"))
-x_value = []
-y_value = []
 
 print("█                                                                          █")
 Bar = ProgressBar(100, 30, "Import of the coordinates       ")
 
 "Importing X coordinates in a list"
+x_value = []
 for row in crx:
-    a = float(row[0]) / 1000
+    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
     x_value.append(a)
 ax = 100 / (len(x_value) - 1)
-b = 0
 
 "Importing Y coordinates in a list"
+y_value = []
+b = 0
 for row in cry:
-    a = float(row[0]) / 1000
+    a = float(row[0]) / 1000  # Divided by 1000 to get millimeters
     y_value.append(a)
     b = b + ax
     Bar.update(b)
@@ -103,20 +102,22 @@ for row in cry:
 "Creation of the mesh"
 R = []
 for i in range(0, len(x_value) - 1, 1):
-    maillage = abs(x_value[i] - x_value[i + 1])
-    R.append(maillage)
+    mesh = abs(x_value[i] - x_value[i + 1])
+    R.append(mesh)
 R.append(R[-1])
 
 # Plot of the upper profile of the engine
-"""plt.figure(dpi=200)
+"""
+plt.figure(dpi=200)
 plt.plot(x_value, y_value, color='black')
 plt.title('Profile of the Viserion', color='black')
-plt.show()"""
+plt.show()
+"""
 
 # Plot of the mesh density of the engine
 """
 colooo = plt.cm.binary
-inv = 1, 1, 1
+inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
 """
 
@@ -125,11 +126,12 @@ print()
 # %% Areas computation
 "Computation of the cross-sectional areas of the engine"
 long = len(x_value)
-aire = []
+
 Bar = ProgressBar(100, 30, "Computation of the areas        ")
 aw = 100 / (long)
 b = 0
 
+aire = []
 for i in range(0, long, 1):
     a = pi * (y_value[i]) ** 2
     aire.append(a)
@@ -138,29 +140,27 @@ for i in range(0, long, 1):
 
 print()
 
-# %% Adiabatic constant parametrization
+# %% Adiabatic constant (gamma) parametrization
 "Computation of gamma  --  Not much information"
-i = 0  # Index où la valeur de y n'est plus constante (début du convergent)
+i = 0
 a = 1
 b = 1
 
-# On lit les lignes 2 par 2 jusqu'à détecter une différence entre les 2
-while a == b:
+while a == b:  # Read y values two per two in order to detect the beginning of the convergent -> i at the end of the while
     a = y_value[i]
     i = i + 1
     b = y_value[i]
 
-# On fixe gamma comme constant tout le long de la chambre cylindrique (les i premiers points)
 gamma = []
-for j in range(0, i, 1):
+for j in range(0, i, 1):  # Gamma is a constant before the beginning of the convergent along the chamber
     gamma.append(gamma_c)
 
-j = y_value.index(min(y_value))  # Index du col
-k = j - i  # Nombre de points dans le convergent
+j = y_value.index(min(y_value))  # Throat index
+k = j - i  # Number of points in the convergent
 c = gamma_c
 a = -1
-for m in range(0, k, 1):
-    l = (gamma_c - gamma_t) / ((x_value[j] - x_value[i]) / abs(x_value[i + 1 + a] - x_value[i + a]))
+for m in range(0, k, 1):  # Linear interpolation between beginning and end of convergent
+    l = (gamma_c - gamma_t) / ((x_value[j] - x_value[i]) / abs(x_value[i + 1 + a] - x_value[i + a])) 
     c = c - l
     a = a + 1
     gamma.append(c)
@@ -168,21 +168,21 @@ for m in range(0, k, 1):
 p = len(x_value) - j
 c = gamma_t
 a = -1
-for q in range(0, p, 1):
+for q in range(0, p, 1):  # Linear interpolation between beginning and end of divergent
     n = (gamma_t - gamma_e) / ((y_value[-1] - y_value[j]) / abs(y_value[j + 1 + a] - y_value[j + a]))
     c = c - n
     a = a + 1
     gamma.append(c)
 
 # Plot of the gamma linearisation
-"""
+
 #print(gamma)
 #print(len(gamma))
 plt.figure(dpi=200)
 plt.plot(x_value,gamma,color='gold')
 plt.title("Gamma linearisation")
 plt.show()
-"""
+
 
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
@@ -212,7 +212,7 @@ plt.title("Mach number as a function of the engine axis")
 plt.show()
 
 colooo = plt.cm.Spectral
-inv = 1, 1, 1
+inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2 - 2, limitation)
 
 print()
@@ -246,7 +246,7 @@ plt.title("Static pressure as a function of the engine axis")
 plt.show()
 
 colooo = plt.cm.gist_rainbow_r
-inv = 1, 1, 1
+inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size2 - 2, limitation)
 
 print()
@@ -287,7 +287,7 @@ plt.title("Temperature as a function of the engine axis")
 plt.show()
 
 colooo = plt.cm.terrain_r
-inv = 1, 1, 1
+inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv,x_value,y_value,temperature_function,colooo,'Temperature of the gases',size2-2,limitation)
 """
 
@@ -733,7 +733,7 @@ print("█                                                                      
 # %% Display of the first results
 "Display of the results"
 colooo = plt.cm.magma
-inv = 0, 0, 0
+inv = 0, 0, 0  # 1 means should be reversed
 view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
 Cel03 = []
 for x in Celerite:
