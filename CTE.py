@@ -127,7 +127,7 @@ for m in range(-1, k - 1):
     # Linear interpolation between beginning and end of convergent:
     # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
     l = ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i])) * abs(x_value[i + 1 + m] - x_value[i + m])
-    c = c + l
+    c += l
     gamma.append(c)
 
 # Gamma in the divergent nozzle
@@ -136,7 +136,7 @@ t = gamma_t
 for q in range(-1, p - 1):  # Linear interpolation between beginning and end of divergent
     n = ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(
         x_value[i_throat + 1 + q] - x_value[i_throat + q])
-    t = t + n
+    t += n
     gamma.append(t)
 
 # Plot of the gamma linearisation
@@ -168,7 +168,7 @@ for i in range(0, long - 1):
     g = Mach_solv(A1, A2, M1, gamma[i], pos, machtype)
     mach_function.append(g)
     M1 = g
-    b = b + av
+    b += av
     Bar.update(b)
 
 # Plots of the Mach number in the engine (2D/3D)
@@ -201,7 +201,7 @@ for i in range(0, long - 1):
     P1 = pressure_function[i]
     P2 = Pressure_solv(M1, M2, P1, gamma[i])
     pressure_function.append(P2)
-    c = c + ac
+    c += ac
     Bar.update(c)
 
 # Plot of the static pressure (2D/3D)
@@ -233,7 +233,7 @@ for i in range(0, long - 1):
     T1 = hotgas_temperature[i]
     T2 = Temperature_solv(M1, M2, T1, gamma[i])
     hotgas_temperature.append(T2)
-    b = b + ay
+    b += ay
     Bar.update(b)
 
 # List of corrected gas temperatures (max diff with original is about 75K)
@@ -559,7 +559,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             cele = Quality * cele1 + (1 - Quality) * cele2
             Celerite.append(cele)
 
-        b = b + ay
+        b += ay
         Bar.update(b)
 
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
