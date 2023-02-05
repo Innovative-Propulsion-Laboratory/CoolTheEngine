@@ -11,44 +11,60 @@ Any changes might affect the results.
 """
 
 # %% Import of packages
-# Calculations
-from math import *
-from sympy import Symbol, nsolve, Eq
-import sympy as mp
-import numpy as np
-from decimal import * # ? 
+# # Calculations
+# from math import *
+# from sympy import Symbol, nsolve, Eq
+# import sympy as mp
+# import numpy as np
+# from decimal import *  # ?
+#
+# # Graphics
+# import matplotlib.pyplot as plt
+# from pylab import *
+# from mpl_toolkits.mplot3d import Axes3D
+#
+# # Files in the CTE folder
+# # Solving
+# from machsolve import Mach_solv
+# from pressuresolve import Pressure_solv
+# from temperaturesolve import Temperature_solv
+# from musolve import mu
+# from Tcorsolve import tempcorrige
+# from heatequationsolve import *
+# # from PrandtlVonKarman import PVK
+# # Data
+# from methan import *
+# from Canaux import canauxangl, canaux
+# # Graphics
+# from ProgressBar import *
+# from volume3d import *
+# from graphic3d import view3d
+#
+# # Chemical species data
+# from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
+# import CoolProp.CoolProp as CoolProp
+#
+# # Others
+# import csv  # To read .txt
 
-# Graphics
-import matplotlib.pyplot as plt 
+import csv
+import matplotlib.pyplot as plt
 from pylab import *
-from mpl_toolkits.mplot3d import Axes3D
-
-# Files in the CTE folder
-# Solving
+from math import *
 from machsolve import Mach_solv
 from pressuresolve import Pressure_solv
 from temperaturesolve import Temperature_solv
 from musolve import mu
 from Tcorsolve import tempcorrige
-from heatequationsolve import *
-from PrandtlVonKarman import PVK
-# Data
-from methan import *
-from Canaux import canauxangl, canaux
-# Graphics
 from ProgressBar import *
-from volume3d import *
+from Canaux import canaux
+from sympy import Symbol, nsolve
+import sympy as mp
+from methan import *
 from graphic3d import view3d
-# IA
-from IA import *
-
-# Chemical species data
-from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
-import CoolProp.CoolProp as CoolProp
-
-# Others 
-import csv # To read .txt
-
+from heatequationsolve import *
+from volume3d import *
+from CoolProp.CoolProp import PropsSI
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
@@ -454,11 +470,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
 
         # Prandtl number
         Pr_cool = (visccoolant[i] * Cpmeth[i]) / condcoolant[i]
-<<<<<<< Updated upstream
-        # Hg computation
-=======
 
->>>>>>> Stashed changes
         T1 = hotgas_temperature[i]
         # Compute viscosity, Cp, conductivity and Prandtl number with musolve.py
         viscosite, cp, lamb, Pr = mu(T1, M, gamma[i])
@@ -473,17 +485,6 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         hg = (0.026 / (DiamCol ** 0.2) * (((viscosite ** 0.2) * cp) / (Pr ** 0.6)) * (
                 (Pc / Cstar) ** 0.8) * ((DiamCol / Dcol) ** 0.1) * ((Ac / aire[i]) ** 0.9)) * Sig[i]
         hg_function.append(hg)
-<<<<<<< Updated upstream
-        Tg = T1
-        # Radiation comutation (optionnal)
-        steff = 5.6697 * 10 ** (-8)
-        emissivity = 0.02
-        qr = emissivity * steff * (T1 ** 4)
-        if i + 1 == len(xcanauxre):
-            EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
-        else:
-            EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
-=======
 
         # Radiative heat flux assuming black body radiation
         Tg = hotgas_temperature[i]
@@ -491,13 +492,12 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         emissivity = 0.02  # 2% emissivity for CH4
         qr = emissivity * steff * (T1 ** 4)  # Radiative heat flux
 
-        # # This is not used, didn't delete because it might have a purpose
+        # # This is not used, didn't delete because it might have a purpose later
         # if i + 1 == len(xcanauxre):
         #     EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
         # else:
         #     EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
 
->>>>>>> Stashed changes
         Gdeb = debit_LCH4 / (Areare[i] * nbc)
 
         # In case of single-phase flow
@@ -550,12 +550,8 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 # Corrected coefficient, taking the fin effect into account
                 hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * (
                         (2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * ((tanh(m * htre[i])) / (pi * D))
-<<<<<<< Updated upstream
-                # Wall temperature resolution
-=======
 
                 # Save the data in lists
->>>>>>> Stashed changes
                 hg = hg_function[i]
                 hl = hl_cor
                 Tl = Tcoolant[i]
@@ -590,12 +586,8 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                  ((2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * (
                          (tanh(m * htre[i])) / (pi * D))
         hlcor.append(hl_cor)
-<<<<<<< Updated upstream
-        # Wall temperature resolution
-=======
 
         # Store the results
->>>>>>> Stashed changes
         hg = hg_function[i]
         hl = hlcor[i]
         Tl = Tcoolant[i]
@@ -614,18 +606,11 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         # Temperature at the walls
         inwall_temperature.append(x_)
         outwall_temperature.append(y_)
-<<<<<<< Updated upstream
-        # Flow computation
-        flux = hl * (y_ - Tcoolant[i]) * 0.000001
-        fluxsolved.append(flux)
-        # Sigma computation
-=======
 
         # Compute heat flux throught the coolant side
         flux = hl * (y_ - Tcoolant[i]) * 0.000001
         fluxsolved.append(flux)
 
->>>>>>> Stashed changes
         Tw = inwall_temperature[i]
         Ts = hotgas_temperature[positioncol]
         Mak = mach_function[i]
@@ -647,12 +632,10 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             xa = Distance
             ya = (2 * pi * ycanauxre[i + 1]) / nbc
             za = (2 * pi * ycanauxre[i]) / nbc
-<<<<<<< Updated upstream
-            perim = (2 * pi * ((A / pi) ** 0.5)) / nbc
-            # dA=xa*perim
-=======
+
             perim = (2 * pi * ((aire[i] / pi) ** 0.5)) / nbc
->>>>>>> Stashed changes
+            # dA=xa*perim
+
             dA = xa * (2 * c + 2 * htre[i])
             timer = (((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5) / V
         Q = abs(flux) * 1000000 * abs(dA)
@@ -908,13 +891,13 @@ plt.show()
 
 colooo = plt.cm.plasma
 inv = 0, 0, 0
-view3d(inv, xcanauxre, ycanauxre, fluxsolved, colooo, "Burnout 3D (or flow in MW/m² ?)", size2, limitation)
+view3d(inv, xcanauxre, ycanauxre, fluxsolved, colooo, "Heat flux (in MW/m²)", size2, limitation)
 colooo = plt.cm.coolwarm
 inv = 0, 0, 0
 view3d(inv, xcanauxre, ycanauxre, Tcoolant, colooo, "Temperature of the coolant", size2, limitation)
 
 # %% Flux computation in 2D and 3D
-"Computation for 2D graph"
+"Computation for 2D graphs"
 # 3D and 2D cartography establishement of temperatures
 # At the beginning of the chamber
 reste.reverse()
