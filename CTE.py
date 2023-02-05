@@ -350,16 +350,12 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         outwall_temperature = []
         fluxsolved = []
         Vitesse = []
-        Burnout = []
-        Burnout2 = []
         Celerite = []
         hlnormal = []
         error_D_ = []
         singpertes = [Pcoolant[0]]
         totalpha = 0
         Pcoolant2 = [Pcoolant[0]]
-        Burnoutplus1 = []
-        Burnoutplus2 = []
         phase = 0
         Quality = -1
         positioncol = ycanauxre.index(min(ycanauxre))
@@ -564,39 +560,22 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 cele2 = PropsSI("A", "Q", 0, "P", Pcoolant[i + 1], fluid)
                 cele = Quality * cele1 + (1 - Quality) * cele2
                 Celerite.append(cele)
-            PMPa = Pcoolant[i] / 1000000
-            if PMPa <= 5.5:
-                first = 0.82281553398 * PMPa + 0.91213592233
-            else:
-                first = 0.076974683097 * PMPa + 4.2238162494
-            newBurnout = first + 0.334433962 * (V - 10)
-            Burnout.append(newBurnout)
-            if phase == 0 or phase == 1:
-                DTemp = float(DeltaT(Pcoolant[i], Tcoolant[i], fluid))
-                Burn2x = (V * 3.281) * (DTemp * (9 / 5))
-                Burn2 = (4.68521 * 10 ** (-3)) * Burn2x + 1.00130 * 10
-                Burn3 = 16.270 * (0.2598 + 0.0004134 * DTemp * (9 / 5) * ((V * 3.281) ** 0.9))
-            else:
-                Burn2 = 0
-                Burn3 = 0
-            Burnoutplus1.append(Burn2)
-            Burnoutplus2.append(Burn3)
+
             b = b + ay
             Bar.update(b)
-        Burnout2.append(Burnoutplus1)
-        Burnout2.append(Burnoutplus2)
+
         return hlcor, visc_function, cp_function, lamb_function, \
                Prandtl_function, hg_function, inwall_temperature, \
                outwall_temperature, fluxsolved, Sig, b, Re_function, \
                Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-               Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, \
+               Vitesse, Pcoolant, LambdaTC, \
                Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
     hlcor, visc_function, cp_function, lamb_function, \
     Prandtl_function, hg_function, inwall_temperature, \
     outwall_temperature, fluxsolved, Sig, b, Re_function, \
     Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-    Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, \
+    Pcoolant, LambdaTC, Celerite, hlnormal, \
     error_D_, singpertes, Pcoolant2 = downsolver(Sig, b, rho, Tcoolant,
                                                  visccoolant, condcoolant,
                                                  Cpmeth, ay, Pcoolant,
@@ -604,7 +583,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
 
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
            outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-           Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
+           Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
 
 Sig = []
@@ -631,7 +610,7 @@ Bar = ProgressBar(100, 30, "Résolution globale en cours...  ")
 ay = 100 / ((1 + rep) * len(xcanauxre))
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
+Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
     Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
 for i in range(0, rep):
     newa = Sig[2]
@@ -655,7 +634,7 @@ for i in range(0, rep):
     entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
     outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-    Vitesse, Pcoolant, LambdaTC, Burnout, Burnout2, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
+    Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
         mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
 
 print()
@@ -675,12 +654,14 @@ for x in Celerite:
 plt.plot(xcanauxre, Re_function, color='blue')
 plt.title("Reynolds number as a function of the engine axis")
 plt.show()
+"""
 plt.figure(dpi=200)
 plt.plot(xcanauxre, hlcor, color='blue', label='Hl corrigé')
 plt.plot(xcanauxre, hlnormal, color='cyan', label='Hl')
 plt.title("Convection coefficient Hl as a function of the engine axis")
 plt.legend()
 plt.show()
+"""
 plt.figure(dpi=200)
 plt.plot(xcanauxre, visc_function, color='orangered')
 plt.title("Gas viscosity as a function of the engine axis")
@@ -713,13 +694,7 @@ plt.plot(xcanauxre, outwall_temperature, color='orangered', label='Twl')
 plt.title('Wall temperature')
 plt.legend()
 plt.show()
-plt.figure(dpi=200)
-plt.plot(xcanauxre, fluxsolved, color='darkviolet', label='Heat flux')
-plt.plot(xcanauxre, Burnout2[0], color='black', label='Burn out NASA')
-plt.plot(xcanauxre, Burnout2[1], color='red', label='Burn out Pratt & Witney')
-plt.title('Burn out')
-plt.legend()
-plt.show()
+
 plt.figure(dpi=200)
 Tcoolant.pop()
 plt.plot(xcanauxre, Tcoolant, color='blue')
