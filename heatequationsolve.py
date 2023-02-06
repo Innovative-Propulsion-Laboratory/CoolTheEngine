@@ -306,14 +306,18 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
               "K                              █")
         if leg == 1:
             a1 = 0.003
+            a2 = -0.0025
+            a3 = 0.00025
+            a4 = -0.0025
+            a5 = 0.002
+            a6 = -0.0005
+        elif leg == 2:
+            a1 = 0.0015
             a2 = -0.002
             a3 = 0.00025
             a4 = -0.002
-        elif leg == 2:
-            a1 = 0.0015
-            a2 = -0.0015
-            a3 = 0.00025
-            a4 = -0.0015
+            a5 = 0.001
+            a6 = -0.0005
         # plt.figure(dpi=200)
         # p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='flag')  # rainbow#prism#flag
         # plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
@@ -326,9 +330,10 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         title = "2D temperature distribution (in K)" + where
         plt.figure(dpi=200)
         p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag
-        plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
+        plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
         plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-
+        plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
+        
         plt.title(title, fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=0.4, aspect=15)

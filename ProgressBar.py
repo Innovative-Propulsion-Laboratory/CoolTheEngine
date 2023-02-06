@@ -4,6 +4,7 @@ Created on Wed Dec 16 11:05:04 2020
 
 @author: julie
 """
+import sys
 
 
 class ProgressBar:
@@ -14,7 +15,6 @@ class ProgressBar:
         self.title = title  # Title of the bar
 
     def update(self, val):
-        import sys
         # format
         if val > self.valmax:
             val = self.valmax

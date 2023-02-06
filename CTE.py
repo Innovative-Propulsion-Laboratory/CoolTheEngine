@@ -13,6 +13,7 @@ Any changes might affect the results.
 # %% Imports
 import time
 import csv
+import sys
 
 # Calculations
 import numpy as np
@@ -204,10 +205,7 @@ av = 100 / (long - 1)
 
 "Mach number computations along the engine"
 for i in range(0, long - 1):
-    A1 = aire[i]
-    A2 = aire[i + 1]
-    pos = i
-    g = mach_solv(A1, A2, M1, gamma[i], pos, machtype)
+    g = mach_solv(aire[i], aire[i + 1], M1, gamma[i], i, machtype)
     mach_function.append(g)
     M1 = g
     b += av
@@ -242,8 +240,7 @@ for i in range(0, long - 1):
     else:
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
-    P1 = pressure_function[i]
-    P2 = pressure_solv(M1, M2, P1, gamma[i])
+    P2 = pressure_solv(M1, M2, pressure_function[i], gamma[i])
     pressure_function.append(P2)
     c += ac
     Bar.update(c)
@@ -276,8 +273,7 @@ for i in range(0, long - 1):
     else:
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
-    T1 = hotgas_temperature[i]
-    T2 = temperature_solv(M1, M2, T1, gamma[i])
+    T2 = temperature_solv(M1, M2, hotgas_temperature[i], gamma[i])
     hotgas_temperature.append(T2)
     b += ay
     Bar.update(b)
@@ -298,7 +294,7 @@ inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases (in K)',size2-2,limitation)
 """
 
-print("\n█                                                                          █")
+print("█                                                                          █")
 
 # %% Canal parameters
 "Number of channels and tore position"
@@ -961,37 +957,25 @@ if choix == 1:
         # print(i)
         lim1 = 0
         lim2 = 650
-        pas = reste[i] + larg_canalre[i]
-        epaisseur = epaiss_chemise[i]
-        hauteur = htre[i]
-        largeur = larg_canalre[i]
-        Hg = hg_function[i]
-        Tg = hotgas_temperature[i]
-        Hl = hlnormal[i]
-        Tl = Tcoolant[i]
         if lim2 >= i >= lim1:
             dx = 0.0001
         else:
             dx = 0.0001
         lamb = LambdaTC[i]
-        t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 3, 0, 1)
+        t3d = carto2D(reste[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
+                      hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1,"")
         eachT.append(t3d)
         b += ay
         Bar.update(b)
     print()
-    inv = [0, 0, 0]
-    x = xcanauxre
-    yprim = ycanauxre
-    temp = eachT
-    colooo = plt.cm.Spectral_r
-    title = '3D view of wall temperatures'
-    number = nbc
-    carto3d(inv, x, yprim, temp, colooo, title, number, limitation)
+    
+    carto3d([0, 0, 0], xcanauxre, ycanauxre, eachT, plt.cm.Spectral_r, '3D view of wall temperatures', nbc, limitation)
 
     end_d3 = time.time()  # End of the display of 3D timer
     time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
     print("█                                                                          █")
     print("█ Execution duration of the display of 3D :", time_elapsed_d3, "                         █")
+
 start_e = time.time()  # Start of the end timer
 # %% Reversion of the different lists
 "Utility unknown"
