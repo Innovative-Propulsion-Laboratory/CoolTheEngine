@@ -46,7 +46,8 @@ Any changes might affect the results.
 #
 # # Others
 # import csv  # To read .txt
-from time import time, ctime
+
+import time
 import csv
 import matplotlib.pyplot as plt
 from pylab import *
@@ -73,7 +74,7 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 print("█                                                                          █")
 print("█                                                                          █")
 # %% Engine initialisation
-Bar = ProgressBar(100, 30, "Initialization                  ")
+Bar = ProgressBar(100, 30, "Initialisation                  ")
 
 "Viserion settings"
 
@@ -396,8 +397,16 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename,
 
 Bar.update(100)
 print()
+
+end_i = time.time()  # End of the initialisation timer
+time_elapsed_i = time.ctime(end_i - start_t)[14:19]  # Initialisation elapsed time converted in minutes:secondes
+start_m = time.time()  # Start of the main solution timer
+
+print("█                                                                          █")
+print("█ Execution duration of the initialisation :", time_elapsed_i, "                        █")
 print("█                                                                          █")
 
+# %% Computation of the global solution
 # We reverse the data in order to calculate from the manifold to the injection (x is in reverse)
 epaiss_chemise.reverse()
 xcanauxre.reverse()
@@ -781,6 +790,13 @@ for i in range(0, rep):
         mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
 
 print()
+
+end_m = time.time()  # End of the main solution timer
+time_elapsed_m = time.ctime(end_m - start_m)[14:19]  # Main elapsed time converted in minutes:secondes
+start_d2 = time.time()  # Start of the display of 2D timer
+
+print("█                                                                          █")
+print("█ Execution duration of the computation of the main solution :", time_elapsed_m, "      █")
 print("█                                                                          █")
 
 # %% Display of the first results
@@ -948,10 +964,18 @@ t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 
 
 longc = len(xcanauxre)
 
+end_d2 = time.time()  # End of the display of 2D timer
+time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]  # Display of 2D elapsed time converted in minutes:secondes
+
+print("█                                                                          █")
+print("█ Execution duration of the display of 2D :", time_elapsed_d2, "                         █")
+print("█                                                                          █")
+
 "Computation for 3D graph"
-choix2 = int(input("█ 3D cartography visualisation ? (1 = oui, sinon 2)                        █"))
-if choix2 == 1:
+choix = int(input("█ 3D cartography visualisation ? (1 = oui, sinon 2)                        █"))
+if choix == 1:
     # 3D display
+    start_d3 = time.time()  # Start of the display of 3D timer
     Bar = ProgressBar(100, 30, "3D graph initialisation         ")
     b = 0
     ay = 100 / longc
@@ -986,7 +1010,12 @@ if choix2 == 1:
     title = '3D view of wall temperatures'
     number = nbc
     carto3d(inv, x, yprim, temp, colooo, title, number, limitation)
-
+    
+    end_d3 = time.time()  # End of the display of 3D timer
+    time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
+    print("█                                                                          █")
+    print("█ Execution duration of the display of 3D :", time_elapsed_d3, "                         █")
+start_e = time.time()  # Start of the end timer
 # %% Reversion of the different lists
 "Utility unknown"
 print("█                                                                          █")
@@ -1132,10 +1161,21 @@ file.close()
 
 print()
 
-end_t = time.time()  # End of the timer
-time_elapsed = time.ctime(end_t - start_t)[14:19]  # Elapsed time converted in minutes:secondes
+end_t = time.time()  # End of the total timer
+time_elapsed_e = time.ctime(end_t - start_e)[14:19]  # End elapsed time converted in minutes:secondes
+print("█                                                                          █")
+print("█ Execution duration of the end of the program :", time_elapsed_e, "                    █")
+
+if choix == 1:
+    time_elapsed_t_w3D = time.ctime((end_t - start_d3) + (end_d2 - start_t))[14:19]  # Total elapsed time with 3D computation 
+                                                                                     # (without time waited to choose 3D) converted in minutes:secondes
+    print("█                                                                          █")
+    print("█ Execution duration of the whole program with 3D computation :", time_elapsed_t_w3D, "     █")
+    
+time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_t))[14:19]  # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
 
 print("█                                                                          █")
-print("█ Execution duration of the whole program :", time_elapsed, "                         █")
+print("█ Execution duration of the whole program without 3D computation :", time_elapsed_t, "  █")
+print("█                                                                          █")
 print("█                                                                          █")
 print("███████████████████████████████████ END ████████████████████████████████████")
