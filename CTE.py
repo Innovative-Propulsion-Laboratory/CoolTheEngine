@@ -140,7 +140,7 @@ print("█                                                                      
 """
 plt.figure(dpi=200)
 plt.plot(x_value, y_value, color='black')
-plt.title('Profile of the Viserion', color='black')
+plt.title('Profile of the Viserion (left : chamber and right : divergent', color='black')
 plt.show()
 """
 
@@ -165,7 +165,7 @@ print()
 """
 plt.figure(dpi=200)
 plt.plot(x_value,aire,color='black')
-plt.title("Area in m² as a function of engine axis")
+plt.title("Area (in m²) as a function of engine axis")
 plt.show()
 """
 print("█                                                                          █")
@@ -215,7 +215,7 @@ print()
 #print(len(gamma))
 plt.figure(dpi=200)
 plt.plot(x_value,gamma,color='gold')
-plt.title("Gamma linearisation")
+plt.title("Gamma linearisation as a function of engine axis")
 plt.show()
 """
 print("█                                                                          █")
@@ -287,7 +287,7 @@ plt.show()
 
 colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size2 - 2, limitation)
+view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2 - 2, limitation)
 
 print("\n█                                                                          █")
 
@@ -319,15 +319,15 @@ hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_funct
 """
 plt.figure(dpi=200)
 plt.plot(x_value,hotgas_temperature,color='gold')
-plt.title("Temperature as a function of the engine axis")
+plt.title("Gas temperature (in K) as a function of the engine axis")
 plt.show()
 
 colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases',size2-2,limitation)
+view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases (in K)',size2-2,limitation)
 """
 
-print("█                                                                          █")
+print("\n█                                                                          █")
 
 # %% Canal parameters
 "Number of channels and tore position"
@@ -805,19 +805,19 @@ print("█ Display of results in 2D :                                           
 
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
-view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side", size2, limitation)
+view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side (in K)", size2, limitation)
 
 Cel03 = [x * 0.3 for x in Celerite]
 """
 plt.figure(dpi=200)
 plt.plot(xcanauxre, Re_function, color='blue')
-plt.title("Reynolds number as a function of the engine axis")
+plt.title("Reynolds number of the coolant as a function of the engine axis")
 plt.show()
 """
 plt.figure(dpi=200)
 plt.plot(xcanauxre, hlcor, color='blue', label='Hl corrected')
 plt.plot(xcanauxre, hlnormal, color='cyan', label='Hl')
-plt.title("Convection coefficient Hl as a function of the engine axis")
+plt.title("Convection coeff as a function of the engine axis")
 plt.legend()
 plt.show()
 """
@@ -831,15 +831,15 @@ plt.title("Gas Cp as a function of the engine axis")
 plt.show()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, lamb_function, color='orangered')
-plt.title("Gas conductivity (lambda)")
+plt.title("Gas conductivity (lambda) as a function of engine axis")
 plt.show()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, Prandtl_function, color='orangered')
-plt.title("Prandtl number of gas")
+plt.title("Gas Prandtl number as a function of engine axis")
 plt.show()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, hg_function, color='orangered')
-plt.title('Convection coefficient Hg')
+plt.title('Convection coefficient Hg as a function of engine axis')
 plt.show()
 plt.figure(dpi=200)
 Sig.pop()
@@ -851,42 +851,43 @@ plt.show()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, inwall_temperature, color='magenta', label='Twg')
 plt.plot(xcanauxre, outwall_temperature, color='orangered', label='Twl')
-plt.title('Wall temperature')
+plt.title('Wall temperature (in K) as a function of engine axis')
 plt.legend()
 plt.show()
 
 plt.figure(dpi=200)
 Tcoolant.pop()
 plt.plot(xcanauxre, Tcoolant, color='blue')
-plt.title('Coolant temperature')
+plt.title('Coolant temperature (in K) as a function of engine axis')
 plt.show()
 
 """
 plt.figure(dpi=200)
 rho.pop()
 plt.plot(xcanauxre, rho, color='blue')
-plt.title('Volumic mass of the coolant')
+plt.title('Density of the coolant as a function of engine axis')
 plt.show()
 plt.figure(dpi=200)
 visccoolant.pop()
 plt.plot(xcanauxre, visccoolant, color='blue')
-plt.title('Viscosity of the coolant')
+plt.title('Viscosity of the coolant as a function of engine axis')
 plt.show()
 plt.figure(dpi=200)
 condcoolant.pop()
 plt.plot(xcanauxre, condcoolant, color='blue')
-plt.title('Conductivity of the coolant')
+plt.title('Conductivity of the coolant as a function of engine axis')
 plt.show()
 plt.figure(dpi=200)
 Cpmeth.pop()
 plt.plot(xcanauxre, Cpmeth, color='blue')
-plt.title('Cp of the coolant')
-plt.show()"""
+plt.title('Cp of the coolant as a function of engine axis')
+plt.show()
+"""
 
 plt.figure(dpi=200)
 plt.plot(xcanauxre, Vitesse, color='blue', label='Coolant')
 plt.plot(xcanauxre, Cel03, color='orange', label='Mach 0.3 limit')
-plt.title('Velocity of the coolant')
+plt.title('Velocity of the coolant as a function of engine axis')
 plt.legend()
 plt.show()
 Pcoolant.pop()
@@ -894,17 +895,17 @@ Pcoolant2.pop()
 singpertes.pop()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, Pcoolant, color='orange', label='Pressure losses')
-plt.title('Pressure of the coolant')
+plt.title('Coolant pressure as a function of engine axis')
 plt.legend()
 plt.show()
 LambdaTC.pop()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, LambdaTC, color='orangered')
-plt.title('Thermal conductivity of the wall')
+plt.title('Thermal conductivity of the wall as a function of engine axis')
 plt.show()
 plt.figure(dpi=200)
 plt.plot(xcanauxre, Celerite, color='pink')
-plt.title('Sound velocity of the coolant')
+plt.title('Sound velocity of the coolant as a function of engine axis')
 plt.show()
 
 colooo = plt.cm.plasma
@@ -931,7 +932,8 @@ dx = 0.00004  # *3.5
 lamb = LambdaTC[-1]
 print("\n█                                                                          █")
 print("█ Results at the beginning of the chamber :                                █")
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1)
+where = " at the beginning of the chamber"
+t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
 # At the throat
 poscol = ycanauxre.index(min(ycanauxre))
 pas = reste[poscol] + larg_canalre[poscol]
@@ -946,7 +948,8 @@ dx = 0.000025  # *3.5
 lamb = LambdaTC[poscol]
 print("█                                                                          █")
 print("█ Results at the throat :                                                  █")
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 15, 1, 2)
+where = " at the throat"
+t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 15, 1, 2, where)
 # At the end of the divergent
 pas = reste[0] + larg_canalre[0]
 epaisseur = e_div
@@ -960,7 +963,8 @@ dx = 0.00004
 lamb = LambdaTC[0]
 print("█                                                                          █")
 print("█ Results at the end of the divergent :                                    █")
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1)
+where = " at the end of the divergent"
+t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
 
 longc = len(xcanauxre)
 
@@ -1089,11 +1093,14 @@ for i in range(0, longc):
 
 print()
 
-plt.plot(newxhtre, newyhtre)
-plt.plot(xcanauxre, ycanauxre)
-plt.title("Geometrical aspect of the canal")
+plt.figure(dpi=200)
+plt.plot(newxhtre, newyhtre,  color='blue', label='New height')
+plt.plot(xcanauxre, ycanauxre, color='chocolate', label='Formal height')
+plt.title("Geometrical aspect of the canal (height as a function of the engine axis)")
 plt.axis("equal")
+plt.legend()
 plt.show()
+plt.figure(dpi=200)
 plt.plot(xcanauxre, verification)
 plt.title("Checking of the height of the generated canals")
 plt.show()

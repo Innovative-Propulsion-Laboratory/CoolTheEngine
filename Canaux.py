@@ -285,19 +285,19 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     plt.legend()
     plt.show()  # orange=allé
     plt.plot(xcanauxre, vitessere, color = 'chocolate')  # Affichage des courbes
-    plt.title('Velocity in channels')  # bleu=retour
+    plt.title('Velocity of coolant in channels (in m/s) as a function of engine axis')  # bleu=retour
     plt.show()
 
     plt.plot(xcanauxre, epaiss_chemise, color = 'chocolate')  # Affichage des courbes
-    plt.title('Thickness of chamber wall')  # bleu=retour
+    plt.title('Thickness of chamber wall as a function of engine axis')  # bleu=retour
     plt.show()
 
     plt.plot(xcanauxre, htre, color = 'chocolate')
-    plt.title('Channels height')  # bleu=retour
+    plt.title('Channels height as a function of engine axis')  # bleu=retour
     plt.show()  # orange=allé
 
     plt.plot(xcanauxre, Areare, color = 'chocolate')
-    plt.title('Area of channel sections')  # bleu=retour
+    plt.title('Channel sections as a function of engine axis')  # bleu=retour
     plt.show()
     # print(larg_canalre[-92])
     return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise
