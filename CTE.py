@@ -1070,7 +1070,7 @@ plt.show()
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
 Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
-ay = 100 / (3 * longc + 3 * (long - longc))
+ay = 100 / (3 * longc + (long - longc))
 
 file_name = "valuexport.csv"
 file = open(file_name, "w")
@@ -1113,14 +1113,6 @@ for i in range(0, longc):
     b += ay
     Bar.update(b)
 
-for i in range(longc, long):
-    writer.writerow(
-        (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
-         hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
-    b += ay
-    Bar.update(b)
-    
 file.close()
 
 # %% Writing the results of the study in a CSV file
@@ -1131,13 +1123,6 @@ writer = csv.writer(file)
 writer.writerow(("Engine + chamber wall diameter", "x real height"))
 for i in range(0, longc):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
-    b += ay
-    Bar.update(b)
-for i in range(longc, long):
-    writer.writerow(
-        (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
-         hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
     b += ay
     Bar.update(b)
 
