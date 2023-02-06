@@ -278,26 +278,26 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
 
         #
 
-    plt.plot(xcanauxre, larg_canalre, label='largeur', color='red')  # Création et affichage
-    plt.plot(xcanauxre, larg_ailette, label='reste', color='chocolate')
-    plt.plot(xcanauxre, htre, label='hauteur', color='blue')  #
-    plt.title('largeur des canaux et ailette')  # bleu=retour
+    plt.plot(xcanauxre, larg_canalre, label = 'Canal width', color = 'green')  # Création et affichage
+    plt.plot(xcanauxre, larg_ailette, label = 'Fin width', color = 'chocolate')
+    plt.plot(xcanauxre, htre, label = 'Height', color = 'blue')  #
+    plt.title('Width of channels and fins (ailettes in french)')  # bleu=retour
     plt.legend()
     plt.show()  # orange=allé
-    plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes
-    plt.title('vitesse dans les canaux')  # bleu=retour
+    plt.plot(xcanauxre, vitessere, color = 'chocolate')  # Affichage des courbes
+    plt.title('Velocity in channels')  # bleu=retour
     plt.show()
 
-    plt.plot(xcanauxre, epaiss_chemise, color='chocolate')  # Affichage des courbes
-    plt.title('epaisseur de la chemise')  # bleu=retour
+    plt.plot(xcanauxre, epaiss_chemise, color = 'chocolate')  # Affichage des courbes
+    plt.title('Thickness of chamber wall')  # bleu=retour
     plt.show()
 
-    plt.plot(xcanauxre, htre, color='chocolate')
-    plt.title('Hauteur des canaux')  # bleu=retour
+    plt.plot(xcanauxre, htre, color = 'chocolate')
+    plt.title('Channels height')  # bleu=retour
     plt.show()  # orange=allé
 
-    plt.plot(xcanauxre, Areare, color='chocolate')
-    plt.title('Aire des sections de canaux')  # bleu=retour
+    plt.plot(xcanauxre, Areare, color = 'chocolate')
+    plt.title('Area of channel sections')  # bleu=retour
     plt.show()
     # print(larg_canalre[-92])
     return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise

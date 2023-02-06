@@ -323,20 +323,20 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             paroigas = paroigas + t[0]
         bis += 1
     if oui == 1:
-        print("█ Température moyenne à la paroi gas =", round(temperature[0]),
+        print("█ Mean temperature on gas wall       =", round(temperature[0]),
               "K                              █")
-        print("█ Température moyenne paroi coolant  =", round(temperature[abop + 1]),
+        print("█ Mean temperature on coolant wall   =", round(temperature[abop + 1]),
               "K                              █")
-        print("█ Température maximum à la paroi     =", round(max(temperature)),
+        print("█ Maximum temperature on wall        =", round(max(temperature)),
               "K                              █")
         if leg == 1:
-            a1 = 0.004
-            a2 = 0.0005
+            a1 = 0.003
+            a2 = -0.002
             a3 = 0.00025
             a4 = -0.002
         elif leg == 2:
-            a1 = 0.002
-            a2 = 0.00025
+            a1 = 0.0015
+            a2 = -0.0015
             a3 = 0.00025
             a4 = -0.0015
         # plt.figure(dpi=200)
@@ -354,7 +354,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
         plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
 
-        plt.title("Distribution 2D des températures", fontsize=15)
+        plt.title("2D temperature distribution", fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=0.4, aspect=15)
         plt.show()

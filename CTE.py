@@ -251,7 +251,7 @@ colooo = plt.cm.Spectral
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2 - 2, limitation)
 
-print("█                                                                          █")
+print("\n█                                                                          █")
 
 # %% Static pressure computation
 "Static pressure computation"
@@ -286,7 +286,7 @@ colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure', size2 - 2, limitation)
 
-print("█                                                                          █")
+print("\n█                                                                          █")
 
 # %% Temperature computation
 b = 0
@@ -746,7 +746,7 @@ LambdaTC = [330]
 entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 b = 0
 rep = 2
-Bar = ProgressBar(100, 30, "Résolution globale              ")
+Bar = ProgressBar(100, 30, "Global resolution               ")                 
 ay = 100 / ((1 + rep) * len(xcanauxre))
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
@@ -784,7 +784,6 @@ print("█                                                                      
 # %% Display of the first results
 "Display of the results"
 print("█ Display of results in 2D :                                               █")
-print("█                                                                          █")
 
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
@@ -798,7 +797,7 @@ plt.title("Reynolds number as a function of the engine axis")
 plt.show()
 """
 plt.figure(dpi=200)
-plt.plot(xcanauxre, hlcor, color='blue', label='Hl corrigé')
+plt.plot(xcanauxre, hlcor, color='blue', label='Hl corrected')
 plt.plot(xcanauxre, hlnormal, color='cyan', label='Hl')
 plt.title("Convection coefficient Hl as a function of the engine axis")
 plt.legend()
@@ -844,7 +843,8 @@ plt.plot(xcanauxre, Tcoolant, color='blue')
 plt.title('Coolant temperature')
 plt.show()
 
-"""plt.figure(dpi=200)
+"""
+plt.figure(dpi=200)
 rho.pop()
 plt.plot(xcanauxre, rho, color='blue')
 plt.title('Volumic mass of the coolant')
@@ -911,6 +911,7 @@ Hl = hlnormal[-1]
 Tl = Tcoolant[-1]
 dx = 0.00004  # *3.5
 lamb = LambdaTC[-1]
+print("\n█                                                                          █")
 print("█ Results at the beginning of the chamber :                                █")
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1)
 # At the throat
@@ -925,6 +926,7 @@ Hl = hlnormal[poscol]
 Tl = Tcoolant[poscol]
 dx = 0.000025  # *3.5
 lamb = LambdaTC[poscol]
+print("█                                                                          █")
 print("█ Results at the throat :                                                  █")
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 15, 1, 2)
 # At the end of the divergent
@@ -938,15 +940,21 @@ Hl = hlnormal[0]
 Tl = Tcoolant[0]
 dx = 0.00004
 lamb = LambdaTC[0]
+print("█                                                                          █")
 print("█ Results at the end of the divergent :                                    █")
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1)
 
+longc = len(xcanauxre)
+
 "Computation for 3D graph"
-choix2 = int(input("█ Visualisation des cartographie 3D ? (1=oui sinon 2)                      █"))
+choix2 = int(input("█ 3D cartography visualisation ? (1 = oui, sinon 2)                        █"))
 if choix2 == 1:
     # 3D display
+    Bar = ProgressBar(100, 30, "3D graph initialisation         ")
+    b = 0
+    ay = 100 / longc
     eachT = []
-    for i in range(0, len(xcanauxre)):
+    for i in range(0, longc):
         # print(i)
         lim1 = 0
         lim2 = 650
@@ -965,8 +973,11 @@ if choix2 == 1:
         lamb = LambdaTC[i]
         t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 3, 0, 1)
         eachT.append(t3d)
-        inv = [0, 0, 0]
-        x = xcanauxre
+        b += ay
+        Bar.update(b)
+    print()
+    inv = [0, 0, 0]
+    x = xcanauxre
     yprim = ycanauxre
     temp = eachT
     colooo = plt.cm.Spectral_r
@@ -976,6 +987,11 @@ if choix2 == 1:
 
 # %% Reversion of the different lists
 "Utility unknown"
+print("█                                                                          █")
+Bar = ProgressBar(100, 30, "Computation of channels height  ")
+b = 0
+ay = 100 / (2*longc)
+
 aire.reverse()
 gamma.reverse()
 mach_function.reverse()
@@ -1009,11 +1025,11 @@ Pcoolant.reverse()
 angles = []
 newxhtre = []
 newyhtre = []
-for i in range(0, len(xcanauxre)):
+for i in range(0, longc):
     if i == 0:
         angle = 0
         angles.append(angle)
-    elif i == (len(xcanauxre) - 1):
+    elif i == (longc - 1):
         angle = angles[i - 1]
         angles.append(angle)
     else:
@@ -1029,12 +1045,19 @@ for i in range(0, len(xcanauxre)):
     newy = ycanauxre[i] + htre[i] * cos(radians(angles[i]))
     newxhtre.append(newx)
     newyhtre.append(newy)
+    b += ay
+    Bar.update(b)
 
 "Checking the height of channels"
 verification = []
-for i in range(0, len(xcanauxre)):
+for i in range(0, longc):
     verifhtre = (((newxhtre[i] - xcanauxre[i]) ** 2) + ((newyhtre[i] - ycanauxre[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
+    b += ay
+    Bar.update(b)
+
+print()
+
 plt.plot(newxhtre, newyhtre)
 plt.plot(xcanauxre, ycanauxre)
 plt.title("Geometrical aspect of the canal")
@@ -1046,31 +1069,37 @@ plt.show()
 
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
-Bar = ProgressBar(100, 30, "Writting results in CSV files    ")
+Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
+ay = 100 / (3 * longc + 3 * (long - longc))
 
 file_name = "valuexport.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
-writer.writerow(("Axe x moteur", "Diamètre moteur", "Aire gaz moteur", "Gamma gaz", "Nombre de mach", "Pression gaz",
-                 "Pression totale", "Temperature gaz", "Axe x canaux", "Diamètre moteur+chemise", "Largeur canaux",
-                 "Hauteur canaux", "Aire canaux", "Viscosité gaz", "Cp gaz", "Conductivité gaz", "Prandtl gaz",
-                 "Coeff Hg", "Sigma", " Twg ", " Twl ", "Heat flux", "Tl", "Vitesse coolant", "Reynolds CH4",
-                 "Coeff Hl", "Rho coolant", "Viscosité CH4", "Conductivité CH4", "Cp CH4", "Vitesse du coolant",
-                 "Pression du coolant", "Conductivité de la paroi", "x hauteur réelle",
-                 "y hauteur réelle"))
-for i in range(0, len(xcanauxre)):
+writer.writerow(("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma", "Mach number", "Gas pressure",
+                 "Total pressure", "Gas temperature", "Channels x axis", "Engine + chamber wall diameter", "Channels width",
+                 "Channels height", "Channels area", "Gas viscosity", "Cp gas", "Gas conductivity", "Prandtl gaz",
+                 "Coeff Hg", "Sigma", " Twg ", " Twl ", "Heat flux", "Tl", "Reynolds CH4", "Coeff Hl", "Rho coolant", 
+                 "Viscosity CH4", "Conductivity CH4", "Cp CH4", "Coolant velocity", "Coolant pressure", "Wall conductivity", 
+                 "x real height", "y real height"))
+for i in range(0, longc):
     writer.writerow(
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
          hotgas_temperature_saved[i], xcanauxre[i], ycanauxre[i], larg_canalre[i],
          htre[i], Areare[i], visc_function[i], cp_function[i], lamb_function[i], Prandtl_function[i],
          hg_function[i], Sig[i], inwall_temperature[i], outwall_temperature[i], fluxsolved[i], Tcoolant[i],
-         Vitesse[i], Re_function[i], hlnormal[i], rho[i], visccoolant[i], condcoolant[i], Cpmeth[i],
+         Re_function[i], hlnormal[i], rho[i], visccoolant[i], condcoolant[i], Cpmeth[i],
          Vitesse[i], Pcoolant[i], LambdaTC[i], newxhtre[i], newyhtre[i]))
-for i in range(len(xcanauxre), len(x_value)):
+    b += ay
+    Bar.update(b)
+    
+for i in range(longc, long):
     writer.writerow(
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
          hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
+         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
+    b += ay
+    Bar.update(b)
+
 file.close()
 
 # %% Writing the results of the study in a CSV file
@@ -1078,14 +1107,20 @@ file.close()
 file_name = "geometry1.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
-writer.writerow(("x hauteur réelle", "y hauteur réelle"))
-for i in range(0, len(xcanauxre)):
+writer.writerow(("x real height", "y real height"))
+for i in range(0, longc):
     writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
-for i in range(len(xcanauxre), len(x_value)):
+    b += ay
+    Bar.update(b)
+
+for i in range(longc, long):
     writer.writerow(
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
          hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
          ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
+    b += ay
+    Bar.update(b)
+    
 file.close()
 
 # %% Writing the results of the study in a CSV file
@@ -1093,18 +1128,22 @@ file.close()
 file_name = "geometry2.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
-writer.writerow(("Diamètre moteur+chemise", "x hauteur réelle"))
-for i in range(0, len(xcanauxre)):
+writer.writerow(("Engine + chamber wall diameter", "x real height"))
+for i in range(0, longc):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
-for i in range(len(xcanauxre), len(x_value)):
+    b += ay
+    Bar.update(b)
+for i in range(longc, long):
     writer.writerow(
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
          hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
          ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
+    b += ay
+    Bar.update(b)
+
 file.close()
 
-Bar.update(100)
 print()
 print("█                                                                          █")
 print("█                                                                          █")
-print("███████████████████████████████████ FIN ████████████████████████████████████")
+print("███████████████████████████████████ END ████████████████████████████████████")

@@ -18,8 +18,8 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
     if inv[2] == 1:
         temp.reverse()
     b = 0
-    Bar = ProgressBar(100, 30, "Visualisation des résultats 3D  ")
-    ay = 100 / (len(x))
+    Bar = ProgressBar(100, 30, "3D results computation          ")
+    ay = 100 / len(x)
     fig = plt.figure(figsize=(10, 17), dpi=500)
     ax = fig.add_subplot(111, projection='3d')
     Tcolor = []
@@ -55,7 +55,10 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
                 eh += 1
         b += ay
         Bar.update(b)
-
+    print()
+    
+    Bar = ProgressBar(100, 30, "3D results visualisation        ")
+    ay = 100 / len(cu)
     mi = min(cu)
     ma = max(cu)
     for i in range(0, len(cu), 1):
@@ -68,6 +71,9 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
         Tcolor.append(T)
         b += ay
         Bar.update(b)
+    print()
+    
+    Bar = ProgressBar(100, 30, "3D results finalisation         ")
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=5, cmap=col)
     mis = min(xu)
     mas = max(xu)
@@ -80,11 +86,16 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
     plt.title(title, fontsize=25)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
     plt.show()
+    Bar.update(25)
     if inv[0] == 1:
         x.reverse()
+    Bar.update(50)
     if inv[1] == 1:
         yprim.reverse()
+    Bar.update(75)
     if inv[2] == 1:
         temp.reverse()
+    Bar.update(100)
+    print()
 # col=plt.cm.hot
 # view3d(x,yprim,temp,col)
