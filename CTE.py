@@ -46,7 +46,7 @@ Any changes might affect the results.
 #
 # # Others
 # import csv  # To read .txt
-
+from time import time, ctime
 import csv
 import matplotlib.pyplot as plt
 from pylab import *
@@ -65,6 +65,8 @@ from graphic3d import view3d
 from heatequationsolve import *
 from volume3d import *
 from CoolProp.CoolProp import PropsSI
+
+start_t = time.time()  # Beginning of the timer
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
@@ -1129,6 +1131,11 @@ for i in range(0, longc):
 file.close()
 
 print()
+
+end_t = time.time()  # End of the timer
+time_elapsed = time.ctime(end_t - start_t)[14:19]  # Elapsed time converted in minutes:secondes
+
 print("█                                                                          █")
+print("█ Execution duration of the whole program :", time_elapsed, "                         █")
 print("█                                                                          █")
 print("███████████████████████████████████ END ████████████████████████████████████")
