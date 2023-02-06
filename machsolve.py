@@ -4,12 +4,11 @@ Created on Wed Nov  4 12:23:55 2020
 
 @author: julie
 """
-from sympy import Symbol, nsolve, Eq
+from sympy import Symbol, nsolve
 import sympy as mp
-from math import *
 
 
-def Mach_solv(A1, A2, M1, gamma, pos, machtype):
+def mach_solv(A1, A2, M1, gamma, pos, machtype):
     def solveur(A1, A2, M1, gamma, ome):
         def part2(A1, A2, M1, gamma, ome):
             part2 = (A1 / A2) * (M1 / ((1 + ((gamma - 1) / 2) * M1 * M1) ** ome))

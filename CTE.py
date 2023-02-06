@@ -10,62 +10,33 @@ WARNING: This Python file was rewritten only for the Viserion_2023 project.
 Any changes might affect the results.
 """
 
-# %% Import of packages
-# # Calculations
-# from math import *
-# from sympy import Symbol, nsolve, Eq
-# import sympy as mp
-# import numpy as np
-# from decimal import *  # ?
-#
-# # Graphics
-# import matplotlib.pyplot as plt
-# from pylab import *
-# from mpl_toolkits.mplot3d import Axes3D
-#
-# # Files in the CTE folder
-# # Solving
-# from machsolve import Mach_solv
-# from pressuresolve import Pressure_solv
-# from temperaturesolve import Temperature_solv
-# from musolve import mu
-# from Tcorsolve import tempcorrige
-# from heatequationsolve import *
-# # from PrandtlVonKarman import PVK
-# # Data
-# from methan import *
-# from Canaux import canauxangl, canaux
-# # Graphics
-# from ProgressBar import *
-# from volume3d import *
-# from graphic3d import view3d
-#
-# # Chemical species data
-# from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
-# import CoolProp.CoolProp as CoolProp
-#
-# # Others
-# import csv  # To read .txt
-
+# %% Imports
 import time
 import csv
-import matplotlib.pyplot as plt
-from pylab import *
-from math import *
-from machsolve import Mach_solv
-from pressuresolve import Pressure_solv
-from temperaturesolve import Temperature_solv
-from musolve import mu
-from Tcorsolve import tempcorrige
-from ProgressBar import *
-from Canaux import canaux
+
+# Calculations
+import numpy as np
 from sympy import Symbol, nsolve
 import sympy as mp
-from methan import *
+from machsolve import mach_solv
+from pressuresolve import pressure_solv
+from temperaturesolve import temperature_solv
+from musolve import mu
+from Tcorsolve import tempcorrige
+
+# Data
+from Canaux import canaux
+
+# Graphics
 from graphic3d import view3d
-from heatequationsolve import *
-from volume3d import *
+from heatequationsolve import carto2D
+from volume3d import carto3d
+import matplotlib.pyplot as plt
+from ProgressBar import ProgressBar
+
+# Chemical species data
 from CoolProp.CoolProp import PropsSI
+import methan as meth
 
 start_t = time.time()  # Beginning of the timer
 
@@ -138,7 +109,7 @@ print("█                                                                      
 
 # Plot of the upper profile of the engine
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value, y_value, color='black')
 plt.title('Profile of the Viserion (left : chamber and right : divergent', color='black')
 plt.show()
@@ -156,14 +127,14 @@ view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
 # %% Computation of the cross-sectional areas of the engine
 Bar = ProgressBar(100, 30, "Sectionnal areas computation    ")
 
-aire = [pi * r ** 2 for r in y_value]
+aire = [np.pi * r ** 2 for r in y_value]
 
 Bar.update(100)
 print()
 
 # Plots of the cross-sectionnal areas
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value,aire,color='black')
 plt.title("Area (in m²) as a function of engine axis")
 plt.show()
@@ -213,7 +184,7 @@ print()
 """
 #print(gamma)
 #print(len(gamma))
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value,gamma,color='gold')
 plt.title("Gamma linearisation as a function of engine axis")
 plt.show()
@@ -236,7 +207,7 @@ for i in range(0, long - 1):
     A1 = aire[i]
     A2 = aire[i + 1]
     pos = i
-    g = Mach_solv(A1, A2, M1, gamma[i], pos, machtype)
+    g = mach_solv(A1, A2, M1, gamma[i], pos, machtype)
     mach_function.append(g)
     M1 = g
     b += av
@@ -245,7 +216,7 @@ for i in range(0, long - 1):
 print()
 
 # Plots of the Mach number in the engine (2D/3D)
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value, mach_function, color='gold')
 plt.title("Mach number as a function of the engine axis")
 plt.show()
@@ -272,7 +243,7 @@ for i in range(0, long - 1):
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
     P1 = pressure_function[i]
-    P2 = Pressure_solv(M1, M2, P1, gamma[i])
+    P2 = pressure_solv(M1, M2, P1, gamma[i])
     pressure_function.append(P2)
     c += ac
     Bar.update(c)
@@ -280,7 +251,7 @@ for i in range(0, long - 1):
 print()
 
 # Plot of the static pressure (2D/3D)
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value, pressure_function, color='gold')
 plt.title("Static pressure as a function of the engine axis")
 plt.show()
@@ -306,7 +277,7 @@ for i in range(0, long - 1):
         M1 = mach_function[i]
         M2 = mach_function[i + 1]
     T1 = hotgas_temperature[i]
-    T2 = Temperature_solv(M1, M2, T1, gamma[i])
+    T2 = temperature_solv(M1, M2, T1, gamma[i])
     hotgas_temperature.append(T2)
     b += ay
     Bar.update(b)
@@ -317,7 +288,7 @@ hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_funct
 
 # Plots of the temperature in the engine (2D/3D)
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(x_value,hotgas_temperature,color='gold')
 plt.title("Gas temperature (in K) as a function of the engine axis")
 plt.show()
@@ -513,7 +484,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
 
         # In case of single-phase flow
         if phase == 0 or phase == 2:
-            f = (1.82 * log10(Re) - 1.64) ** (-2)
+            f = (1.82 * np.log10(Re) - 1.64) ** (-2)
             Nu = ((f / 8) * (Re - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
             hl = Nu * (condcoolant[i] / Dhy)
             Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
@@ -555,12 +526,13 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
 
                 # Compute dimensions of the fins
                 D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-                d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-                m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
+                d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
+                m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
 
                 # Corrected coefficient, taking the fin effect into account
-                hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * (
-                        (2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * ((tanh(m * htre[i])) / (pi * D))
+                hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * (
+                        (2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
+                                 (np.tanh(m * htre[i])) / (np.pi * D))
 
                 # Save the data in lists
                 hg = hg_function[i]
@@ -589,13 +561,13 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
 
         # Fin dimensions
         D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-        d = (pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-        m = ((2 * hl) / (d * Lambda_tc)) ** 0.5
+        d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
+        m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
 
         # Correct for the fin effect
-        hl_cor = hl * ((nbc * c) / (pi * D)) + nbc * \
-                 ((2 * hl * Lambda_tc * (((pi * D) / nbc) - c)) ** 0.5) * (
-                         (tanh(m * htre[i])) / (pi * D))
+        hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * \
+                 ((2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
+                         (np.tanh(m * htre[i])) / (np.pi * D))
         hlcor.append(hl_cor)
 
         # Store the results
@@ -633,18 +605,18 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         if i == xcanauxre.index(xcanauxre[-1]):
             Distance = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
             xa = Distance
-            ya = (2 * pi * ycanauxre[i - 1]) / nbc
-            za = (2 * pi * ycanauxre[i]) / nbc
-            perim = (2 * pi * ((aire[i] / pi) ** 0.5)) / nbc
+            ya = (2 * np.pi * ycanauxre[i - 1]) / nbc
+            za = (2 * np.pi * ycanauxre[i]) / nbc
+            perim = (2 * np.pi * ((aire[i] / np.pi) ** 0.5)) / nbc
             dA = xa * (2 * c + 2 * htre[i])
             timer = (((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5) / V
         else:
             Distance = ((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5
             xa = Distance
-            ya = (2 * pi * ycanauxre[i + 1]) / nbc
-            za = (2 * pi * ycanauxre[i]) / nbc
+            ya = (2 * np.pi * ycanauxre[i + 1]) / nbc
+            za = (2 * np.pi * ycanauxre[i]) / nbc
 
-            perim = (2 * pi * ((aire[i] / pi) ** 0.5)) / nbc
+            perim = (2 * np.pi * ((aire[i] / np.pi) ** 0.5)) / nbc
             # dA=xa*perim
 
             dA = xa * (2 * c + 2 * htre[i])
@@ -659,10 +631,10 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 rho2 = PropsSI("D", "Q", 0, "T", Tfu, fluid)
             Re_sp = Dhy * Gdeb / visccoolant[i]
             fsp1 = 1
-            fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+            fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
             while abs((fsp1 / fsp2) - 1) > 0.0000001:
                 fsp1 = fsp2
-                fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+                fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
             DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rho[i] * Dhy)
             DeltaPac = ((Gdeb ** 2) / (2 * rho[i])) * ((rho[i] / rho2) - 1)
         else:
@@ -672,10 +644,10 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                     (((1 - Xqual) ** 2) / (rholp * (1 - eps_prim))) + ((Xqual ** 2) / (rhogp * eps_prim)))
             rhotp = (rhogp * rholp) / (rhogp * (1 - Xqual) + rholp * Xqual)
             fsp1 = 1
-            fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+            fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
             while abs((fsp1 / fsp2) - 1) > 0.0000001:
                 fsp1 = fsp2
-                fsp2 = (1 / (-2 * log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+                fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
             DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rhotp * Dhy)
         NewPressure = Pcoolant[i] - (DeltaPfr + DeltaPac)
         Pcoolant.append(NewPressure)
@@ -749,15 +721,15 @@ b = 0
 Sig.append(1)
 Tcoolant.append(Tl_init)
 Pcoolant.append(Pl_init)
-visccoolant.append(viscCH4(Pcoolant[0], Tcoolant[0], fluid))
-condcoolant.append(condCH4(Pcoolant[0], Tcoolant[0], fluid))
-Cpmeth.append(cpCH4(Pcoolant[0], Tcoolant[0], fluid))
-rho.append(rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
+visccoolant.append(meth.viscCH4(Pcoolant[0], Tcoolant[0], fluid))
+condcoolant.append(meth.condCH4(Pcoolant[0], Tcoolant[0], fluid))
+Cpmeth.append(meth.cpCH4(Pcoolant[0], Tcoolant[0], fluid))
+rho.append(meth.rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
 LambdaTC = [330]
-entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
+entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 b = 0
 rep = 2
-Bar = ProgressBar(100, 30, "Global resolution               ")                 
+Bar = ProgressBar(100, 30, "Global resolution               ")
 ay = 100 / ((1 + rep) * len(xcanauxre))
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
@@ -779,11 +751,11 @@ for i in range(0, rep):
     Tcoolant.append(Tl_init)
     Pcoolant.append(Pl_init)
     LambdaTC.append(newLambdatc)
-    visccoolant.append(viscCH4(Pcoolant[0], Tcoolant[0], fluid))
-    condcoolant.append(condCH4(Pcoolant[0], Tcoolant[0], fluid))
-    Cpmeth.append(cpCH4(Pcoolant[0], Tcoolant[0], fluid))
-    rho.append(rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
-    entropy = [entCH4(Pcoolant[0], Tcoolant[0], fluid)]
+    visccoolant.append(meth.viscCH4(Pcoolant[0], Tcoolant[0], fluid))
+    condcoolant.append(meth.condCH4(Pcoolant[0], Tcoolant[0], fluid))
+    Cpmeth.append(meth.cpCH4(Pcoolant[0], Tcoolant[0], fluid))
+    rho.append(meth.rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
+    entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
     outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
     Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
@@ -805,86 +777,87 @@ print("█ Display of results in 2D :                                           
 
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
-view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side (in K)", size2, limitation)
+view3d(inv, xcanauxre, ycanauxre, inwall_temperature, colooo, "Wall temperature on the gas side (in K)", size2,
+       limitation)
 
 Cel03 = [x * 0.3 for x in Celerite]
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, Re_function, color='blue')
 plt.title("Reynolds number of the coolant as a function of the engine axis")
 plt.show()
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, hlcor, color='blue', label='Hl corrected')
 plt.plot(xcanauxre, hlnormal, color='cyan', label='Hl')
 plt.title("Convection coeff as a function of the engine axis")
 plt.legend()
 plt.show()
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, visc_function, color='orangered')
 plt.title("Gas viscosity as a function of the engine axis")
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, cp_function, color='orangered')
 plt.title("Gas Cp as a function of the engine axis")
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, lamb_function, color='orangered')
 plt.title("Gas conductivity (lambda) as a function of engine axis")
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, Prandtl_function, color='orangered')
 plt.title("Gas Prandtl number as a function of engine axis")
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, hg_function, color='orangered')
 plt.title('Convection coefficient Hg as a function of engine axis')
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 Sig.pop()
 plt.plot(xcanauxre, Sig, color='orangered')
 plt.title("Sigma as a function of the engine axis")
 plt.show()
 """
 
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, inwall_temperature, color='magenta', label='Twg')
 plt.plot(xcanauxre, outwall_temperature, color='orangered', label='Twl')
 plt.title('Wall temperature (in K) as a function of engine axis')
 plt.legend()
 plt.show()
 
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 Tcoolant.pop()
 plt.plot(xcanauxre, Tcoolant, color='blue')
 plt.title('Coolant temperature (in K) as a function of engine axis')
 plt.show()
 
 """
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 rho.pop()
 plt.plot(xcanauxre, rho, color='blue')
 plt.title('Density of the coolant as a function of engine axis')
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 visccoolant.pop()
 plt.plot(xcanauxre, visccoolant, color='blue')
 plt.title('Viscosity of the coolant as a function of engine axis')
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 condcoolant.pop()
 plt.plot(xcanauxre, condcoolant, color='blue')
 plt.title('Conductivity of the coolant as a function of engine axis')
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 Cpmeth.pop()
 plt.plot(xcanauxre, Cpmeth, color='blue')
 plt.title('Cp of the coolant as a function of engine axis')
 plt.show()
 """
 
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, Vitesse, color='blue', label='Coolant')
 plt.plot(xcanauxre, Cel03, color='orange', label='Mach 0.3 limit')
 plt.title('Velocity of the coolant as a function of engine axis')
@@ -893,17 +866,17 @@ plt.show()
 Pcoolant.pop()
 Pcoolant2.pop()
 singpertes.pop()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, Pcoolant, color='orange', label='Pressure losses')
 plt.title('Coolant pressure as a function of engine axis')
 plt.legend()
 plt.show()
 LambdaTC.pop()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, LambdaTC, color='orangered')
 plt.title('Thermal conductivity of the wall as a function of engine axis')
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, Celerite, color='pink')
 plt.title('Sound velocity of the coolant as a function of engine axis')
 plt.show()
@@ -1014,7 +987,7 @@ if choix == 1:
     title = '3D view of wall temperatures'
     number = nbc
     carto3d(inv, x, yprim, temp, colooo, title, number, limitation)
-    
+
     end_d3 = time.time()  # End of the display of 3D timer
     time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
     print("█                                                                          █")
@@ -1025,7 +998,7 @@ start_e = time.time()  # Start of the end timer
 print("█                                                                          █")
 Bar = ProgressBar(100, 30, "Computation of channels height  ")
 b = 0
-ay = 100 / (2*longc)
+ay = 100 / (2 * longc)
 
 aire.reverse()
 gamma.reverse()
@@ -1072,12 +1045,12 @@ for i in range(0, longc):
                 (((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
         vect2 = (xcanauxre[i + 1] - xcanauxre[i]) / (
                 (((ycanauxre[i + 1] - ycanauxre[i]) ** 2) + ((xcanauxre[i + 1] - xcanauxre[i]) ** 2)) ** 0.5)
-        angle1 = degrees(acos(vect1))
-        angle2 = degrees(acos(vect2))
+        angle1 = np.rad2deg(np.arccos(vect1))
+        angle2 = np.rad2deg(np.arccos(vect2))
         angle = angle2
         angles.append(angle)
-    newx = xcanauxre[i] + htre[i] * sin(radians(angles[i]))
-    newy = ycanauxre[i] + htre[i] * cos(radians(angles[i]))
+    newx = xcanauxre[i] + htre[i] * np.sin(np.deg2rad(angles[i]))
+    newy = ycanauxre[i] + htre[i] * np.cos(np.deg2rad(angles[i]))
     newxhtre.append(newx)
     newyhtre.append(newy)
     b += ay
@@ -1093,14 +1066,14 @@ for i in range(0, longc):
 
 print()
 
-plt.figure(dpi=200)
-plt.plot(newxhtre, newyhtre,  color='blue', label='New height')
+plt.figure(dpi=300)
+plt.plot(newxhtre, newyhtre, color='blue', label='New height')
 plt.plot(xcanauxre, ycanauxre, color='chocolate', label='Formal height')
 plt.title("Geometrical aspect of the canal (height as a function of the engine axis)")
 plt.axis("equal")
 plt.legend()
 plt.show()
-plt.figure(dpi=200)
+plt.figure(dpi=300)
 plt.plot(xcanauxre, verification)
 plt.title("Checking of the height of the generated canals")
 plt.show()
@@ -1114,10 +1087,12 @@ file_name = "valuexport.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
 writer.writerow(("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma", "Mach number", "Gas pressure",
-                 "Total pressure", "Gas temperature", "Channels x axis", "Engine + chamber wall diameter", "Channels width",
+                 "Total pressure", "Gas temperature", "Channels x axis", "Engine + chamber wall diameter",
+                 "Channels width",
                  "Channels height", "Channels area", "Gas viscosity", "Cp gas", "Gas conductivity", "Prandtl gaz",
-                 "Coeff Hg", "Sigma", " Twg ", " Twl ", "Heat flux", "Tl", "Reynolds CH4", "Coeff Hl", "Rho coolant", 
-                 "Viscosity CH4", "Conductivity CH4", "Cp CH4", "Coolant velocity", "Coolant pressure", "Wall conductivity", 
+                 "Coeff Hg", "Sigma", " Twg ", " Twl ", "Heat flux", "Tl", "Reynolds CH4", "Coeff Hl", "Rho coolant",
+                 "Viscosity CH4", "Conductivity CH4", "Cp CH4", "Coolant velocity", "Coolant pressure",
+                 "Wall conductivity",
                  "x real height", "y real height"))
 for i in range(0, longc):
     writer.writerow(
@@ -1129,7 +1104,7 @@ for i in range(0, longc):
          Vitesse[i], Pcoolant[i], LambdaTC[i], newxhtre[i], newyhtre[i]))
     b += ay
     Bar.update(b)
-    
+
 for i in range(longc, long):
     writer.writerow(
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
@@ -1174,12 +1149,14 @@ print("█                                                                      
 print("█ Execution duration of the end of the program :", time_elapsed_e, "                    █")
 
 if choix == 1:
-    time_elapsed_t_w3D = time.ctime((end_t - start_d3) + (end_d2 - start_t))[14:19]  # Total elapsed time with 3D computation 
-                                                                                     # (without time waited to choose 3D) converted in minutes:secondes
+    time_elapsed_t_w3D = time.ctime((end_t - start_d3) + (end_d2 - start_t))[
+                         14:19]  # Total elapsed time with 3D computation
+    # (without time waited to choose 3D) converted in minutes:secondes
     print("█                                                                          █")
     print("█ Execution duration of the whole program with 3D computation :", time_elapsed_t_w3D, "     █")
-    
-time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_t))[14:19]  # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
+
+time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_t))[
+                 14:19]  # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
 
 print("█                                                                          █")
 print("█ Execution duration of the whole program without 3D computation :", time_elapsed_t, "  █")

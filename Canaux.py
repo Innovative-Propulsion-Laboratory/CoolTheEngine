@@ -4,7 +4,7 @@ Created on Sat Dec 19 21:46:19 2020
 
 @author: julien
 """
-from math import *
+import numpy as np
 import csv
 import matplotlib.pyplot as plt
 
@@ -37,14 +37,14 @@ def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total
     degportion = 360 / nbc
     poscol = ycanauxre.index(min(ycanauxre))
     # print(poscol)
-    expcoef = (((2 * pi * ycanauxre[poscol]) / nbc) / lrg_col)
+    expcoef = (((2 * np.pi * ycanauxre[poscol]) / nbc) / lrg_col)
     # print(expcoef)
 
     larg_canalre = []
     reste = []
     for i in range(0, longcanal, 1):
         larg = (ycanauxre[i] / ycanauxre[poscol]) * lrg_col
-        rest = ((ycanauxre[i] * 2 * pi) / nbc) - larg
+        rest = ((ycanauxre[i] * 2 * np.pi) / nbc) - larg
         larg_canalre.append(larg)
         reste.append(rest)
     # print(larg_canalre)
@@ -160,7 +160,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         x = xcanauxre[i]
         pos = xcanauxre.index(x)  # Indexation de la
         r = ycanauxre[pos]  # position considérée
-        p = pi * 2 * r / nbc  #
+        p = np.pi * 2 * r / nbc  #
 
         if (ycanauxre.index(ycanauxre[pos])) > col:  # Calcul largeur transition
             acc = (e_div - e_col) / (ycanauxre[-1] - ycanauxre[col])
@@ -180,16 +180,16 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         elif i == (len(xcanauxre) - 1):
             vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / (
                     (((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
-            angle2 = degrees(acos(vect2))
+            angle2 = np.rad2deg(np.arccos(vect2))
             angulaire.append(angle)
         else:
             vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / (
                     (((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
-            angle2 = degrees(acos(vect2))
+            angle2 = np.rad2deg(np.arccos(vect2))
             angle = angle2
             angulaire.append(angle)
 
-        newep = ycanauxre[i] + epaiss_chemise[i] / cos(radians(angulaire[i]))
+        newep = ycanauxre[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
         newepaisseur.append(newep)
     ycanauxre = []
     for i in range(0, len(newepaisseur), 1):
@@ -197,7 +197,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     veritas = []
     for i in range(0, len(xcanauxre), 1):
         verifepe = (((ycanauxre[i] - y_value[i]) ** 2) - (
-                sin(radians(angulaire[i])) * (ycanauxre[i] - y_value[i])) ** 2) ** 0.5
+                np.sin(np.deg2rad(angulaire[i])) * (ycanauxre[i] - y_value[i])) ** 2) ** 0.5
         veritas.append(verifepe)
 
     # plt.plot(xcanauxre, veritas)  # (configuration qui
@@ -216,7 +216,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     for x in xcanauxre:  #
         pos = xcanauxre.index(x)  # Indexation de la
         r = ycanauxre[pos]  # position considérée
-        p = pi * 2 * r / nbc  #
+        p = np.pi * 2 * r / nbc  #
         # print(xcanauxre[section])
         # print(xcanauxre[0])
         pente = (lrg_c - lrg_c2) / (xcanauxre[section] - xcanauxre[0])
@@ -224,7 +224,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
             acc = (lrg_div - lrg) / (ycanauxre[-1] - ycanauxre[col])
             aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
             lrg_x = ((1 - aug) ** n2) * (r - ycanauxre[col]) * acc + lrg
-            lrg_aill = (r * 2 * pi / nbc) - lrg_x
+            lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
         else:
             if pos <= section:
                 lrg_x = pente * (x - xcanauxre[0]) + lrg_c2
@@ -232,7 +232,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
                 acc = (lrg_c - lrg) / (ycanauxre[0] - ycanauxre[col])  # Calcul largeur canaux
                 aug = ((ycanauxre[col] - ycanauxre[pos]) / (ycanauxre[0] - ycanauxre[col]))
                 lrg_x = ((-aug) ** n1) * (r - ycanauxre[col]) * acc + lrg
-            lrg_aill = (r * 2 * pi / nbc) - lrg_x
+            lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
         larg_ailette.append(lrg_aill)
         larg_canalre.append(lrg_x)
 
@@ -242,7 +242,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     for x in xcanauxre:  #
         pos = xcanauxre.index(x)  # Indexation de la
         r = ycanauxre[pos]  # position considérée
-        p = pi * 2 * r / nbc  #
+        p = np.pi * 2 * r / nbc  #
         pente = (ht_c - ht_c2) / (xcanauxre[section] - xcanauxre[0])
         if (xcanauxre[pos]) >= 0:  # Calcul largeur transition
             acc = (ht_div - ht) / (ycanauxre[-1] - ycanauxre[col])
@@ -278,25 +278,25 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
 
         #
 
-    plt.plot(xcanauxre, larg_canalre, label = 'Canal width', color = 'green')  # Création et affichage
-    plt.plot(xcanauxre, larg_ailette, label = 'Fin width', color = 'chocolate')
-    plt.plot(xcanauxre, htre, label = 'Height', color = 'blue')  #
+    plt.plot(xcanauxre, larg_canalre, label='Canal width', color='green')  # Création et affichage
+    plt.plot(xcanauxre, larg_ailette, label='Fin width', color='chocolate')
+    plt.plot(xcanauxre, htre, label='Height', color='blue')  #
     plt.title('Width of channels and fins (ailettes in french)')  # bleu=retour
     plt.legend()
     plt.show()  # orange=allé
-    plt.plot(xcanauxre, vitessere, color = 'chocolate')  # Affichage des courbes
+    plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes
     plt.title('Velocity of coolant in channels (in m/s) as a function of engine axis')  # bleu=retour
     plt.show()
 
-    plt.plot(xcanauxre, epaiss_chemise, color = 'chocolate')  # Affichage des courbes
+    plt.plot(xcanauxre, epaiss_chemise, color='chocolate')  # Affichage des courbes
     plt.title('Thickness of chamber wall as a function of engine axis')  # bleu=retour
     plt.show()
 
-    plt.plot(xcanauxre, htre, color = 'chocolate')
+    plt.plot(xcanauxre, htre, color='chocolate')
     plt.title('Channels height as a function of engine axis')  # bleu=retour
     plt.show()  # orange=allé
 
-    plt.plot(xcanauxre, Areare, color = 'chocolate')
+    plt.plot(xcanauxre, Areare, color='chocolate')
     plt.title('Channel sections as a function of engine axis')  # bleu=retour
     plt.show()
     # print(larg_canalre[-92])

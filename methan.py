@@ -6,10 +6,7 @@ Created on Tue Jan 26 20:58:43 2021
 """
 
 from __future__ import print_function
-from CoolProp import AbstractState
-from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
-import CoolProp.CoolProp as CoolProp
-from CoolProp.HumidAirProp import HAPropsSI
+from CoolProp.CoolProp import PropsSI
 
 """
 def viscCH4(P, T):

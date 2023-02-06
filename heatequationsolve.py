@@ -5,34 +5,9 @@ Created on Sun Apr 11 20:47:01 2021
 @author: julie
 """
 
-from casthermo import *
+import casthermo as ct
 import numpy as np
 from matplotlib import pyplot as plt
-import scipy as sc
-
-"""
-pas=0.015
-epaisseur=0.001
-hauteur=0.0018
-largeur=0.0018
-dx=0.00005
-Hg=2600
-lamb=388
-Tg=3200
-Hl=59500
-Tl=158.5
-
-pas=0.015
-epaisseur=0.001
-hauteur=0.0015
-largeur=0.0012
-dx=0.0001
-Hg=8000
-lamb=390
-Tg=3000
-Hl=120000
-Tl=125
-"""
 
 
 def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where):
@@ -234,15 +209,15 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             inv = 1
         # résolution des coefficients
         if listing[k][0] == 1:
-            a, b, c, d, x, plus = cas1(h, dx, lamb, Tf, inv)
+            a, b, c, d, x, plus = ct.cas1(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 2:
-            a, b, c, d, x, plus = cas2(h, dx, lamb, Tf, inv)
+            a, b, c, d, x, plus = ct.cas2(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 3:
-            a, b, c, d, x, plus = cas3(h, dx, lamb, Tf, inv)
+            a, b, c, d, x, plus = ct.cas3(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 4:
-            a, b, c, d, x, plus = cas4(h, dx, lamb, Tf, inv)
+            a, b, c, d, x, plus = ct.cas4(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 5:
-            a, b, c, d, x, plus = cas5(h, dx, lamb, Tf, inv)
+            a, b, c, d, x, plus = ct.cas5(h, dx, lamb, Tf, inv)
             # résolution de l'orientation
         if listing[k][1] == 0:
             coef1 = a

@@ -4,7 +4,7 @@ Created on Tue Apr 13 17:37:58 2021
 
 @author: julie
 """
-from ProgressBar import *
+from ProgressBar import ProgressBar
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -56,7 +56,7 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
         b += ay
         Bar.update(b)
     print()
-    
+
     Bar = ProgressBar(100, 30, "3D results visualisation        ")
     ay = 100 / len(cu)
     mi = min(cu)
@@ -72,7 +72,7 @@ def carto3d(inv, x, yprim, temp, col, title, number, limitation):
         b += ay
         Bar.update(b)
     print()
-    
+
     Bar = ProgressBar(100, 30, "3D results finalisation         ")
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=5, cmap=col)
     mis = min(xu)
