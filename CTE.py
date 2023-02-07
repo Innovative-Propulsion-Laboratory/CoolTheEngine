@@ -217,7 +217,7 @@ colooo = plt.cm.Spectral
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
 
-print("\n█                                                                          █")
+print("█                                                                          █")
 
 # %% Static pressure computation
 "Static pressure computation"
@@ -251,7 +251,7 @@ colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
 
-print("\n█                                                                          █")
+print("█                                                                          █")
 
 # %% Temperature computation
 b = 0
