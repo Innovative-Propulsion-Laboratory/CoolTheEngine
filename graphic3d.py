@@ -20,7 +20,7 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
         mesure.reverse()
     b = 0
     Bar = ProgressBar(100, 30, "3D display computation          ")
-    ay = 100 / (len(x) * 200 / 3)
+    av = 100 / (len(x) * 200 / 3)
     
     fig = plt.figure(figsize=(10, size2), dpi=200)  # figsize=(float, float) : width, height in inches
     ax = fig.add_subplot(111, projection='3d')
@@ -35,7 +35,7 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
             zu.append(y[i] * np.sin(t))
             xu.append(x[i])
             cu.append(mesure[i])
-            b += ay
+            b += av
             Bar.update(b)
     print()
     Tcolor = [cu[i] for i in range(0, len(cu))]

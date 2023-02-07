@@ -18,7 +18,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
         mesure.reverse()
     b = 0
     Bar = ProgressBar(100, 30, "3D results computation          ")
-    ay = 100 / len(x)
+    av = 100 / len(x)
     
     fig = plt.figure(figsize=(10, 17), dpi=500)
     ax = fig.add_subplot(111, projection='3d')
@@ -45,7 +45,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
                 cu.append(mesure[i][eh])
                 cu.append(mesure[i][eh])
                 eh += 1
-        b += ay
+        b += av
         Bar.update(b)
     print()
     Tcolor = [cu[i] for i in range(0, len(cu))]

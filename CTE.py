@@ -13,7 +13,7 @@ Any changes might affect the results.
 # %% Imports
 import time
 import csv
-import sys
+import sys  # Used in ProgressBar
 
 # Calculations
 import numpy as np
@@ -45,9 +45,8 @@ print("████████████████████████�
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█                                                                          █")
 print("█                                                                          █")
-# %% Engine initialisation
 Bar = ProgressBar(100, 30, "Initialisation                  ")
-
+# %% Engine initialisation
 "Viserion settings"
 
 mesh_size = 0.25  # Distance between two points of calculation
@@ -89,12 +88,8 @@ Rcol = float(input_data_list[13])  # Throat radius of curvature
 Ac = float(input_data_list[14])  # Throat diameter
 DiamCol = float(input_data_list[15])  # Throat diameter
 
-Bar.update(100)
-print()
 print("█                                                                          █")
-
 # %% Import of the (X,Y) coordinates of the Viserion
-Bar = ProgressBar(100, 30, "Import of (X,Y) coordinates     ")
 
 # Reading the coordinate files
 crx = csv.reader(open(x_coords_filename, "r"))
@@ -104,10 +99,6 @@ cry = csv.reader(open(y_coords_filename, "r"))
 x_value = [float(row[0]) / 1000 for row in crx]
 y_value = [float(row[0]) / 1000 for row in cry]
 
-Bar.update(100)
-print()
-print("█                                                                          █")
-
 # Plot of the upper profile of the engine
 """
 plt.figure(dpi=300)
@@ -115,7 +106,6 @@ plt.plot(x_value, y_value, color='black')
 plt.title('Profile of the Viserion (left : chamber and right : divergent', color='black')
 plt.show()
 """
-
 # Computation and plot of the mesh density of the engine
 """
 R = [abs(x_value[i] - x_value[i + 1]) for i in range(0, len(x_value) - 1)]
@@ -124,14 +114,9 @@ colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2, limitation)
 """
-
+print("█                                                                          █")
 # %% Computation of the cross-sectional areas of the engine
-Bar = ProgressBar(100, 30, "Sectionnal areas computation    ")
-
 aire = [np.pi * r ** 2 for r in y_value]
-
-Bar.update(100)
-print()
 
 # Plots of the cross-sectionnal areas
 """
@@ -140,8 +125,9 @@ plt.plot(x_value,aire,color='black')
 plt.title("Area (in m²) as a function of engine axis")
 plt.show()
 """
+Bar.update(100)
+print()
 print("█                                                                          █")
-
 # %% Adiabatic constant (gamma) parametrization
 "Linear interpolation of gamma"
 Bar = ProgressBar(100, 30, "Gamma computation               ")
@@ -173,9 +159,6 @@ for q in range(-1, p - 1):  # Linear interpolation between beginning and end of 
     t += ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(x_value[i_throat + 1 + q] - x_value[i_throat + q])
     gamma.append(t)
 
-Bar.update(100)
-print()
-
 # Plot of the gamma linearisation
 """
 #print(gamma)
@@ -185,8 +168,9 @@ plt.plot(x_value,gamma,color='gold')
 plt.title("Gamma linearisation as a function of engine axis")
 plt.show()
 """
+Bar.update(100)
+print()
 print("█                                                                          █")
-
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
 v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # Initial velocity of the gases
@@ -204,7 +188,6 @@ for i in range(0, long - 1):
     mach_function.append(M1)
     b += av
     Bar.update(b)
-
 print()
 
 # Plots of the Mach number in the engine (2D/3D)
@@ -218,12 +201,11 @@ inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
 
 print("█                                                                          █")
-
 # %% Static pressure computation
 "Static pressure computation"
-c = 0
+b = 0
 Bar = ProgressBar(100, 30, "Static pressure computation     ")
-ac = 100 / (long - 1)
+av = 100 / (long - 1)
 
 pressure_function = [Pc]  # (in Pa)
 "Static pressure computations along the engine"
@@ -236,9 +218,8 @@ for i in range(0, long - 1):
         M2 = mach_function[i + 1]
     P2 = pressure_solv(M1, M2, pressure_function[i], gamma[i])
     pressure_function.append(P2)
-    c += ac
-    Bar.update(c)
-
+    b += av
+    Bar.update(b)
 print()
 
 # Plot of the static pressure (2D/3D)
@@ -252,11 +233,10 @@ inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
 
 print("█                                                                          █")
-
 # %% Temperature computation
 b = 0
 Bar = ProgressBar(100, 30, "Temperature computation         ")
-ay = 100 / (long - 1)
+av = 100 / (long - 1)
 
 # Hot gas temperature computations along the engine
 hotgas_temperature = [Tc]
@@ -269,10 +249,10 @@ for i in range(0, long - 1):
         M2 = mach_function[i + 1]
     T2 = temperature_solv(M1, M2, hotgas_temperature[i], gamma[i])
     hotgas_temperature.append(T2)
-    b += ay
+    b += av
     Bar.update(b)
-
 print()
+
 # List of corrected gas temperatures (max diff with original is about 75 K)
 hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_function[i]) for i in range(0, long)]
 
@@ -287,9 +267,7 @@ colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, hotgas_temperature, colooo, 'Temperature of the gases (in K)', size2, limitation)
 """
-
 print("█                                                                          █")
-
 # %% Channel parameters
 "Number of channels and tore position"
 nbc = 40  # Number of channels
@@ -355,7 +333,6 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename,
                                                               nbc, lrg_col, ht, ht_c, ht_div, tore,
                                                               debit_total, epaisseur_chemise)
 """
-
 Bar.update(100)
 print()
 
@@ -366,7 +343,6 @@ start_m = time.time()  # Start of the main solution timer
 print("█                                                                          █")
 print("█ Execution duration of the initialisation :", time_elapsed_i, "                        █")
 print("█                                                                          █")
-
 # %% Computation of the global solution
 # We reverse the data in order to calculate from the manifold to the injection (x is in reverse)
 epaiss_chemise.reverse()
@@ -394,7 +370,6 @@ mach_function.reverse()
 aire.reverse()
 hotgas_temperature.reverse()
 
-
 def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
     """
     This is the main function used for solving the 1D case.
@@ -402,7 +377,6 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
     The function uses a marching algorithm, and computes all the relevant physical
     quantities at each point. The values obtained are then used on the next point.
     """
-
     # Lists containing the physical quantities at each point
     hlcor = []
     visc_function = []
@@ -692,7 +666,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
             cele = Quality * cele1 + (1 - Quality) * cele2
             Celerite.append(cele)
 
-        b += ay
+        b += av
         Bar.update(b)
 
     return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
@@ -720,11 +694,11 @@ entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 b = 0
 rep = 2
 Bar = ProgressBar(100, 30, "Global resolution               ")
-ay = 100 / ((1 + rep) * len(xcanauxre))
+av = 100 / ((1 + rep) * len(xcanauxre))
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
 Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
-    Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
+    Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, av, Pcoolant, LambdaTC, entropy)
 # Second itération of the solving
 for i in range(0, rep):
     newa = Sig[2]
@@ -749,8 +723,7 @@ for i in range(0, rep):
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
     outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
     Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
-        mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy)
-
+        mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, av, Pcoolant, LambdaTC, entropy)
 print()
 
 end_m = time.time()  # End of the main solution timer
@@ -760,7 +733,6 @@ start_d2 = time.time()  # Start of the display of 2D timer
 print("█                                                                          █")
 print("█ Execution duration of the computation of the main solution :", time_elapsed_m, "      █")
 print("█                                                                          █")
-
 # %% Display of the first results
 "Display of the results"
 print("█ Display of results in 2D :                                               █")
@@ -947,7 +919,7 @@ if choix == 1:
     start_d3 = time.time()  # Start of the display of 3D timer
     Bar = ProgressBar(100, 30, "3D graph initialisation         ")
     b = 0
-    ay = 100 / longc
+    av = 100 / longc
     eachT = []
     lim1 = 0
     lim2 = 650
@@ -963,7 +935,7 @@ if choix == 1:
         t3d = carto2D(reste[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
                       hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
         eachT.append(t3d)
-        b += ay
+        b += av
         Bar.update(b)
     print()
 
@@ -973,14 +945,13 @@ if choix == 1:
     time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
     print("█                                                                          █")
     print("█ Execution duration of the display of 3D :", time_elapsed_d3, "                         █")
-
 start_e = time.time()  # Start of the end timer
 # %% Reversion of the different lists
 "Utility unknown"
 print("█                                                                          █")
 Bar = ProgressBar(100, 30, "Computation of channel height   ")
 b = 0
-ay = 100 / (2 * longc)
+av = 100 / (2 * longc)
 
 aire.reverse()
 gamma.reverse()
@@ -1035,7 +1006,7 @@ for i in range(0, longc):
     newy = ycanauxre[i] + htre[i] * np.cos(np.deg2rad(angles[i]))
     newxhtre.append(newx)
     newyhtre.append(newy)
-    b += ay
+    b += av
     Bar.update(b)
 
 "Checking the height of channels"
@@ -1043,9 +1014,8 @@ verification = []
 for i in range(0, longc):
     verifhtre = (((newxhtre[i] - xcanauxre[i]) ** 2) + ((newyhtre[i] - ycanauxre[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
-    b += ay
+    b += av
     Bar.update(b)
-
 print()
 
 plt.figure(dpi=300)
@@ -1063,7 +1033,7 @@ plt.show()
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
 Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
-ay = 100 / (3 * longc + (long - longc))
+av = 100 / (3 * longc + (long - longc))
 
 file_name = "valuexport.csv"
 file = open(file_name, "w")
@@ -1084,7 +1054,7 @@ for i in range(0, longc):
          hg_function[i], Sig[i], inwall_temperature[i], outwall_temperature[i], fluxsolved[i], Tcoolant[i],
          Re_function[i], hlnormal[i], rho[i], visccoolant[i], condcoolant[i], Cpmeth[i],
          Vitesse[i], Pcoolant[i], LambdaTC[i], newxhtre[i], newyhtre[i]))
-    b += ay
+    b += av
     Bar.update(b)
 
 for i in range(longc, long):
@@ -1092,11 +1062,9 @@ for i in range(longc, long):
         (x_value[i], y_value[i], aire_saved[i], gamma_saved[i], mach_function_saved[i], pressure_function[i],
          hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
          ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
-    b += ay
+    b += av
     Bar.update(b)
-
 file.close()
-
 # %% Writing the results of the study in a CSV file
 "Writing the results of the study in a CSV file"
 file_name = "geometry1.csv"
@@ -1105,11 +1073,9 @@ writer = csv.writer(file)
 writer.writerow(("x real height", "y real height"))
 for i in range(0, longc):
     writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
-    b += ay
+    b += av
     Bar.update(b)
-
 file.close()
-
 # %% Writing the results of the study in a CSV file
 "Writing the results of the study in a CSV file"
 file_name = "geometry2.csv"
@@ -1118,11 +1084,9 @@ writer = csv.writer(file)
 writer.writerow(("Engine + chamber wall diameter", "x real height"))
 for i in range(0, longc):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
-    b += ay
+    b += av
     Bar.update(b)
-
 file.close()
-
 print()
 
 end_t = time.time()  # End of the total timer
@@ -1131,14 +1095,13 @@ print("█                                                                      
 print("█ Execution duration of the end of the program :", time_elapsed_e, "                    █")
 
 if choix == 1:
-    time_elapsed_t_w3D = time.ctime((end_t - start_d3) + (end_d2 - start_t))[
-                         14:19]  # Total elapsed time with 3D computation
-    # (without time waited to choose 3D) converted in minutes:secondes
+    time_elapsed_t_w3D = time.ctime((end_t - start_d3) + (end_d2 - start_t))[14:19]
+    # Total elapsed time with 3D computation (without time waited to choose 3D) converted in minutes:secondes
     print("█                                                                          █")
     print("█ Execution duration of the whole program with 3D computation :", time_elapsed_t_w3D, "     █")
 
-time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_t))[
-                 14:19]  # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
+time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_t))[14:19]
+# Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
 
 print("█                                                                          █")
 print("█ Execution duration of the whole program without 3D computation :", time_elapsed_t, "  █")
