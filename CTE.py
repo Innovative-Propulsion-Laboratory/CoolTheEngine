@@ -58,7 +58,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 
 "Constant input_data_list"
 lim22 = 600  # Not used anymore
-size2 = 18  # Used for the height of the display in 3D view
+size2 = 16  # Used for the height of the display in 3D view
 ange = -18.884  # Not used anymore ?
 lim11 = 200  # Not used anymore ?
 epso = 10  # Not used anymore ?
@@ -122,7 +122,7 @@ R = [abs(x_value[i] - x_value[i + 1]) for i in range(0, len(x_value) - 1)]
 R.append(R[-1])
 colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2 - 2, limitation)
+view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2, limitation)
 """
 
 # %% Computation of the cross-sectional areas of the engine
@@ -146,36 +146,31 @@ print("█                                                                      
 "Linear interpolation of gamma"
 Bar = ProgressBar(100, 30, "Gamma computation               ")
 
-i = 0  # Index of the beginning of the convergent
+i_conv = 0  # Index of the beginning of the convergent
 a = 1
 b = 1
 while a == b:  # Read y values two per two in order to detect the beginning of the convergent
-    a = y_value[i]
-    i += 1
-    b = y_value[i]
+    a = y_value[i_conv]
+    i_conv += 1
+    b = y_value[i_conv]
 # Gamma in the cylindrical chamber
-gamma = []
-for i_throat in range(0, i):  # Gamma is constant before the beginning of the convergent along the chamber
-    gamma.append(gamma_c)
+gamma = [gamma_c for i in range(0, i_conv)]  # Gamma is constant before the beginning of the convergent along the chamber
 
 # Gamma in the convergent
 i_throat = y_value.index(min(y_value))  # Throat index
-k = i_throat - i  # Number of points in the convergent
+k = i_throat - i_conv  # Number of points in the convergent
 c = gamma_c
 for m in range(-1, k - 1):
     # Linear interpolation between beginning and end of convergent:
     # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
-    l = ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i])) * abs(x_value[i + 1 + m] - x_value[i + m])
-    c += l
+    c += ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i_conv])) * abs(x_value[i_conv + 1 + m] - x_value[i_conv + m])
     gamma.append(c)
 
 # Gamma in the divergent nozzle
 p = len(x_value) - i_throat  # Number of points in the divergent
 t = gamma_t
 for q in range(-1, p - 1):  # Linear interpolation between beginning and end of divergent
-    n = ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(
-        x_value[i_throat + 1 + q] - x_value[i_throat + q])
-    t += n
+    t += ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(x_value[i_throat + 1 + q] - x_value[i_throat + q])
     gamma.append(t)
 
 Bar.update(100)
@@ -205,9 +200,8 @@ av = 100 / (long - 1)
 
 "Mach number computations along the engine"
 for i in range(0, long - 1):
-    g = mach_solv(aire[i], aire[i + 1], M1, gamma[i], i, machtype)
-    mach_function.append(g)
-    M1 = g
+    M1 = mach_solv(aire[i], aire[i + 1], M1, gamma[i], i, machtype)
+    mach_function.append(M1)
     b += av
     Bar.update(b)
 
@@ -221,7 +215,7 @@ plt.show()
 
 colooo = plt.cm.Spectral
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2 - 2, limitation)
+view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
 
 print("\n█                                                                          █")
 
@@ -255,7 +249,7 @@ plt.show()
 
 colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2 - 2, limitation)
+view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
 
 print("\n█                                                                          █")
 
@@ -291,7 +285,7 @@ plt.show()
 
 colooo = plt.cm.terrain_r
 inv = 1, 1, 1  # 1 means should be reversed
-view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases (in K)',size2-2,limitation)
+view3d(inv, x_value, y_value, hotgas_temperature, colooo, 'Temperature of the gases (in K)', size2, limitation)
 """
 
 print("█                                                                          █")
@@ -953,11 +947,10 @@ if choix == 1:
     b = 0
     ay = 100 / longc
     eachT = []
+    lim1 = 0
+    lim2 = 650
     for i in range(0, longc):
-        # print(i)
-        lim1 = 0
-        lim2 = 650
-        if lim2 >= i >= lim1:
+        if lim1 <= i <= lim2:
             dx = 0.0001
         else:
             dx = 0.0001

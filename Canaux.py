@@ -278,7 +278,7 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     plt.plot(xcanauxre, larg_canalre, label='Canal width', color='green')  # Création et affichage
     plt.plot(xcanauxre, larg_ailette, label='Fin width', color='chocolate')
     plt.plot(xcanauxre, htre, label='Height', color='blue')  #
-    plt.title('Width of channels and fins (ailettes in french)')  # bleu=retour
+    plt.title('Width of channels and rid')  # bleu=retour
     plt.legend()
     plt.show()  # orange=allé
     plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes

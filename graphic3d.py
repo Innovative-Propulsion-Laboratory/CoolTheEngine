@@ -6,56 +6,41 @@ Created on Mon Mar  8 08:35:13 2021
 @author: julie
 """
 
-from ProgressBar import *
+from ProgressBar import ProgressBar
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 
-def view3d(inv, x, yprim, temp, col, title, size2, limitation):
+def view3d(inv, x, y, mesure, col, title, size2, limitation):
     if inv[0] == 1:
         x.reverse()
     if inv[1] == 1:
-        yprim.reverse()
+        y.reverse()
     if inv[2] == 1:
-        temp.reverse()
+        mesure.reverse()
     b = 0
-    Bar = ProgressBar(100, 30, "Results visualisation           ")
-    ay = 100 / ((len(x) / 5) * 40 + len(x))
-    fig = plt.figure(figsize=(10, size2), dpi=200)
+    Bar = ProgressBar(100, 30, "3D display computation          ")
+    ay = 100 / (len(x) * 200 / 3)
+    
+    fig = plt.figure(figsize=(10, size2), dpi=200)  # figsize=(float, float) : width, height in inches
     ax = fig.add_subplot(111, projection='3d')
-    Tcolor = []
-    xu = []
-    yu = []
-    zu = []
-    cu = []
-
-    for i in range(0, len(x), 2):
-        theta = np.linspace(0, 2 * np.pi, 200)
-        for O in theta:
-            yo = yprim[i] * np.cos(O)
-            zo = yprim[i] * np.sin(O)
-            xo = x[i]
-            yu.append(yo)
-            zu.append(zo)
-            xu.append(xo)
-            co = temp[i]
-            cu.append(co)
+    xu = []  # List of x position of points (vertical)
+    yu = []  # List of y position of points
+    zu = []  # List of z position of points
+    cu = []  # List of mesure on each point
+    theta = np.linspace(0, 2* np.pi, 200) # List of angle value in order to make a whole circle
+    for i in range(0, len(x), 3):  # Increment of 3 to reduce computation duration (this doesn't much reduce quatity)
+        for t in theta:
+            yu.append(y[i] * np.cos(t))
+            zu.append(y[i] * np.sin(t))
+            xu.append(x[i])
+            cu.append(mesure[i])
             b += ay
             Bar.update(b)
     print()
     mi = min(cu)
     ma = max(cu)
-    for i in range(0, len(cu), 1):
-        # T=[((cu[i]-min(cu))/max(cu))%1,(cu[i]-min(cu))/max(cu)%1,1-(cu[i]-min(cu))/max(cu)%1]
-        # posey=(cu[i]-mi)/(ma-mi)
-
-        # print(pos)
-        T = cu[i]
-
-        Tcolor.append(T)
-        b += ay
-        Bar.update(b)
+    Tcolor = [cu(i) for i in range(0, len(cu))]
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=60, cmap=col)
     mis = min(xu)
     mas = max(xu)
@@ -68,11 +53,10 @@ def view3d(inv, x, yprim, temp, col, title, size2, limitation):
     plt.title(title, fontsize=25)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
     plt.show()
+    
     if inv[0] == 1:
         x.reverse()
     if inv[1] == 1:
-        yprim.reverse()
+        y.reverse()
     if inv[2] == 1:
-        temp.reverse()
-# col=plt.cm.hot
-# view3d(x,yprim,temp,col)
+        mesure.reverse()
