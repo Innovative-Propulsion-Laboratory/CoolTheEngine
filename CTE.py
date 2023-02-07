@@ -296,22 +296,22 @@ view3d(inv,x_value,y_value,hotgas_temperature,colooo,'Temperature of the gases (
 
 print("█                                                                          █")
 
-# %% Canal parameters
+# %% Channel parameters
 "Number of channels and tore position"
 nbc = 40  # Number of channels
 tore = 0.103  # Position of the manifol from the throat (in m)
 
 "Width of the channels"
-lrg_c2 = 0.003  # Width of the canal in at the injection plate (in m)
-lrg_c = 0.003  # Width of the canal at the end of the cylindrical chamber (in m)
-lrg_col = 0.002  # Width of the canal in the throat (in m)
-lrg_div = 0.003  # Width of the canal at the extremity of the nozzle (in m)
+lrg_c2 = 0.002  # Width of the channel in at the injection plate (in m)
+lrg_c = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
+lrg_col = 0.002  # Width of the channel in the throat (in m)
+lrg_div = 0.002  # Width of the channel at the extremity of the nozzle (in m)
 
 "Height of the channels"
-ht_c2 = 0.003  # Height of the canal at the injection plate (in m)
-ht_c = 0.003  # Height of the canal at the end of the cylindrical chamber (in m)
-ht = 0.002  # Height of the canal in the throat (in m)
-ht_div = 0.003  # Height of the canal at the extremity of the nozzle (in m)
+ht_c2 = 0.002  # Height of the channel at the injection plate (in m)
+ht_c = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
+ht = 0.002  # Height of the channel in the throat (in m)
+ht_div = 0.002  # Height of the channel at the extremity of the nozzle (in m)
 
 # %% Thicknesses
 e_c = 0.001  # Thickness of the chamber (in m)
@@ -346,7 +346,7 @@ debit_total = If_reg / rho_initCH4  # Total volumic flow rate of the coolant (in
 Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
 Ro = 3  # Roughness (micrometers)
 
-# %% Computation of canals
+# %% Computation of channel geometry
 Bar = ProgressBar(100, 30, "Canal geometric computation     ")
 
 """Methode 2"""
@@ -886,7 +886,7 @@ view3d(inv, xcanauxre, ycanauxre, Tcoolant, colooo, "Temperature of the coolant"
 
 # %% Flux computation in 2D and 3D
 "Computation for 2D graphs"
-# 3D and 2D cartography establishement of temperatures
+# 3D and 2D temperature contour plot
 # At the beginning of the chamber
 reste.reverse()
 pas = reste[-1] + larg_canalre[-1]
@@ -945,7 +945,7 @@ print("█ Execution duration of the display of 2D :", time_elapsed_d2, "       
 print("█                                                                          █")
 
 "Computation for 3D graph"
-choix = int(input("█ 3D cartography visualisation ? (1 = oui, sinon 2)                        █"))
+choix = int(input("█ 3D temperature contour visualisation ? (1 = yes, 2 = no)                 █"))
 if choix == 1:
     # 3D display
     start_d3 = time.time()  # Start of the display of 3D timer
@@ -963,12 +963,12 @@ if choix == 1:
             dx = 0.0001
         lamb = LambdaTC[i]
         t3d = carto2D(reste[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
-                      hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1,"")
+                      hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
         eachT.append(t3d)
         b += ay
         Bar.update(b)
     print()
-    
+
     carto3d([0, 0, 0], xcanauxre, ycanauxre, eachT, plt.cm.Spectral_r, '3D view of wall temperatures', nbc, limitation)
 
     end_d3 = time.time()  # End of the display of 3D timer
@@ -980,7 +980,7 @@ start_e = time.time()  # Start of the end timer
 # %% Reversion of the different lists
 "Utility unknown"
 print("█                                                                          █")
-Bar = ProgressBar(100, 30, "Computation of channels height  ")
+Bar = ProgressBar(100, 30, "Computation of channel height   ")
 b = 0
 ay = 100 / (2 * longc)
 
@@ -1013,7 +1013,7 @@ Cpmeth.reverse()
 Pcoolant.reverse()
 
 # %% Preparation of the lists for CAO modelisation
-"Changing the coordinates of the height of the canals (otherwise it is geometrically wrong)"
+"Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"
 angles = []
 newxhtre = []
 newyhtre = []
@@ -1052,14 +1052,14 @@ print()
 
 plt.figure(dpi=300)
 plt.plot(newxhtre, newyhtre, color='blue', label='New height')
-plt.plot(xcanauxre, ycanauxre, color='chocolate', label='Formal height')
-plt.title("Geometrical aspect of the canal (height as a function of the engine axis)")
+plt.plot(xcanauxre, ycanauxre, color='chocolate', label='Former height')
+plt.title("Geometrical aspect of the channel (height as a function of the engine axis)")
 plt.axis("equal")
 plt.legend()
 plt.show()
 plt.figure(dpi=300)
 plt.plot(xcanauxre, verification)
-plt.title("Checking of the height of the generated canals")
+plt.title("Checking the height of the generated channels")
 plt.show()
 
 # %% Writing the results of the study in a CSV file

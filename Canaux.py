@@ -47,7 +47,6 @@ def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total
         rest = ((ycanauxre[i] * 2 * np.pi) / nbc) - larg
         larg_canalre.append(larg)
         reste.append(rest)
-    # print(larg_canalre)
 
     n = 1
     while ycanauxre[n] == ycanauxre[n - 1]:
@@ -236,8 +235,6 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         larg_ailette.append(lrg_aill)
         larg_canalre.append(lrg_x)
 
-    # print (larg_canalre[col])                               # vert=ailettes
-
     htre = []
     for x in xcanauxre:  #
         pos = xcanauxre.index(x)  # Indexation de la
@@ -293,11 +290,11 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     plt.show()
 
     plt.plot(xcanauxre, htre, color='chocolate')
-    plt.title('Channels height as a function of engine axis')  # bleu=retour
+    plt.title('Channel height as a function of engine axis')  # bleu=retour
     plt.show()  # orange=allé
 
     plt.plot(xcanauxre, Areare, color='chocolate')
-    plt.title('Channel sections as a function of engine axis')  # bleu=retour
+    plt.title('Channel cross-sectionnal area as a function of engine axis')  # bleu=retour
     plt.show()
-    # print(larg_canalre[-92])
+
     return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise

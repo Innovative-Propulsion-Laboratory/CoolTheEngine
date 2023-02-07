@@ -298,11 +298,11 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             paroigas = paroigas + t[0]
         bis += 1
     if oui == 1:
-        print("█ Mean temperature on gas wall       =", round(temperature[0]),
+        print("█ Mean wall temperature at hot side  =", round(temperature[0]),
               "K                              █")
-        print("█ Mean temperature on coolant wall   =", round(temperature[abop + 1]),
+        print("█ Mean wall temperature at cool side =", round(temperature[abop + 1]),
               "K                              █")
-        print("█ Maximum temperature on wall        =", round(max(temperature)),
+        print("█ Maximum temperature in the wall    =", round(max(temperature)),
               "K                              █")
         if leg == 1:
             a1 = 0.003
@@ -333,7 +333,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
         plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
         plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
-        
+
         plt.title(title, fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=0.4, aspect=15)
