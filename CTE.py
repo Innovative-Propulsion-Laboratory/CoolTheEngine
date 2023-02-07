@@ -893,7 +893,7 @@ Hl = hlnormal[-1]
 Tl = Tcoolant[-1]
 dx = 0.00004  # *3.5
 lamb = LambdaTC[-1]
-print("\n█                                                                          █")
+print("█                                                                          █")
 print("█ Results at the beginning of the chamber :                                █")
 where = " at the beginning of the chamber"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
@@ -940,8 +940,10 @@ print("█                                                                      
 
 "Computation for 3D graph"
 choix = int(input("█ 3D temperature contour visualisation ? (1 = yes, 2 = no)                 █"))
+
 if choix == 1:
     # 3D display
+    print("█                                                                          █")
     start_d3 = time.time()  # Start of the display of 3D timer
     Bar = ProgressBar(100, 30, "3D graph initialisation         ")
     b = 0
@@ -949,11 +951,14 @@ if choix == 1:
     eachT = []
     lim1 = 0
     lim2 = 650
+    dx = 0.0001
     for i in range(0, longc):
+        """
         if lim1 <= i <= lim2:
             dx = 0.0001
         else:
             dx = 0.0001
+        """
         lamb = LambdaTC[i]
         t3d = carto2D(reste[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
                       hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")

@@ -38,13 +38,10 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
             b += ay
             Bar.update(b)
     print()
-    mi = min(cu)
-    ma = max(cu)
     Tcolor = [cu[i] for i in range(0, len(cu))]
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=60, cmap=col)
     mis = min(xu)
     mas = max(xu)
-    miy = min(yu)
     may = max(yu)
     ax.set_xlim(may + limitation, -may - limitation)
     ax.set_ylim(may + limitation, -may - limitation)
