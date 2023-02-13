@@ -87,8 +87,6 @@ Dcol = float(input_data_list[12])  # Convergent radius of curvature
 Rcol = float(input_data_list[13])  # Throat radius of curvature
 Ac = float(input_data_list[14])  # Throat diameter
 DiamCol = float(input_data_list[15])  # Throat diameter
-
-print("█                                                                          █")
 # %% Import of the (X,Y) coordinates of the Viserion
 
 # Reading the coordinate files
@@ -114,7 +112,6 @@ colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2, limitation)
 """
-print("█                                                                          █")
 # %% Computation of the cross-sectional areas of the engine
 aire = [np.pi * r ** 2 for r in y_value]
 
@@ -179,7 +176,7 @@ M1 = M_init
 mach_function = [M_init]
 b = 0
 Bar = ProgressBar(100, 30, "Mach number computation         ")
-long = len(x_value)  # Number of points
+long = len(x_value)  # Number of points (or the index of the end of the dvergent)
 av = 100 / (long - 1)
 
 "Mach number computations along the engine"
@@ -274,21 +271,21 @@ nbc = 40  # Number of channels
 tore = 0.103  # Position of the manifol from the throat (in m)
 
 "Width of the channels"
-lrg_c2 = 0.002  # Width of the channel in at the injection plate (in m)
-lrg_c = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
+lrg_inj = 0.002  # Width of the channel in at the injection plate (in m)
+lrg_conv = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
 lrg_col = 0.002  # Width of the channel in the throat (in m)
-lrg_div = 0.002  # Width of the channel at the extremity of the nozzle (in m)
+lrg_tore = 0.002  # Width of the channel at the manifol (in m)
 
 "Height of the channels"
-ht_c2 = 0.002  # Height of the channel at the injection plate (in m)
-ht_c = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
-ht = 0.002  # Height of the channel in the throat (in m)
-ht_div = 0.002  # Height of the channel at the extremity of the nozzle (in m)
+ht_inj = 0.002  # Height of the channel at the injection plate (in m)
+ht_conv = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
+ht_col = 0.002  # Height of the channel in the throat (in m)
+ht_tore = 0.002  # Height of the channel at the manifol (in m)
 
 # %% Thicknesses
-e_c = 0.001  # Thickness of the chamber (in m)
-e_col = 0.001  # Thickness of the throat (in m)
-e_div = 0.001  # Thickness of the divergent (in m)
+e_conv = 0.001  # Thickness of the wall at the chamber (in m)
+e_col = 0.001  # Thickness of the wall at the throat (in m)
+e_tore = 0.001  # Thickness of the wall at the manifol (in m)
 
 # %% Growth factors
 n1 = 1  # Width convergent
@@ -322,17 +319,17 @@ Ro = 3  # Roughness (micrometers)
 Bar = ProgressBar(100, 30, "Canal geometric computation     ")
 
 """Methode 2"""
-xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise \
-    = canaux(x_coords_filename, y_coords_filename, nbc, lrg_col, lrg_c,
-             lrg_div, ht, ht_c, ht_div, tore, debit_total, n1, n2, n3, n4,
-             e_col, e_div, e_c, n5, n6, lrg_c2, ht_c2)
+xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise, longc \
+    = canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore, 
+             e_conv, e_col, e_tore, tore, debit_total, n1, n2, n3, n4, n5, n6)
 
 """Methode 1"""
 """
 xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
-                                                              nbc, lrg_col, ht, ht_c, ht_div, tore,
+                                                              nbc, lrg_col, ht_col, ht_c, ht_div, tore,
                                                               debit_total, epaisseur_chemise)
 """
+
 Bar.update(100)
 print()
 
@@ -351,7 +348,6 @@ larg_canalre.reverse()
 Areare.reverse()
 htre.reverse()
 ycanauxre.reverse()
-fin = len(xcanauxre)  # Index of the end of the channels, after removing everything before the manifold
 
 # Save the data for exporting, before altering the original lists
 hotgas_temperature_saved = hotgas_temperature[:]
@@ -360,10 +356,10 @@ mach_function_saved = mach_function[:]
 gamma_saved = gamma[:]
 
 # Remove the data points before the manifold
-hotgas_temperature_ = hotgas_temperature[:fin]
-aire_ = aire[:fin]
-mach_function_ = mach_function[:fin]
-gamma_ = gamma[:fin]
+hotgas_temperature_ = hotgas_temperature[:longc]
+aire_ = aire[:longc]
+mach_function_ = mach_function[:longc]
+gamma_ = gamma[:longc]
 
 gamma.reverse()
 mach_function.reverse()
@@ -398,7 +394,7 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
     positioncol = ycanauxre.index(min(ycanauxre))
 
     # Main computation loop
-    for i in range(0, len(xcanauxre)):
+    for i in range(0, longc):
         Lambda_tc = LambdaTC[i]
         x = xcanauxre[i]
         c = larg_canalre[i]
@@ -694,7 +690,7 @@ entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 b = 0
 rep = 2
 Bar = ProgressBar(100, 30, "Global resolution               ")
-av = 100 / ((1 + rep) * len(xcanauxre))
+av = 100 / ((1 + rep) * longc)
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
 outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
 Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
@@ -856,7 +852,7 @@ view3d(inv, xcanauxre, ycanauxre, Tcoolant, colooo, "Temperature of the coolant"
 # At the beginning of the chamber
 reste.reverse()
 pas = reste[-1] + larg_canalre[-1]
-epaisseur = e_c
+epaisseur = e_conv
 hauteur = htre[-1]
 largeur = larg_canalre[-1]
 Hg = hg_function[-1]
@@ -870,24 +866,24 @@ print("█ Results at the beginning of the chamber :                            
 where = " at the beginning of the chamber"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
 # At the throat
-poscol = ycanauxre.index(min(ycanauxre))
-pas = reste[poscol] + larg_canalre[poscol]
+pos_col = ycanauxre.index(min(ycanauxre))
+pas = reste[pos_col] + larg_canalre[pos_col]
 epaisseur = e_col
-hauteur = htre[poscol]
-largeur = larg_canalre[poscol]
-Hg = hg_function[poscol]
-Tg = hotgas_temperature[poscol]
-Hl = hlnormal[poscol]
-Tl = Tcoolant[poscol]
+hauteur = htre[pos_col]
+largeur = larg_canalre[pos_col]
+Hg = hg_function[pos_col]
+Tg = hotgas_temperature[pos_col]
+Hl = hlnormal[pos_col]
+Tl = Tcoolant[pos_col]
 dx = 0.000025  # *3.5
-lamb = LambdaTC[poscol]
+lamb = LambdaTC[pos_col]
 print("█                                                                          █")
 print("█ Results at the throat :                                                  █")
 where = " at the throat"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 15, 1, 2, where)
 # At the end of the divergent
 pas = reste[0] + larg_canalre[0]
-epaisseur = e_div
+epaisseur = e_tore
 hauteur = htre[0]
 largeur = larg_canalre[0]
 Hg = hg_function[0]
@@ -900,8 +896,6 @@ print("█                                                                      
 print("█ Results at the end of the divergent :                                    █")
 where = " at the end of the divergent"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
-
-longc = len(xcanauxre)
 
 end_d2 = time.time()  # End of the display of 2D timer
 time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]  # Display of 2D elapsed time converted in minutes:secondes

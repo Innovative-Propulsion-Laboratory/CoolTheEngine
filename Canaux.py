@@ -5,10 +5,10 @@ Created on Sat Dec 19 21:46:19 2020
 @author: julien
 """
 import numpy as np
-import csv
+# import csv
 import matplotlib.pyplot as plt
 
-
+"""
 # x_coords_filename,y_coords_filename
 def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total, epaisseur_chemise, e_col, e_div, e_c):
     crx = csv.reader(open(plagex, "r"))  # ouverture des x
@@ -99,161 +99,114 @@ def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total
     plt.title('Vitesse représentative dans les canaux')
     plt.show()
     return xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste
+"""
 
-
-def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, debit_total, n1, n2, n3, n4, e_col, e_div,
-           e_c, n5, n6, lrg_c2, ht_c2):
-    crx = csv.reader(open(plagex, "r"))  # ouverture des x
-    cry = csv.reader(open(plagey, "r"))  # ouverture des y
-    x_value = []  # en m
-    y_value = []  # en m
-
-    for row in crx:  #
-        a = float(row[0]) / 1000  #
-        x_value.append(a)  # Récupération des données des deux fichiers
-    for row in cry:  #
-        a = float(row[0]) / 1000  #
-        y_value.append(a)  #
-
+def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore, 
+           e_conv, e_col, e_tore, tore, debit_total, n1, n2, n3, n4, n5, n6):
+    """
+    This function compute the caracteristics of channels on each point 
+    by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
+    throat (col) and extremity of the nozzle (div).
+    """
+    xcanauxre = []  # List of x where there are channels (before the manifold)
+    ycanauxre = []  # List of y where there are channels (before the manifold)
+    long_x = len(x_value)
     i = 0
-    xcanauxre = []  # allé
-    ycanauxre = []
-    while x_value[i] <= tore:
+    while i < long_x and x_value[i] <= tore:
         xcanauxre.append(x_value[i])
         ycanauxre.append(y_value[i])
         i += 1
-    section = 0
-    while y_value[section] == y_value[section + 1]:
-        section += 1
-    """
-    angles=[]
-    newxhtre=[]
-    newyhtre=[]
-    for i in range (0,len(xcanauxre),1):
-        if i==0:
-            angle=0
-            angles.append(angle)
-        elif i==(len(xcanauxre)-1):
-            angle=angles[i-1]
-            angles.append(angle)
-        else:
-            vect1=(xcanauxre[i]-xcanauxre[i-1])/((((ycanauxre[i]-ycanauxre[i-1])**2)+((xcanauxre[i]-xcanauxre[
-            i-1])**2))**0.5)
-            vect2=(xcanauxre[i+1]-xcanauxre[i])/((((ycanauxre[i+1]-ycanauxre[i])**2)+((xcanauxre[i+1]-xcanauxre[
-            i])**2))**0.5)
-            angle1=degrees(acos(vect1))
-            angle2=degrees(acos(vect2))
-            angle=angle2
-            angles.append(angle)
-        
-        newx=xcanauxre[i]+htre[i]*sin(radians(angles[i]))
-        newy=ycanauxre[i]+htre[i]*cos(radians(angles[i]))
-        newxhtre.append(newx)
-        newyhtre.append(newy)
-    """
-    col = ycanauxre.index(min(ycanauxre))  # Définition position du col (index)
-    angulaire = []
-    newepaisseur = []
-    epaiss_chemise = []
-    for i in range(0, len(xcanauxre), 1):
-        x = xcanauxre[i]
-        pos = xcanauxre.index(x)  # Indexation de la
-        r = ycanauxre[pos]  # position considérée
-        p = np.pi * 2 * r / nbc  #
-
-        if (ycanauxre.index(ycanauxre[pos])) > col:  # Calcul largeur transition
-            acc = (e_div - e_col) / (ycanauxre[-1] - ycanauxre[col])
-            aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
-            epp_x = ((1 - aug) ** n5) * (r - ycanauxre[col]) * acc + e_col
-        else:
-            acc = (e_c - e_col) / (ycanauxre[0] - ycanauxre[col])  # Calcul largeur canaux
-            aug = ((ycanauxre[col] - ycanauxre[pos]) / (ycanauxre[0] - ycanauxre[col]))
-            epp_x = ((-aug) ** n6) * (r - ycanauxre[col]) * acc + e_col
-
+    
+    pos_conv = 0  # Index of the end of cylindrical chamber
+    while ycanauxre[pos_conv] == ycanauxre[pos_conv + 1]:
+        pos_conv += 1
+    pos_col = ycanauxre.index(min(ycanauxre))  # Index of the throat
+    y_col = ycanauxre[pos_col]
+    y_inj = ycanauxre[0]
+    y_tore = ycanauxre[-1]
+    longc = len(xcanauxre)  # Index of the end of the channels, after removing everything before the manifold
+    
+    epaiss_chemise = []  # Thickness of the chamber wall as a function of the engine axis
+    acc = (e_conv - e_col) / (y_inj - y_col)
+    for i in range(0, pos_col + 1):  # Chamber + convergent computation
+        r = ycanauxre[i]
+        aug = ((y_col - r) / (y_inj - y_col))
+        epp_x = ((-aug) ** n5) * (r - y_col) * acc + e_col
         epaiss_chemise.append(epp_x)
-
-    for i in range(0, len(xcanauxre), 1):
-        if i == 0:
-            angle = 0
-            angulaire.append(angle)
-        elif i == (len(xcanauxre) - 1):
-            vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / (
-                    (((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
-            angle2 = np.rad2deg(np.arccos(vect2))
-            angulaire.append(angle)
-        else:
-            vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / (
-                    (((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
-            angle2 = np.rad2deg(np.arccos(vect2))
-            angle = angle2
-            angulaire.append(angle)
-
+    acc = (e_tore - e_col) / (y_tore - y_col)
+    for i in range(pos_col + 1, longc):  # Divergent computation
+        r = ycanauxre[i]
+        aug = ((y_tore - r) / (y_tore - y_col))
+        epp_x = ((1 - aug) ** n6) * (r - y_col) * acc + e_col
+        epaiss_chemise.append(epp_x)
+    
+    angulaire = [0]  # 
+    newepaisseur = [y_inj + epaiss_chemise[0]]  # Corrected thickness (to match with the geometry of the engine)
+    for i in range(1, longc):
+        vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / ((((ycanauxre[i] - ycanauxre[i - 1]) ** 2) + 
+                                                      ((xcanauxre[i] - xcanauxre[i - 1]) ** 2)) ** 0.5)
+        angulaire.append(np.rad2deg(np.arccos(vect2)))
         newep = ycanauxre[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
         newepaisseur.append(newep)
-    ycanauxre = []
-    for i in range(0, len(newepaisseur), 1):
-        ycanauxre.append(newepaisseur[i])
+
+    ycanauxre = [newepaisseur[i] for i in range(0, len(newepaisseur))]
     veritas = []
-    for i in range(0, len(xcanauxre), 1):
+    for i in range(0, longc):
         verifepe = (((ycanauxre[i] - y_value[i]) ** 2) - (
                 np.sin(np.deg2rad(angulaire[i])) * (ycanauxre[i] - y_value[i])) ** 2) ** 0.5
         veritas.append(verifepe)
+    """
+    plt.plot(xcanauxre, veritas)  # (configuration qui
+    plt.title('vérification epaisseur canaux')  # et au Viserion)
+    plt.show()
 
-    # plt.plot(xcanauxre, veritas)  # (configuration qui
-    # plt.title('vérification epaisseur canaux')  # et au Viserion)
-    # plt.show()
-
-    # plt.plot(xcanauxre, ycanauxre, color='chocolate')  # (configuration qui
-    # plt.title('trajet des canaux')  # et au Viserion)
-    # plt.show()
-    ###################################################
+    plt.plot(xcanauxre, ycanauxre, color='chocolate')  # (configuration qui
+    plt.title('trajet des canaux')  # et au Viserion)
+    plt.show()
+    """
     debitcanal = debit_total / nbc  # calcul débit volumique par canaux
-
     larg_ailette = []  #
     larg_canalre = []  #
-
-    for x in xcanauxre:  #
-        pos = xcanauxre.index(x)  # Indexation de la
-        r = ycanauxre[pos]  # position considérée
-        p = np.pi * 2 * r / nbc  #
-        # print(xcanauxre[section])
-        # print(xcanauxre[0])
-        pente = (lrg_c - lrg_c2) / (xcanauxre[section] - xcanauxre[0])
-        if (ycanauxre.index(ycanauxre[pos])) > col:  # Calcul largeur transition
-            acc = (lrg_div - lrg) / (ycanauxre[-1] - ycanauxre[col])
-            aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
-            lrg_x = ((1 - aug) ** n2) * (r - ycanauxre[col]) * acc + lrg
-            lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
-        else:
-            if pos <= section:
-                lrg_x = pente * (x - xcanauxre[0]) + lrg_c2
-            else:
-                acc = (lrg_c - lrg) / (ycanauxre[0] - ycanauxre[col])  # Calcul largeur canaux
-                aug = ((ycanauxre[col] - ycanauxre[pos]) / (ycanauxre[0] - ycanauxre[col]))
-                lrg_x = ((-aug) ** n1) * (r - ycanauxre[col]) * acc + lrg
-            lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
+    pente = (lrg_conv - lrg_inj) / (xcanauxre[pos_conv] - xcanauxre[0])
+    for i in range(0, pos_conv + 1):  # Chamber computation
+        r = ycanauxre[i]
+        lrg_x = pente * (xcanauxre[i] - xcanauxre[0]) + lrg_inj
+        lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
         larg_ailette.append(lrg_aill)
         larg_canalre.append(lrg_x)
-
+    acc = (lrg_conv - lrg_col) / (y_inj - y_col)  
+    for i in range(pos_conv + 1, pos_col + 1):  # Convergent computation
+        r = ycanauxre[i]
+        aug = ((y_col - r) / (y_inj - y_col))
+        lrg_x = ((-aug) ** n1) * (r - y_col) * acc + lrg_col
+        lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
+        larg_ailette.append(lrg_aill)
+        larg_canalre.append(lrg_x)
+    acc = (lrg_tore - lrg_col) / (y_tore - y_col)
+    for i in range(pos_col + 1, longc):  # Divergent computation
+        r = ycanauxre[i]
+        aug = ((y_tore - r) / (y_tore - y_col))
+        lrg_x = ((1 - aug) ** n2) * (r - y_col) * acc + lrg_col
+        lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
+        larg_ailette.append(lrg_aill)
+        larg_canalre.append(lrg_x)
+    
     htre = []
-    for x in xcanauxre:  #
-        pos = xcanauxre.index(x)  # Indexation de la
-        r = ycanauxre[pos]  # position considérée
-        p = np.pi * 2 * r / nbc  #
-        pente = (ht_c - ht_c2) / (xcanauxre[section] - xcanauxre[0])
-        if (xcanauxre[pos]) >= 0:  # Calcul largeur transition
-            acc = (ht_div - ht) / (ycanauxre[-1] - ycanauxre[col])
-            aug = ((ycanauxre[-1] - ycanauxre[pos]) / (ycanauxre[-1] - ycanauxre[col]))
-            htr_x = ((1 - aug) ** n4) * (r - ycanauxre[col]) * acc + ht
-
-        else:
-            if pos <= section:
-                htr_x = pente * (x - xcanauxre[0]) + ht_c2
-            else:
-                acc = (ht_c - ht) / (ycanauxre[0] - ycanauxre[col])  # Calcul largeur canaux
-                aug = ((ycanauxre[col] - ycanauxre[pos]) / (ycanauxre[0] - ycanauxre[col]))
-                htr_x = ((-aug) ** n3) * (r - ycanauxre[col]) * acc + ht  # sur le reste du moteur
-
+    pente = (ht_conv - ht_inj) / (xcanauxre[pos_conv] - xcanauxre[0])
+    for i in range(0, pos_conv + 1):  # Chamber computation
+        htr_x = pente * (xcanauxre[i] - xcanauxre[0]) + ht_inj
+        htre.append(htr_x)
+    acc = (ht_conv - ht_col) / (y_inj - y_col)
+    for i in range(pos_conv + 1, pos_col):  # Convergent computation
+        r = ycanauxre[i]
+        aug = ((y_col - r) / (y_inj - y_col))
+        htr_x = ((-aug) ** n3) * (r - y_col) * acc + ht_col
+        htre.append(htr_x)
+    acc = (ht_tore - ht_col) / (y_tore - y_col)
+    for i in range(pos_col, longc):  # Divergent computation
+        r = ycanauxre[i]
+        aug = ((y_tore - r) / (y_tore - y_col))
+        htr_x = ((1 - aug) ** n4) * (r - y_col) * acc + ht_col
         htre.append(htr_x)
     """
     for zz in larg_canalre:
@@ -262,23 +215,18 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
         z2=zz+0.5*zz*sin(x*1000/4)
         larg_canalre[larg_canalre.index(zz)]=z2 
     """
-
-    Areare = []  # (sans prendre en compte
-    vitessere = []  #
-    rang = 0  # changement de rho)
-    for y in larg_canalre:  #
-        aire = y * htre[rang]
-        Areare.append(aire)  #
-        v = debitcanal / aire  #
+    Areare = []  # Without taking changes of density in count
+    vitessere = []
+    for i in range(0, len(larg_canalre)):
+        aire = larg_canalre[i] * htre[i]
+        Areare.append(aire)
+        v = debitcanal / aire
         vitessere.append(v)
-        rang += 1
-
-        #
-
-    plt.plot(xcanauxre, larg_canalre, label='Canal width', color='green')  # Création et affichage
-    plt.plot(xcanauxre, larg_ailette, label='Fin width', color='chocolate')
-    plt.plot(xcanauxre, htre, label='Height', color='blue')  #
-    plt.title('Width of channels and rid')  # bleu=retour
+    
+    plt.plot(xcanauxre, larg_ailette, label='Rid width', color='chocolate')
+    plt.plot(xcanauxre, larg_canalre, label='Channel width', color='green')
+    plt.plot(xcanauxre, htre, label='Channel height', color='blue')  #
+    plt.title('Width of channels and of rid')  # bleu=retour
     plt.legend()
     plt.show()  # orange=allé
     plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes
@@ -297,4 +245,4 @@ def canaux(plagex, plagey, nbc, lrg, lrg_c, lrg_div, ht, ht_c, ht_div, tore, deb
     plt.title('Channel cross-sectionnal area as a function of engine axis')  # bleu=retour
     plt.show()
 
-    return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise
+    return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise, longc
