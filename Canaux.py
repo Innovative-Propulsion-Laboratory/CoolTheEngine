@@ -5,7 +5,7 @@ Created on Sat Dec 19 21:46:19 2020
 @author: julien
 """
 import numpy as np
-# import csv
+import csv
 import matplotlib.pyplot as plt
 
 """
@@ -222,6 +222,29 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         Areare.append(aire)
         v = debitcanal / aire
         vitessere.append(v)
+    
+    "Writing the results of the study in a CSV file"
+    file_name = "channel_macro_catia.csv"
+    file = open(file_name, "w")
+    writer = csv.writer(file)
+    writer.writerow(("StartCurve"))
+    for i in range(0, longc):
+        writer.writerow((xcanauxre[i], ycanauxre[i] + epaiss_chemise[i], larg_canalre[i] / 2))
+    writer.writerow(("EndCurve"))
+    writer.writerow(("StartCurve"))
+    for i in range(0, longc):
+        writer.writerow((xcanauxre[i], ycanauxre[i] + epaiss_chemise[i], -larg_canalre[i] / 2))
+    writer.writerow(("EndCurve"))
+    writer.writerow(("StartCurve"))
+    for i in range(0, longc):
+        writer.writerow((xcanauxre[i], ycanauxre[i] + epaiss_chemise[i] + htre[i], larg_canalre[i] / 2))
+    writer.writerow(("EndCurve"))
+    writer.writerow(("StartCurve"))
+    for i in range(0, longc):
+        writer.writerow((xcanauxre[i], ycanauxre[i] + epaiss_chemise[i] + htre[i], - larg_canalre[i] / 2))
+    writer.writerow(("EndCurve"))
+    
+    file.close()
     
     plt.plot(xcanauxre, larg_ailette, label='Rid width', color='chocolate')
     plt.plot(xcanauxre, larg_canalre, label='Channel width', color='green')

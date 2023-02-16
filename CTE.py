@@ -333,13 +333,13 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename,
 Bar.update(100)
 print()
 
+"Writing the results of the study in a CSV file"
 file_name = "channelvalue.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
 writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
 for i in range(0, longc):
     writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
-
 file.close()
 
 end_i = time.time()  # End of the initialisation timer
@@ -1036,7 +1036,7 @@ plt.show()
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
 Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
-av = 100 / (4 * longc + (long - longc))
+av = 100 / (3 * longc + (long - longc))
 
 file_name = "valuexport.csv"
 file = open(file_name, "w")
@@ -1087,17 +1087,6 @@ writer = csv.writer(file)
 writer.writerow(("Engine + chamber wall diameter", "x real height"))
 for i in range(0, longc):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
-    b += av
-    Bar.update(b)
-file.close()
-# %% Writing the results of the study in a CSV file
-"Writing the results of the study in a CSV file"
-file_name = "channelvalue.csv"
-file = open(file_name, "w")
-writer = csv.writer(file)
-writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
-for i in range(0, longc):
-    writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
     b += av
     Bar.update(b)
 file.close()
