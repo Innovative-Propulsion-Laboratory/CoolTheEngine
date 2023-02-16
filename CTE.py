@@ -18,12 +18,12 @@ import sys  # Used in ProgressBar
 # Calculations
 import numpy as np
 from sympy import Symbol, nsolve
-import sympy as mp
 from machsolve import mach_solv
 from pressuresolve import pressure_solv
 from temperaturesolve import temperature_solv
 from musolve import mu
 from Tcorsolve import tempcorrige
+import scipy.optimize as opt
 
 # Data
 from Canaux import canaux
@@ -137,7 +137,8 @@ while a == b:  # Read y values two per two in order to detect the beginning of t
     i_conv += 1
     b = y_value[i_conv]
 # Gamma in the cylindrical chamber
-gamma = [gamma_c for i in range(0, i_conv)]  # Gamma is constant before the beginning of the convergent along the chamber
+gamma = [gamma_c for i in
+         range(0, i_conv)]  # Gamma is constant before the beginning of the convergent along the chamber
 
 # Gamma in the convergent
 i_throat = y_value.index(min(y_value))  # Throat index
@@ -146,14 +147,16 @@ c = gamma_c
 for m in range(-1, k - 1):
     # Linear interpolation between beginning and end of convergent:
     # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
-    c += ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i_conv])) * abs(x_value[i_conv + 1 + m] - x_value[i_conv + m])
+    c += ((gamma_t - gamma_c) / (x_value[i_throat] - x_value[i_conv])) * abs(
+        x_value[i_conv + 1 + m] - x_value[i_conv + m])
     gamma.append(c)
 
 # Gamma in the divergent nozzle
 p = len(x_value) - i_throat  # Number of points in the divergent
 t = gamma_t
 for q in range(-1, p - 1):  # Linear interpolation between beginning and end of divergent
-    t += ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(x_value[i_throat + 1 + q] - x_value[i_throat + q])
+    t += ((gamma_e - gamma_t) / (x_value[-1] - x_value[i_throat])) * abs(
+        x_value[i_throat + 1 + q] - x_value[i_throat + q])
     gamma.append(t)
 
 # Plot of the gamma linearisation
@@ -319,8 +322,9 @@ Ro = 3  # Roughness (micrometers)
 Bar = ProgressBar(100, 30, "Canal geometric computation     ")
 
 """Methode 2"""
+
 xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc \
-    = canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore, 
+    = canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore,
              e_conv, e_col, e_tore, tore, debit_total, n1, n2, n3, n4, n5, n6)
 
 """Methode 1"""
@@ -337,9 +341,11 @@ print()
 file_name = "channelvalue.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
-writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
+writer.writerow(
+    ("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
 for i in range(0, longc):
-    writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
+    writer.writerow(
+        (xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
 file.close()
 
 end_i = time.time()  # End of the initialisation timer
@@ -374,6 +380,15 @@ gamma.reverse()
 mach_function.reverse()
 aire.reverse()
 hotgas_temperature.reverse()
+
+
+def flux_equations(vars, *data):
+    x1, x2 = vars
+    hg, hl, Tg, Tl, L, e = data
+    f1 = hg * (Tg - x1) - (L / e) * (x1 - x2)
+    f2 = hl * (x2 - Tl) - (L / e) * (x1 - x2)
+    return [f1, f2]
+
 
 def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoolant, LambdaTC, entropy):
     """
@@ -509,16 +524,20 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
                 Tl = Tcoolant[i]
                 e = epaiss_chemise[i]
                 L = Lambda_tc
-                mp.dps = 150
+                # mp.dps = 150
 
                 # Use sympy to solve a system of 2 equations and 2 unknowns
-                cx1 = Symbol('cx1')
-                cx2 = Symbol('cx2')
-                f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
-                f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
+                # cx1 = Symbol('cx1')
+                # cx2 = Symbol('cx2')
+                # f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
+                # f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
 
                 # Solve the system numerically, giving an initial guess
-                x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
+                # x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
+                x_, y_ = opt.fsolve(func=flux_equations,
+                                    x0=np.array([900.0, 700.0]),
+                                    args=(hg, hl, Tg, Tl, L, e))
+
                 # Flow computation
                 flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
 
@@ -544,16 +563,12 @@ def mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, ay, Pcoo
         hl = hlcor[i]
         Tl = Tcoolant[i]
         e = epaiss_chemise[i]
-
-        # Use sympy to solve a system of 2 equations to solve the coupled
-        # heat transfer in the channels
         L = Lambda_tc
-        mp.dps = 150
-        cx1 = Symbol('cx1')
-        cx2 = Symbol('cx2')
-        f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
-        f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
-        x_, y_ = nsolve((f1, f2), (cx1, cx2), (700, 500))
+
+        # Solve a system of two equations to obtain the flux through the wall
+        x_, y_ = opt.fsolve(func=flux_equations,
+                            x0=np.array([900.0, 700.0]),
+                            args=(hg, hl, Tg, Tl, L, e))
 
         # Temperature at the walls
         inwall_temperature.append(x_)
@@ -935,7 +950,8 @@ if choix == 1:
             dx = 0.0001
         """
         lamb = LambdaTC[i]
-        t3d = carto2D(larg_ailette[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
+        t3d = carto2D(larg_ailette[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx,
+                      hg_function[i], lamb,
                       hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
         eachT.append(t3d)
         b += av

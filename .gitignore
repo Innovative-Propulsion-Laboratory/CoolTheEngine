@@ -133,3 +133,5 @@ dmypy.json
 valuexport.csv
 geometry1.csv
 geometry2.csv
+*.prof
+*.zip

@@ -19,7 +19,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     b = 0
     Bar = ProgressBar(100, 30, "3D results computation          ")
     av = 100 / len(x)
-    
+
     fig = plt.figure(figsize=(10, 17), dpi=500)
     ax = fig.add_subplot(111, projection='3d')
     Tcolor = []
@@ -49,7 +49,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
         Bar.update(b)
     print()
     Tcolor = [cu[i] for i in range(0, len(cu))]
-    
+
     Bar = ProgressBar(100, 30, "3D results visualisation        ")
     Bar.update(10)
     p = ax.scatter(yu, zu, xu, c=Tcolor, marker='.', s=5, cmap=col)
@@ -69,7 +69,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     if inv[0] == 1:
         x.reverse()
     if inv[1] == 1:
-        y.reverse()   
+        y.reverse()
     if inv[2] == 1:
         mesure.reverse()
     Bar.update(100)
