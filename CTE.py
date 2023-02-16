@@ -319,7 +319,7 @@ Ro = 3  # Roughness (micrometers)
 Bar = ProgressBar(100, 30, "Canal geometric computation     ")
 
 """Methode 2"""
-xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste, epaiss_chemise, longc \
+xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc \
     = canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore, 
              e_conv, e_col, e_tore, tore, debit_total, n1, n2, n3, n4, n5, n6)
 
@@ -850,8 +850,8 @@ view3d(inv, xcanauxre, ycanauxre, Tcoolant, colooo, "Temperature of the coolant"
 "Computation for 2D graphs"
 # 3D and 2D temperature contour plot
 # At the beginning of the chamber
-reste.reverse()
-pas = reste[-1] + larg_canalre[-1]
+larg_ailette.reverse()
+pas = larg_ailette[-1] + larg_canalre[-1]
 epaisseur = e_conv
 hauteur = htre[-1]
 largeur = larg_canalre[-1]
@@ -867,7 +867,7 @@ where = " at the beginning of the chamber"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
 # At the throat
 pos_col = ycanauxre.index(min(ycanauxre))
-pas = reste[pos_col] + larg_canalre[pos_col]
+pas = larg_ailette[pos_col] + larg_canalre[pos_col]
 epaisseur = e_col
 hauteur = htre[pos_col]
 largeur = larg_canalre[pos_col]
@@ -882,7 +882,7 @@ print("█ Results at the throat :                                              
 where = " at the throat"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 15, 1, 2, where)
 # At the end of the divergent
-pas = reste[0] + larg_canalre[0]
+pas = larg_ailette[0] + larg_canalre[0]
 epaisseur = e_tore
 hauteur = htre[0]
 largeur = larg_canalre[0]
@@ -1027,7 +1027,7 @@ plt.show()
 # %% Writing the results of the study in a CSV file
 "Writing the results in a CSV file"
 Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
-av = 100 / (3 * longc + (long - longc))
+av = 100 / (4 * longc + (long - longc))
 
 file_name = "valuexport.csv"
 file = open(file_name, "w")
@@ -1078,6 +1078,17 @@ writer = csv.writer(file)
 writer.writerow(("Engine + chamber wall diameter", "x real height"))
 for i in range(0, longc):
     writer.writerow((ycanauxre[i] * 1000, newxhtre[i] * (-1000)))
+    b += av
+    Bar.update(b)
+file.close()
+# %% Writing the results of the study in a CSV file
+"Writing the results of the study in a CSV file"
+file_name = "channelvalue.csv"
+file = open(file_name, "w")
+writer = csv.writer(file)
+writer.writerow(("Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
+for i in range(0, longc):
+    writer.writerow(larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i])
     b += av
     Bar.update(b)
 file.close()

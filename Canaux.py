@@ -245,4 +245,4 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     plt.title('Channel cross-sectionnal area as a function of engine axis')  # bleu=retour
     plt.show()
 
-    return xcanauxre, ycanauxre, larg_canalre, Areare, htre, larg_ailette, epaiss_chemise, longc
+    return xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc
