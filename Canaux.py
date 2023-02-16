@@ -246,6 +246,28 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     writer.writerow(["EndCurve"])
 
     file.close()
+    
+    plt.plot(xcanauxre, larg_ailette, label='Rid width', color='chocolate')
+    plt.plot(xcanauxre, larg_canalre, label='Channel width', color='green')
+    plt.plot(xcanauxre, htre, label='Channel height', color='blue')  #
+    plt.title('Width of channels and of rid')  # bleu=retour
+    plt.legend()
+    plt.show()  # orange=allé
+    plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes
+    plt.title('Velocity of coolant in channels (in m/s) as a function of engine axis')  # bleu=retour
+    plt.show()
+
+    plt.plot(xcanauxre, epaiss_chemise, color='chocolate')  # Affichage des courbes
+    plt.title('Thickness of chamber wall as a function of engine axis')  # bleu=retour
+    plt.show()
+
+    plt.plot(xcanauxre, htre, color='chocolate')
+    plt.title('Channel height as a function of engine axis')  # bleu=retour
+    plt.show()  # orange=allé
+
+    plt.plot(xcanauxre, Areare, color='chocolate')
+    plt.title('Channel cross-sectionnal area as a function of engine axis')  # bleu=retour
+    plt.show()
 
     return xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc
 
