@@ -333,6 +333,15 @@ xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename,
 Bar.update(100)
 print()
 
+file_name = "channelvalue.csv"
+file = open(file_name, "w")
+writer = csv.writer(file)
+writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
+for i in range(0, longc):
+    writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
+
+file.close()
+
 end_i = time.time()  # End of the initialisation timer
 time_elapsed_i = time.ctime(end_i - start_t)[14:19]  # Initialisation elapsed time converted in minutes:secondes
 start_m = time.time()  # Start of the main solution timer
@@ -926,7 +935,7 @@ if choix == 1:
             dx = 0.0001
         """
         lamb = LambdaTC[i]
-        t3d = carto2D(reste[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
+        t3d = carto2D(larg_ailette[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx, hg_function[i], lamb,
                       hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
         eachT.append(t3d)
         b += av
@@ -1086,9 +1095,9 @@ file.close()
 file_name = "channelvalue.csv"
 file = open(file_name, "w")
 writer = csv.writer(file)
-writer.writerow(("Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
+writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
 for i in range(0, longc):
-    writer.writerow(larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i])
+    writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
     b += av
     Bar.update(b)
 file.close()
