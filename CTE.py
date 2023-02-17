@@ -32,7 +32,7 @@ from graphic3d import view3d
 from heatequationsolve import carto2D
 from volume3d import carto3d
 import matplotlib.pyplot as plt
-from tqdm import tqdm # For progress bars
+from tqdm import tqdm  # For progress bars
 
 # Chemical species data
 from CoolProp.CoolProp import PropsSI
@@ -936,7 +936,7 @@ if choix == 1:
               desc="█ 3D graph initialisation      ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar:
-        for i in range(0, longc, 3):
+        for i in range(0, longc, 1):
             """
             if lim1 <= i <= lim2:
                 dx = 0.0001
@@ -948,7 +948,7 @@ if choix == 1:
                           hg_function[i], lamb,
                           hotgas_temperature[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
             eachT.append(t3d)
-            pbar.update(3)
+            pbar.update(1)
 
     carto3d([0, 0, 0], xcanauxre, ycanauxre, eachT, plt.cm.Spectral_r, '3D view of wall temperatures', nbc, limitation)
 
