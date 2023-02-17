@@ -230,19 +230,19 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     writer = csv.writer(file)
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((100*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 100*(larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 1000*(larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((100*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 100*(-larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 1000*(-larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((100*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 100*(larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 1000*(larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((100*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 100*(- larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 1000*(- larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["End"])
     file.close()
