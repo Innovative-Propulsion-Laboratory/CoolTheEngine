@@ -226,7 +226,7 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
 
     "Writing the results of the study in a CSV file"
     file_name = "channel_macro_catia.csv"
-    file = open(file_name, "w",newline="")
+    file = open(file_name, "w", newline="")
     writer = csv.writer(file)
     writer.writerow(["StartCurve"])
     for i in range(0, longc):

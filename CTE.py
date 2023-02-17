@@ -339,7 +339,7 @@ print()
 
 "Writing the results of the study in a CSV file"
 file_name = "channelvalue.csv"
-file = open(file_name, "w")
+file = open(file_name, "w", newline="")
 writer = csv.writer(file)
 writer.writerow(
     ("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
@@ -1055,7 +1055,7 @@ Bar = ProgressBar(100, 30, "Writting results in CSV files   ")
 av = 100 / (3 * longc + (long - longc))
 
 file_name = "valuexport.csv"
-file = open(file_name, "w")
+file = open(file_name, "w", newline="")
 writer = csv.writer(file)
 writer.writerow(("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma", "Mach number", "Gas pressure",
                  "Total pressure", "Gas temperature", "Channels x axis", "Engine + chamber wall diameter",
@@ -1087,7 +1087,7 @@ file.close()
 # %% Writing the results of the study in a CSV file
 "Writing the results of the study in a CSV file"
 file_name = "geometry1.csv"
-file = open(file_name, "w")
+file = open(file_name, "w", newline="")
 writer = csv.writer(file)
 writer.writerow(("x real height", "y real height"))
 for i in range(0, longc):
@@ -1098,7 +1098,7 @@ file.close()
 # %% Writing the results of the study in a CSV file
 "Writing the results of the study in a CSV file"
 file_name = "geometry2.csv"
-file = open(file_name, "w")
+file = open(file_name, "w", newline="")
 writer = csv.writer(file)
 writer.writerow(("Engine + chamber wall diameter", "x real height"))
 for i in range(0, longc):
