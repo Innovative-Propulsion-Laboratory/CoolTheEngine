@@ -7,7 +7,7 @@ Created on Sun Apr 11 20:47:01 2021
 
 import casthermo as ct
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where):

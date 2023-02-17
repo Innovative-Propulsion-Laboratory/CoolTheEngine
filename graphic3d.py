@@ -6,9 +6,8 @@ Created on Mon Mar  8 08:35:13 2021
 @author: julie
 """
 
-from ProgressBar import ProgressBar
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def view3d(inv, x, y, mesure, col, title, size2, limitation):

@@ -13,11 +13,10 @@ Any changes might affect the results.
 # %% Imports
 import time
 import csv
-import sys  # Used in ProgressBar
 
 # Calculations
 import numpy as np
-from sympy import Symbol, nsolve
+# from sympy import Symbol, nsolve
 from machsolve import mach_solv
 from pressuresolve import pressure_solv
 from temperaturesolve import temperature_solv
@@ -33,8 +32,7 @@ from graphic3d import view3d
 from heatequationsolve import carto2D
 from volume3d import carto3d
 import matplotlib.pyplot as plt
-from ProgressBar import ProgressBar
-from tqdm import tqdm
+from tqdm import tqdm # For progress bars
 
 # Chemical species data
 from CoolProp.CoolProp import PropsSI
@@ -46,7 +44,7 @@ print("████████████████████████�
 print("█                                                                          █")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█                                                                          █")
-print("█ Initialisation...                                                        █")
+print("█ Initialisation                                                           █")
 # %% Engine initialisation
 "Viserion settings"
 
@@ -127,7 +125,7 @@ plt.show()
 print("█                                                                          █")
 # %% Adiabatic constant (gamma) parametrization
 "Linear interpolation of gamma"
-print("█ Computing gamma...                                                       █")
+print("█ Computing gamma                                                          █")
 i_conv = 0  # Index of the beginning of the convergent
 a = 1
 b = 1
@@ -178,7 +176,7 @@ long = len(x_value)  # Number of points (or the index of the end of the dvergent
 
 "Mach number computations along the engine"
 with tqdm(total=long - 1,
-          desc=f"█ Computing mach number        ",
+          desc="█ Computing mach number        ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, long - 1):
@@ -194,15 +192,14 @@ plt.show()
 
 colooo = plt.cm.Spectral
 inv = 1, 1, 1  # 1 means should be reversed
-print("█ Plotting graph...                                                        █")
-view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
+print("█ Plotting 3D graph                                                        █")
 print("█                                                                          █")
-
+view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
 # %% Static pressure computation
 pressure_function = [Pc]  # (in Pa)
 
 with tqdm(total=long - 1,
-          desc=f"█ Computing static pressure    ",
+          desc="█ Computing static pressure    ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, long - 1):
@@ -224,15 +221,15 @@ plt.show()
 
 colooo = plt.cm.gist_rainbow_r
 inv = 1, 1, 1  # 1 means should be reversed
-print("█ Plotting graph...                                                        █")
-view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
+print("█ Plotting graph                                                           █")
 print("█                                                                          █")
+view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
 # %% Temperature computation
 
 # Hot gas temperature computations along the engine
 hotgas_temperature = [Tc]
 with tqdm(total=long - 1,
-          desc=f"█ Computing gas temperature    ",
+          desc="█ Computing gas temperature    ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, long - 1):
@@ -312,7 +309,7 @@ Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
 Ro = 3  # Roughness (micrometers)
 
 # %% Computation of channel geometry
-print("█ Channel geometric computation...                                         █")
+print("█ Channel geometric computation                                            █")
 
 """Methode 2"""
 
@@ -381,7 +378,7 @@ def flux_equations(vars, *data):
     return [f1, f2]
 
 
-def mainsolver(Sig, b, rho, Tcoolant,
+def mainsolver(Sig, rho, Tcoolant,
                visccoolant, condcoolant,
                Cpmeth, Pcoolant, LambdaTC,
                entropy, current_rep, total_reps):
@@ -687,7 +684,7 @@ def mainsolver(Sig, b, rho, Tcoolant,
             pbar_main.update(1)
 
         return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-               outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+               outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
                Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
 
@@ -698,7 +695,6 @@ visccoolant = []
 condcoolant = []
 Cpmeth = []
 rho = []
-b = 0
 Sig.append(1)
 Tcoolant.append(Tl_init)
 Pcoolant.append(Pl_init)
@@ -711,12 +707,13 @@ entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 
 reps_max = 2
 
+# First iteration of the solving
 hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
+outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
 Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
-    Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, 1, reps_max + 1)
+    Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, 1, reps_max + 1)
 
-# Second iteration of the solving
+# Second and more iteration of the solving
 for i in range(0, reps_max):
     newa = Sig[2]
     Sig = []
@@ -738,9 +735,9 @@ for i in range(0, reps_max):
     rho.append(meth.rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
     entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-    outwall_temperature, fluxsolved, Sig, b, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+    outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
     Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = \
-        mainsolver(Sig, b, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, i + 2,
+        mainsolver(Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, i + 2,
                    reps_max + 1)
 
 end_m = time.time()  # End of the main solution timer
@@ -752,7 +749,7 @@ print("█ Execution time for the computation of the main solution :", time_elap
 print("█                                                                          █")
 # %% Display of the first results
 "Display of the results"
-print("█ Display of results in 2D :                                               █")
+print("█ Display of results in 2D                                                 █")
 
 colooo = plt.cm.magma
 inv = 0, 0, 0  # 1 means should be reversed
@@ -930,14 +927,13 @@ choix = int(input("█ 3D temperature contour visualisation ? (1 = yes, 2 = no) 
 
 if choix == 1:
     # 3D display
-    print("█                                                                          █")
     start_d3 = time.time()  # Start of the display of 3D timer
     eachT = []
     lim1 = 0
     lim2 = 650
     dx = 0.0001
     with tqdm(total=longc,
-              desc=f"█ 3D graph initialisation      ",
+              desc="█ 3D graph initialisation      ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar:
         for i in range(0, longc, 3):
@@ -995,12 +991,13 @@ Pcoolant.reverse()
 
 # %% Preparation of the lists for CAO modelisation
 "Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"
+print("█                                                                          █")
 angles = []
 newxhtre = []
 newyhtre = []
 
 with tqdm(total=longc,
-          desc=f"█ Computing channel height     ",
+          desc="█ Computing channel height     ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, longc):
@@ -1028,7 +1025,7 @@ with tqdm(total=longc,
 "Checking the height of channels"
 verification = []
 with tqdm(total=longc,
-          desc=f"█ Checking channel height      ",
+          desc="█ Checking channel height      ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, longc):
@@ -1070,7 +1067,7 @@ geometry1_writer.writerow(("x real height", "y real height"))
 geometry2_writer.writerow(("Engine + chamber wall radius", "x real height"))
 
 with tqdm(total=long,
-          desc=f"█ Writing results in .csv      ",
+          desc="█ Writing results in .csv      ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as pbar:
     for i in range(0, long):

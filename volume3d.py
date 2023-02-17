@@ -4,9 +4,9 @@ Created on Tue Apr 13 17:37:58 2021
 
 @author: julie
 """
-from ProgressBar import ProgressBar
+
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
@@ -28,7 +28,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     zu = []
     cu = []
     with tqdm(total=len(mesure),
-              desc=f"█ Generating 3D plot           ",
+              desc="█ Generating 3D plot           ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar:
         for i in range(0, len(mesure), 1):
@@ -67,7 +67,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     plt.title(title, fontsize=25)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
 
-    print("█ Showing plot...                                                          █")
+    print("█ Showing real 3D plot                                                     █")
     plt.show()
 
     # # Removed because it seems useless
