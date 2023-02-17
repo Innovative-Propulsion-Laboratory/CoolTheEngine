@@ -298,12 +298,16 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             paroigas = paroigas + t[0]
         bis += 1
     if oui == 1:
-        print("█ Mean wall temperature at hot side  =", round(temperature[0]),
-              "K                              █")
-        print("█ Mean wall temperature at cool side =", round(temperature[abop + 1]),
-              "K                              █")
-        print("█ Maximum temperature in the wall    =", round(max(temperature)),
-              "K                              █")
+        # This is just for formatting
+        tg_avg = f"{round(temperature[0])}" if len(
+            f'{round(temperature[0])}') == 4 else f" {round(temperature[0])}"
+        tl_avg = f"{round(temperature[abop + 1])}" if len(
+            f'{round(temperature[abop + 1])}') == 4 else f" {round(temperature[abop + 1])}"
+        t_max = f"{round(max(temperature))}" if len(
+            f'{round(max(temperature))}') == 4 else f" {round(max(temperature))}"
+        print(f"█ Mean wall temperature at hot side  = {tg_avg} K                              █")
+        print(f"█ Mean wall temperature at cool side = {tl_avg} K                              █")
+        print(f"█ Maximum temperature in the wall    = {t_max} K                              █")
         if leg == 1:
             a1 = 0.003
             a2 = -0.0025
