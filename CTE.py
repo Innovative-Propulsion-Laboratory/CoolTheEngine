@@ -261,7 +261,7 @@ view3d(inv, x_value, y_value, hotgas_temperature, colooo, 'Temperature of the ga
 # %% Channel parameters
 "Number of channels and manifold position"
 nbc = 40  # Number of channels
-tore = 0.103  # Position of the manifold from the throat (in m)
+tore = 0.104  # Position of the manifold from the throat (in m)
 
 "Width of the channels"
 lrg_inj = 0.002  # Width of the channel in at the injection plate (in m)
@@ -306,7 +306,7 @@ If_reg = debit_LCH4  # Total mass flow rate (in kg/s)
 Tl_init = 110  # Initial temperature of the coolant (in K)
 debit_total = If_reg / rho_initCH4  # Total volumic flow rate of the coolant (in m3/s)
 Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
-Ro = 3  # Roughness (micrometers)
+Ro = 3  # Roughness (in micrometers)
 
 # %% Computation of channel geometry
 print("█ Channel geometric computation                                            █")
@@ -338,10 +338,6 @@ file.close()
 end_i = time.time()  # End of the initialisation timer
 time_elapsed_i = time.ctime(end_i - start_t)[14:19]  # Initialisation elapsed time converted in minutes:secondes
 start_m = time.time()  # Start of the main solution timer
-
-print("█                                                                          █")
-print("█ Execution time for the initialisation :", time_elapsed_i, "                           █")
-print("█                                                                          █")
 # %% Computation of the global solution
 
 # We reverse the data in order to calculate from the manifold to the injection (x is in reverse)
@@ -744,6 +740,8 @@ end_m = time.time()  # End of the main solution timer
 time_elapsed_m = time.ctime(end_m - start_m)[14:19]  # Main elapsed time converted in minutes:secondes
 start_d2 = time.time()  # Start of the display of 2D timer
 
+print("█                                                                          █")
+print("█ Execution time for the initialisation :", time_elapsed_i, "                           █")
 print("█                                                                          █")
 print("█ Execution time for the computation of the main solution :", time_elapsed_m, "         █")
 print("█                                                                          █")

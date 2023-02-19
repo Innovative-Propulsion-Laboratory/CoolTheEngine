@@ -109,11 +109,10 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
     throat (col) and extremity of the nozzle (div).
     """
-    xcanauxre = []  # List of x where there are channels (before the manifold)
-    ycanauxre = []  # List of y where there are channels (before the manifold)
-    long_x = len(x_value)
+    xcanauxre = []  # List of x where there are channels (before the manifold) (in m)
+    ycanauxre = []  # List of y where there are channels (before the manifold) (in m)
     i = 0
-    while i < long_x and x_value[i] <= tore:
+    while i < len(x_value) and x_value[i] <= tore:
         xcanauxre.append(x_value[i])
         ycanauxre.append(y_value[i])
         i += 1
@@ -122,12 +121,12 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     while ycanauxre[pos_conv] == ycanauxre[pos_conv + 1]:
         pos_conv += 1
     pos_col = ycanauxre.index(min(ycanauxre))  # Index of the throat
-    y_col = ycanauxre[pos_col]
-    y_inj = ycanauxre[0]
-    y_tore = ycanauxre[-1]
-    longc = len(xcanauxre)  # Index of the end of the channels, after removing everything before the manifold
+    y_col = ycanauxre[pos_col]  # y coordonate of the hot wall at the throat
+    y_inj = ycanauxre[0]  # y coordonate of the hot wall at the injection plate
+    y_tore = ycanauxre[-1]  # y coordonate of the hot wall at the manifold
+    longc = len(xcanauxre)  # Index of the end of the channels (at the manifold)
 
-    epaiss_chemise = []  # Thickness of the chamber wall as a function of the engine axis
+    epaiss_chemise = []  # Thickness of the chamber wall as a function of the engine axis (in m)
     acc = (e_conv - e_col) / (y_inj - y_col)
     for i in range(0, pos_col + 1):  # Chamber + convergent computation
         r = ycanauxre[i]
@@ -141,7 +140,7 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         epp_x = ((1 - aug) ** n6) * (r - y_col) * acc + e_col
         epaiss_chemise.append(epp_x)
 
-    angulaire = [0]  # 
+    angulaire = [0]
     newepaisseur = [y_inj + epaiss_chemise[0]]  # Corrected thickness (to match with the geometry of the engine)
     for i in range(1, longc):
         vect2 = (xcanauxre[i] - xcanauxre[i - 1]) / ((((ycanauxre[i] - ycanauxre[i - 1]) ** 2) +
@@ -149,7 +148,13 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         angulaire.append(np.rad2deg(np.arccos(vect2)))
         newep = ycanauxre[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
         newepaisseur.append(newep)
-
+    
+    plt.plot(xcanauxre, ycanauxre, color='chocolate', label='old')  # (configuration qui
+    plt.plot(xcanauxre, newepaisseur, color='blue', label='New')
+    plt.title('Verif')  # et au Viserion)
+    plt.legend()
+    plt.show()
+    
     ycanauxre = [newepaisseur[i] for i in range(0, len(newepaisseur))]
     veritas = []
     for i in range(0, longc):
@@ -165,9 +170,12 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     plt.title('trajet des canaux')  # et au Viserion)
     plt.show()
     """
-    debitcanal = debit_total / nbc  # calcul débit volumique par canaux
-    larg_ailette = []  #
-    larg_canalre = []  #
+    debitcanal = debit_total / nbc  # Volumic debit of a channel
+    y_col = ycanauxre[pos_col]  # y coordonate of the cold wall at the throat
+    y_inj = ycanauxre[0]  # y coordonate of the cold wall at the injection plate
+    y_tore = ycanauxre[-1]  # y coordonate of the cold wall at the manifold
+    larg_ailette = []  # Width of a rib as a function of the engine axis (in m)
+    larg_canalre = []  # Width of a channel as a function of the engine axis (in m)
     pente = (lrg_conv - lrg_inj) / (xcanauxre[pos_conv] - xcanauxre[0])
     for i in range(0, pos_conv + 1):  # Chamber computation
         r = ycanauxre[i]
@@ -192,7 +200,7 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         larg_ailette.append(lrg_aill)
         larg_canalre.append(lrg_x)
 
-    htre = []
+    htre = []  # Height of a channel as a function of the engine axis (in m)
     pente = (ht_conv - ht_inj) / (xcanauxre[pos_conv] - xcanauxre[0])
     for i in range(0, pos_conv + 1):  # Chamber computation
         htr_x = pente * (xcanauxre[i] - xcanauxre[0]) + ht_inj
@@ -216,8 +224,8 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         z2=zz+0.5*zz*sin(x*1000/4)
         larg_canalre[larg_canalre.index(zz)]=z2 
     """
-    Areare = []  # Without taking changes of density in count
-    vitessere = []
+    Areare = []  # Area of a channel as a function of the engine axis (without taking changes of density in count) (in m²)
+    vitessere = []  # Velocity of coolant in a channel as a function of the engine axis (in m/s)
     for i in range(0, len(larg_canalre)):
         aire = larg_canalre[i] * htre[i]
         Areare.append(aire)
@@ -230,43 +238,44 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     writer = csv.writer(file)
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 1000*(larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i]), 1000*(larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i]), 1000*(-larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i]), 1000*(-larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 1000*(larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + htre[i]), 1000*(larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
     for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + epaiss_chemise[i] + htre[i]), 1000*(- larg_canalre[i] / 2)))
+        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + htre[i]), 1000*(- larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["End"])
-    file.close()
+    file.close()    
 
-    plt.plot(xcanauxre, larg_ailette, label='Rid width', color='chocolate')
+    plt.plot(xcanauxre, larg_ailette, label='Rib width', color='chocolate')
     plt.plot(xcanauxre, larg_canalre, label='Channel width', color='green')
-    plt.plot(xcanauxre, htre, label='Channel height', color='blue')  #
-    plt.title('Width of channels and of rid')  # bleu=retour
+    plt.plot(xcanauxre, htre, label='Channel height', color='blue')
+    plt.title('Width of channels and ribs')
     plt.legend()
-    plt.show()  # orange=allé
-    plt.plot(xcanauxre, vitessere, color='chocolate')  # Affichage des courbes
-    plt.title('Velocity of coolant in channels (in m/s) as a function of engine axis')  # bleu=retour
+    plt.show()
+    
+    plt.plot(xcanauxre, vitessere, color='chocolate')
+    plt.title('Velocity of coolant in channels (in m/s) as a function of the engine axis')
     plt.show()
 
-    plt.plot(xcanauxre, epaiss_chemise, color='chocolate')  # Affichage des courbes
-    plt.title('Thickness of chamber wall as a function of engine axis')  # bleu=retour
+    plt.plot(xcanauxre, epaiss_chemise, color='chocolate')
+    plt.title('Thickness of chamber wall as a function of the engine axis')
     plt.show()
 
     plt.plot(xcanauxre, htre, color='chocolate')
-    plt.title('Channel height as a function of engine axis')  # bleu=retour
-    plt.show()  # orange=allé
+    plt.title('Channel height as a function of the engine axis')
+    plt.show()
 
     plt.plot(xcanauxre, Areare, color='chocolate')
-    plt.title('Channel cross-sectionnal area as a function of engine axis')  # bleu=retour
+    plt.title('Channel cross-sectionnal area as a function of the engine axis')
     plt.show()
 
     return xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc
