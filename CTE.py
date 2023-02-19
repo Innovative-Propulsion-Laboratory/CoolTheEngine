@@ -38,7 +38,7 @@ from tqdm import tqdm  # For progress bars
 from CoolProp.CoolProp import PropsSI
 import methan as meth
 
-start_t = time.time()  # Beginning of the timer
+start_t = time.perf_counter()  # Beginning of the timer
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                                                                          █")
@@ -335,9 +335,9 @@ for i in range(0, longc):
         (xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
 file.close()
 
-end_i = time.time()  # End of the initialisation timer
+end_i = time.perf_counter()  # End of the initialisation timer
 time_elapsed_i = time.ctime(end_i - start_t)[14:19]  # Initialisation elapsed time converted in minutes:secondes
-start_m = time.time()  # Start of the main solution timer
+start_m = time.perf_counter()  # Start of the main solution timer
 # %% Computation of the global solution
 
 # We reverse the data in order to calculate from the manifold to the injection (x is in reverse)
@@ -411,7 +411,6 @@ def mainsolver(Sig, rho, Tcoolant,
         # Main computation loop
         for i in range(0, longc):
             Lambda_tc = LambdaTC[i]
-            x = xcanauxre[i]
             c = larg_canalre[i]
 
             # Hydraulic diameter (4*Area/Perimeter)
@@ -509,27 +508,19 @@ def mainsolver(Sig, rho, Tcoolant,
                             (2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
                                      (np.tanh(m * htre[i])) / (np.pi * D))
 
-                    # Save the data in lists
+                    # Grab data from lists
                     hg = hg_function[i]
                     hl = hl_cor
                     Tl = Tcoolant[i]
                     e = epaiss_chemise[i]
                     L = Lambda_tc
-                    # mp.dps = 150
-
-                    # Use sympy to solve a system of 2 equations and 2 unknowns
-                    # cx1 = Symbol('cx1')
-                    # cx2 = Symbol('cx2')
-                    # f1 = hg * (Tg - cx1) - (L / e) * (cx1 - cx2)
-                    # f2 = hl * (cx2 - Tl) - (L / e) * (cx1 - cx2)
 
                     # Solve the system numerically, giving an initial guess
-                    # x_, y_ = nsolve((f1, f2), (cx1, cx2), (900, 700))
                     x_, y_ = opt.fsolve(func=flux_equations,
                                         x0=np.array([900.0, 700.0]),
                                         args=(hg, hl, Tg, Tl, L, e))
 
-                    # Flow computation
+                    # Heat flux computation
                     flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
 
             # %% Computations
@@ -565,8 +556,8 @@ def mainsolver(Sig, rho, Tcoolant,
             inwall_temperature.append(x_)
             outwall_temperature.append(y_)
 
-            # Compute heat flux throught the coolant side
-            flux = hl * (y_ - Tcoolant[i]) * 0.000001
+            # Store heat flux through the coolant side
+            flux = flux2
             fluxsolved.append(flux)
 
             # Compute sigma (used in the Bartz equation)
@@ -721,14 +712,13 @@ def mainsolver(Sig, rho, Tcoolant,
                Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
 
-Sig = []
+Sig = [1]
 Tcoolant = []
 Pcoolant = []
 visccoolant = []
 condcoolant = []
 Cpmeth = []
 rho = []
-Sig.append(1)
 Tcoolant.append(Tl_init)
 Pcoolant.append(Pl_init)
 visccoolant.append(meth.viscCH4(Pcoolant[0], Tcoolant[0], fluid))
@@ -741,15 +731,17 @@ entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
 reps_max = 2
 
 # First iteration of the solving
-hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, Vitesse, \
-Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
-    Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, 1, reps_max + 1)
+hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, \
+inwall_temperature, outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, \
+visccoolant, condcoolant, Cpmeth, rho, Vitesse, Pcoolant, LambdaTC, Celerite, \
+hlnormal, error_D_, singpertes, Pcoolant2 = mainsolver(
+    Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth,
+    Pcoolant, LambdaTC, entropy, 1, reps_max + 1)
 
 # Second and more iteration of the solving
 for i in range(0, reps_max):
     newa = Sig[2]
-    Sig = []
+    Sig = [newa]
     Tcoolant = []
     visccoolant = []
     condcoolant = []
@@ -757,7 +749,6 @@ for i in range(0, reps_max):
     rho = []
     newLambdatc = LambdaTC[1]
     LambdaTC = []
-    Sig.append(newa)
     Pcoolant = []
     Tcoolant.append(Tl_init)
     Pcoolant.append(Pl_init)
@@ -773,9 +764,9 @@ for i in range(0, reps_max):
         mainsolver(Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, entropy, i + 2,
                    reps_max + 1)
 
-end_m = time.time()  # End of the main solution timer
+end_m = time.perf_counter()  # End of the main solution timer
 time_elapsed_m = time.ctime(end_m - start_m)[14:19]  # Main elapsed time converted in minutes:secondes
-start_d2 = time.time()  # Start of the display of 2D timer
+start_d2 = time.perf_counter()  # Start of the display of 2D timer
 
 print("█                                                                          █")
 print("█ Execution time for the initialisation :", time_elapsed_i, "                           █")
@@ -950,7 +941,7 @@ print("█ Results at the end of the divergent :                                
 where = " at the end of the divergent"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, 5, 1, 1, where)
 
-end_d2 = time.time()  # End of the display of 2D timer
+end_d2 = time.perf_counter()  # End of the display of 2D timer
 time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]  # Display of 2D elapsed time converted in minutes:secondes
 
 print("█                                                                          █")
@@ -962,7 +953,7 @@ choix = int(input("█ 3D temperature contour visualisation ? (1 = yes, 2 = no) 
 
 if choix == 1:
     # 3D display
-    start_d3 = time.time()  # Start of the display of 3D timer
+    start_d3 = time.perf_counter()
     eachT = []
     lim1 = 0
     lim2 = 650
@@ -972,12 +963,11 @@ if choix == 1:
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar:
         for i in range(0, longc, 1):
-            """
-            if lim1 <= i <= lim2:
-                dx = 0.0001
-            else:
-                dx = 0.0001
-            """
+            # if lim1 <= i <= lim2:
+            #     dx = 0.0001
+            # else:
+            #     dx = 0.0001
+
             lamb = LambdaTC[i]
             t3d = carto2D(larg_ailette[i] + larg_canalre[i], epaiss_chemise[i], htre[i], larg_canalre[i], dx,
                           hg_function[i], lamb,
@@ -987,13 +977,12 @@ if choix == 1:
 
     carto3d([0, 0, 0], xcanauxre, ycanauxre, eachT, plt.cm.Spectral_r, '3D view of wall temperatures', nbc, limitation)
 
-    end_d3 = time.time()  # End of the display of 3D timer
+    end_d3 = time.perf_counter()  # End of the display of 3D timer
     time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
     print("█                                                                          █")
     print("█ Execution time for the display of 3D :", time_elapsed_d3, "                            █")
-start_e = time.time()  # Start of the end timer
+start_e = time.perf_counter()  # Start of the end timer
 # %% Reversion of the different lists
-"Utility unknown"
 print("█                                                                          █")
 
 aire.reverse()
@@ -1024,7 +1013,7 @@ condcoolant.reverse()
 Cpmeth.reverse()
 Pcoolant.reverse()
 
-# %% Preparation of the lists for CAO modelisation
+# %% Preparation of the lists for CAD modelisation
 "Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"
 print("█                                                                          █")
 angles = []
@@ -1057,7 +1046,7 @@ with tqdm(total=longc,
         newyhtre.append(newy)
         pbar.update(1)
 
-"Checking the height of channels"
+# Checking the height of channels
 verification = []
 with tqdm(total=longc,
           desc="█ Checking channel height      ",
@@ -1081,7 +1070,6 @@ plt.title("Checking the height of the generated channels")
 plt.show()
 
 # %% Writing the results of the study in a CSV file
-"Writing the results in a CSV file"
 
 valuexport = open("valuexport.csv", "w", newline="")
 geometry1 = open("geometry1.csv", "w", newline="")
@@ -1133,7 +1121,7 @@ valuexport.close()
 geometry1.close()
 geometry2.close()
 
-end_t = time.time()  # End of the total timer
+end_t = time.perf_counter()  # End of the total timer
 time_elapsed_e = time.ctime(end_t - start_e)[14:19]  # End elapsed time converted in minutes:secondes
 print("█                                                                          █")
 print("█ Execution time of the end of the program :", time_elapsed_e, "                        █")
