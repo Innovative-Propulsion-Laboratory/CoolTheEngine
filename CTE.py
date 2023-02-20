@@ -1,13 +1,9 @@
-# %% CTE
 """
 Created on Fri Nov 27 14:47:27 2020
 
 Original author: Julien S
 
 Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R
-
-WARNING: This Python file was rewritten only for the Viserion_2023 project.
-Any changes might affect the results.
 """
 
 # %% Imports
@@ -16,7 +12,6 @@ import csv
 
 # Calculations
 import numpy as np
-# from sympy import Symbol, nsolve
 from machsolve import mach_solv
 from pressuresolve import pressure_solv
 from temperaturesolve import temperature_solv
@@ -305,7 +300,7 @@ rho_initCH4 = 425  # Density of the CH4
 If_reg = debit_LCH4  # Total mass flow rate (in kg/s)
 Tl_init = 110  # Initial temperature of the coolant (in K)
 debit_total = If_reg / rho_initCH4  # Total volumic flow rate of the coolant (in m3/s)
-Pl_init = 3700000  # Initial pressure of the coolant (in Pa)
+Pl_init = 7000000  # Initial pressure of the coolant (in Pa)
 Ro = 3  # Roughness (in micrometers)
 
 # %% Computation of channel geometry
@@ -393,7 +388,7 @@ def mainsolver(Sig, rho, Tcoolant,
     Prandtl_function = []
     hg_function = []
     inwall_temperature = []
-    outwall_temperature = []
+    outwall_temperature = [Tcoolant[0]]
     fluxsolved = []
     Vitesse = []
     Celerite = []
@@ -401,7 +396,7 @@ def mainsolver(Sig, rho, Tcoolant,
     error_D_ = []
     singpertes = [Pcoolant[0]]
     Pcoolant2 = [Pcoolant[0]]
-    phase = 0
+    totalpha = 0
     positioncol = ycanauxre.index(min(ycanauxre))
 
     with tqdm(total=longc,
@@ -443,10 +438,10 @@ def mainsolver(Sig, rho, Tcoolant,
             hg_function.append(hg)
 
             # Radiative heat flux assuming black body radiation
-            Tg = hotgas_temperature[i]
-            steff = 5.6697 * 10 ** (-8)  # Stefan-Boltzmann constant
-            emissivity = 0.02  # 2% emissivity for CH4
-            qr = emissivity * steff * (T1 ** 4)  # Radiative heat flux
+            # Tg = hotgas_temperature[i]
+            # steff = 5.6697 * 10 ** (-8)  # Stefan-Boltzmann constant
+            # emissivity = 0.02  # 2% emissivity for CH4
+            # qr = emissivity * steff * (T1 ** 4)  # Radiative heat flux
 
             # # This is not used, didn't delete because it might have a purpose later
             # if i + 1 == len(xcanauxre):
@@ -456,74 +451,82 @@ def mainsolver(Sig, rho, Tcoolant,
 
             Gdeb = debit_LCH4 / (Areare[i] * nbc)
 
-            # In case of single-phase flow
-            if phase == 0 or phase == 2:
-                f = (1.82 * np.log10(Re) - 1.64) ** (-2)
-                Nu = ((f / 8) * (Re - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
-                hl = Nu * (condcoolant[i] / Dhy)
-                Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
+            length_from_inlet = abs(xcanauxre[i] - max(xcanauxre))  # TO BE IMPROVED TO TAKE CURVATURE INTO ACCOUNT
 
-            # In case of two-phase flow (boiling etc.)
-            else:
-                # Grab all the fluid data using CoolProp
-                Base0 = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-                Base1 = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-                Xqual = (H2 - Base0) / (Base1 - Base0)
-                rhogp = PropsSI("D", "Q", 1, "P", Pcoolant[i], fluid)
-                rholp = PropsSI("D", "Q", 0, "P", Pcoolant[i], fluid)
-                mugp = PropsSI("V", "Q", 1, "P", Pcoolant[i], fluid)
-                mulp = PropsSI("V", "Q", 0, "P", Pcoolant[i], fluid)
-                Xeq = (((1 - Xqual) / Xqual) ** 0.9) * ((rhogp / rholp) ** 0.5) * ((mugp / mulp) ** 0.1)
-                SurfaceT = PropsSI("I", "Q", 0, "P", Pcoolant[i], fluid)
-                Kp = float(Pcoolant[i]) / ((SurfaceT * 9.81 * (rholp - rhogp)) ** 0.5)
-                We = (Gdeb ** 2) * Dhy / (rholp * SurfaceT)
-                # 1-0 H
-                HVP = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-                HLP = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-                HHV = HVP - HLP
+            # Modified correlation from Taylor (NASA TN D-4332)
+            Nu = 0.023 * Re ** 0.705 * Pr ** 0.8 * (outwall_temperature[i] / Tcoolant[i]) ** -(
+                    -0.57 - 1.59 * Dhy / length_from_inlet)
 
-                flux1 = flux + 0.5
-                flux2 = flux
-                while (abs(flux1 - flux2) / flux2) > 0.000001:
-                    flux1 = (flux1 + flux2) / 2
-                    Bo = 1000000 * flux1 / (Gdeb * HHV)
+            # Modified Pizzarelli correlation (best model)
+            # lambda_pizza = None  # This requires properties of the coolant in the bulk flow AND near the wall
+            # Nu = 0.0082 * Re ** 0.8 * Pr ** 0.16 * lambda_pizza ** 0.33 * ( 1 + 10 * (Dhy / length_from_inlet)) ** 0.5
 
-                    # Use a different correlation for the Nusselt number,
-                    # depending on the vapor quality
-                    if Xqual < 0.6:
-                        Nu = 12.46 * (Bo ** 0.544) * (We ** 0.035) * (Kp ** 0.614) * (Xeq ** 0.031)
-                    else:
-                        Nu = 0.00136 * (Bo ** (-1.442)) * (We ** 0.074)
-
-                    # Compute the convective heat-transfer coefficient
-                    hl = Nu * (condcoolant[i] / Dhy)
-
-                    # Compute dimensions of the fins
-                    D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-                    d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-                    m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
-
-                    # Corrected coefficient, taking the fin effect into account
-                    hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * (
-                            (2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
-                                     (np.tanh(m * htre[i])) / (np.pi * D))
-
-                    # Grab data from lists
-                    hg = hg_function[i]
-                    hl = hl_cor
-                    Tl = Tcoolant[i]
-                    e = epaiss_chemise[i]
-                    L = Lambda_tc
-
-                    # Solve the system numerically, giving an initial guess
-                    x_, y_ = opt.fsolve(func=flux_equations,
-                                        x0=np.array([900.0, 700.0]),
-                                        args=(hg, hl, Tg, Tl, L, e))
-
-                    # Heat flux computation
-                    flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
-
-            # %% Computations
+            # # In case of single-phase flow
+            # if phase == 0 or phase == 2:
+            #     f = (1.82 * np.log10(Re) - 1.64) ** (-2)
+            #     Nu = ((f / 8) * (Re - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
+            #
+            #     Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
+            #
+            # # In case of two-phase flow (boiling etc.)
+            # else:
+            #     # Grab all the fluid data using CoolProp
+            #     Base0 = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
+            #     Base1 = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
+            #     Xqual = (H2 - Base0) / (Base1 - Base0)
+            #     rhogp = PropsSI("D", "Q", 1, "P", Pcoolant[i], fluid)
+            #     rholp = PropsSI("D", "Q", 0, "P", Pcoolant[i], fluid)
+            #     mugp = PropsSI("V", "Q", 1, "P", Pcoolant[i], fluid)
+            #     mulp = PropsSI("V", "Q", 0, "P", Pcoolant[i], fluid)
+            #     Xeq = (((1 - Xqual) / Xqual) ** 0.9) * ((rhogp / rholp) ** 0.5) * ((mugp / mulp) ** 0.1)
+            #     SurfaceT = PropsSI("I", "Q", 0, "P", Pcoolant[i], fluid)
+            #     Kp = float(Pcoolant[i]) / ((SurfaceT * 9.81 * (rholp - rhogp)) ** 0.5)
+            #     We = (Gdeb ** 2) * Dhy / (rholp * SurfaceT)
+            #     # 1-0 H
+            #     HVP = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
+            #     HLP = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
+            #     HHV = HVP - HLP
+            #
+            #     flux1 = flux + 0.5
+            #     flux2 = flux
+            #     while (abs(flux1 - flux2) / flux2) > 0.000001:
+            #         flux1 = (flux1 + flux2) / 2
+            #         Bo = 1000000 * flux1 / (Gdeb * HHV)
+            #
+            #         # Use a different correlation for the Nusselt number,
+            #         # depending on the vapor quality
+            #         if Xqual < 0.6:
+            #             Nu = 12.46 * (Bo ** 0.544) * (We ** 0.035) * (Kp ** 0.614) * (Xeq ** 0.031)
+            #         else:
+            #             Nu = 0.00136 * (Bo ** (-1.442)) * (We ** 0.074)
+            #
+            #         # Compute the convective heat-transfer coefficient
+            #         hl = Nu * (condcoolant[i] / Dhy)
+            #
+            #         # Compute dimensions of the fins
+            #         D = 2 * (ycanauxre[i] - epaiss_chemise[i])
+            #         d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
+            #         m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
+            #
+            #         # Corrected coefficient, taking the fin effect into account
+            #         hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * (
+            #                 (2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
+            #                          (np.tanh(m * htre[i])) / (np.pi * D))
+            #
+            #         # Grab data from lists
+            #         hg = hg_function[i]
+            #         hl = hl_cor
+            #         Tl = Tcoolant[i]
+            #         e = epaiss_chemise[i]
+            #         L = Lambda_tc
+            #
+            #         # Solve the system numerically, giving an initial guess
+            #         x_, y_ = opt.fsolve(func=flux_equations,
+            #                             x0=np.array([900.0, 700.0]),
+            #                             args=(hg, hl, Tg, Tl, L, e))
+            #
+            #         # Heat flux computation
+            #         flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
 
             # Compute coolant-side convective heat-transfer coefficient
             hl = Nu * (condcoolant[i] / Dhy)
@@ -544,6 +547,7 @@ def mainsolver(Sig, rho, Tcoolant,
             hg = hg_function[i]
             hl = hlcor[i]
             Tl = Tcoolant[i]
+            Tg = hotgas_temperature[i]
             e = epaiss_chemise[i]
             L = Lambda_tc
 
@@ -557,7 +561,7 @@ def mainsolver(Sig, rho, Tcoolant,
             outwall_temperature.append(y_)
 
             # Store heat flux through the coolant side
-            flux = flux2
+            flux = hl * (y_ - Tcoolant[i]) * 0.000001
             fluxsolved.append(flux)
 
             # Compute sigma (used in the Bartz equation)
@@ -591,119 +595,175 @@ def mainsolver(Sig, rho, Tcoolant,
 
             # New temperature at next point
             Tfu = (Q / (debitmass * Cpmeth[i])) + Tcoolant[i]
+            Tcoolant.append(Tfu)
 
-            # If phase is 100% liquid or 100% gaseous
-            if phase == 0 or phase == 2:
-                # Compute density
-                rho2 = PropsSI("D", "P", Pcoolant[i], "T", Tfu, fluid)
-                if (rho[i] / rho2) > 1.5:
-                    rho2 = PropsSI("D", "Q", 0, "T", Tfu, fluid)
+            # # If phase is 100% liquid or 100% gaseous
+            # if phase == 0 or phase == 2:
+            #     # Compute density
+            #     rho2 = PropsSI("D", "P", Pcoolant[i], "T", Tfu, fluid)
+            #     if (rho[i] / rho2) > 1.5:
+            #         rho2 = PropsSI("D", "Q", 0, "T", Tfu, fluid)
+            #
+            #     # Reynolds number
+            #     Re_sp = Dhy * Gdeb / visccoolant[i]
+            #
+            #     # fsp is the friction coefficient
+            #     fsp1 = 1
+            #     fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+            #     # Solving Colebrook's formula
+            #     while abs((fsp1 / fsp2) - 1) > 0.0000001:
+            #         fsp1 = fsp2
+            #         fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+            #
+            #     # Computing pressure losses (using the formula from Song et al.)
+            #     DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rho[i] * Dhy)  # Friction pressure drop
+            #     DeltaPac = ((Gdeb ** 2) / (2 * rho[i])) * ((rho[i] / rho2) - 1)  # Accelerated pressure drop
+            # # In case of two-phase flow
+            # else:
+            #     # Reynolds number
+            #     Re_tp = Dhy * Gdeb / visccoolant[i]
+            #
+            #     # eps_prim is the "void fraction"
+            #     eps_prim = (rholp / rhogp) / ((1 / Xqual) + ((rholp / rhogp) - 1))
+            #     # Accelerated pressure drop
+            #     DeltaPac = (Gdeb ** 2) * Distance * (
+            #             (((1 - Xqual) ** 2) / (rholp * (1 - eps_prim))) + ((Xqual ** 2) / (rhogp * eps_prim)))
+            #     # Two-phase flow density
+            #     rhotp = (rhogp * rholp) / (rhogp * (1 - Xqual) + rholp * Xqual)
+            #
+            #     # Solving Colebrook's formula
+            #     fsp1 = 1
+            #     fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+            #     while abs((fsp1 / fsp2) - 1) > 0.0000001:
+            #         fsp1 = fsp2
+            #         fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+            #
+            #     # Friction pressure drop
+            #     DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rhotp * Dhy)
 
-                # Reynolds number
-                Re_sp = Dhy * Gdeb / visccoolant[i]
+            # Computing major pressure losses
+            d_ = 1 / ((1.8 * np.log10(Re) - 1.64) ** 2)
+            d_, error_d_ = meth.pvk(Re, d_)
+            error_D_.append(error_d_)
+            DeltaP = d_ * (Distance / Dhy) * ((rho[i] * V ** 2) / 2)
 
-                # fsp is the friction coefficient
-                fsp1 = 1
-                fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
-                # Solving Colebrook's formula
-                while abs((fsp1 / fsp2) - 1) > 0.0000001:
-                    fsp1 = fsp2
-                    fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + 2.51 / (Re_sp * (fsp1 ** 0.5))))) ** 2
+            # Computing minor pressure losses
+            # if i == 0:
+            #     direct1 = np.rad2deg(np.arcsin((ycanauxre[i + 1] - ycanauxre[i]) / ((((xcanauxre[i + 1] - xcanauxre[
+            #         i]) ** 2) + ((ycanauxre[i + 1] - ycanauxre[i]) ** 2)) ** 0.5)))
+            #     direct2 = ange
+            #
+            # elif i >= len(xcanauxre) - 5:
+            #     direct1 = np.rad2deg((np.arcsin((ycanauxre[i] - ycanauxre[i - 1]) / ((((xcanauxre[i] - xcanauxre[
+            #         i - 1]) ** 2) + ((ycanauxre[i] - ycanauxre[i - 1]) ** 2)) ** 0.5))))
+            #     direct2 = np.rad2deg(np.arcsin((ycanauxre[i] - ycanauxre[i - 1]) / ((((xcanauxre[i] - xcanauxre[
+            #         i - 1]) ** 2) + ((ycanauxre[i] - ycanauxre[i - 1]) ** 2)) ** 0.5)))
+            #
+            # elif lim11 <= i <= lim22:
+            #     if i % epso == 0:
+            #         direct1 = np.rad2deg(np.arcsin((ycanauxre[i + epso] - ycanauxre[i]) / ((((xcanauxre[i + epso] -
+            #                                                                                   xcanauxre[i]) ** 2) + ((
+            #                 (ycanauxre[i + epso] - ycanauxre[i]) ** 2))) ** 0.5)))
+            #         direct2 = np.rad2deg(np.arcsin((ycanauxre[i] - ycanauxre[i - epso]) / ((((xcanauxre[i] - xcanauxre[
+            #             i - epso]) ** 2) + ((ycanauxre[i] - ycanauxre[i - epso]) ** 2)) ** 0.5)))
+            #     else:
+            #         direct1 = 0
+            #         direct2 = 0
+            # else:
+            #     direct1 = np.rad2deg(np.arcsin((ycanauxre[i + 1] - ycanauxre[i]) / ((((xcanauxre[i + 1] - xcanauxre[
+            #         i]) ** 2) + ((ycanauxre[i + 1] - ycanauxre[i]) ** 2)) ** 0.5)))
+            #     direct2 = np.rad2deg(np.arcsin((ycanauxre[i] - ycanauxre[i - 1]) / ((((xcanauxre[i] - xcanauxre[
+            #         i - 1]) ** 2) + ((ycanauxre[i] - ycanauxre[i - 1]) ** 2)) ** 0.5)))
+            # alpha = direct1 - direct2
+            # totalpha = totalpha + abs(alpha)
+            # K = abs(((np.sin(np.deg2rad(alpha))) ** 2) + 2 * ((np.sin(np.rad2deg(alpha / 2))) ** 4))
+            # DeltaP2 = K * (0.5 * rho[i] * (V ** 2))
 
-                # Computing pressure losses (using the formula from Song et al.)
-                DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rho[i] * Dhy)  # Friction pressure drop
-                DeltaPac = ((Gdeb ** 2) / (2 * rho[i])) * ((rho[i] / rho2) - 1)  # Accelerated pressure drop
-            # In case of two-phase flow
-            else:
-                # Reynolds number
-                Re_tp = Dhy * Gdeb / visccoolant[i]
+            DeltaP2 = 0  # TEMPORARY
 
-                # eps_prim is the "void fraction"
-                eps_prim = (rholp / rhogp) / ((1 / Xqual) + ((rholp / rhogp) - 1))
-                # Accelerated pressure drop
-                DeltaPac = (Gdeb ** 2) * Distance * (
-                        (((1 - Xqual) ** 2) / (rholp * (1 - eps_prim))) + ((Xqual ** 2) / (rhogp * eps_prim)))
-                # Two-phase flow density
-                rhotp = (rhogp * rholp) / (rhogp * (1 - Xqual) + rholp * Xqual)
+            newP2 = (singpertes[i]) - DeltaP
+            singpertes.append(newP2)
+            newP = (Pcoolant2[i] - DeltaP) - DeltaP2
+            Pcoolant2.append(newP)
 
-                # Solving Colebrook's formula
-                fsp1 = 1
-                fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
-                while abs((fsp1 / fsp2) - 1) > 0.0000001:
-                    fsp1 = fsp2
-                    fsp2 = (1 / (-2 * np.log10(((Ro / Dhy) / 3.7) + (2.51 / (Re_tp * (fsp1 ** 0.5)))))) ** 2
+            # Compute pressure losses with entropy
+            Cp_local = meth.cpCH4(Pcoolant[i], Tfu, fluid)
+            newentropy = entropy[i] + Cp_local * (Tcoolant[i + 1] - Tcoolant[i]) / Tcoolant[i + 1]
+            entropy.append(newentropy)
+            newpressure = meth.pressureCH4(newentropy, Tcoolant[i + 1], fluid)
+            newpressurefin = newpressure - DeltaP - DeltaP2
+            Pcoolant.append(newpressurefin)
+            entropy_corr = meth.entCH4(Pcoolant[i + 1], Tcoolant[i + 1], fluid)
+            entropy.pop()
+            entropy.append(entropy_corr)
 
-                # Friction pressure drop
-                DeltaPfr = fsp1 * (Gdeb ** 2) * Distance / (2 * rhotp * Dhy)
-
-            # Compute new pressure
-            NewPressure = Pcoolant[i] - (DeltaPfr + DeltaPac)
-            Pcoolant.append(NewPressure)
+            # # Compute new pressure
+            # NewPressure = Pcoolant[i] - (DeltaPfr + DeltaPac)
+            # Pcoolant.append(NewPressure)
 
             # Phase determination at the next point using the raise in enthalpy
 
-            if phase == 0:  # Liquid
-                H1 = PropsSI("H", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
-                H2 = H1 + Q / debitmass
-                Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-
-                if 0 < Quality < 1:
-                    phase = 1  # Two-phase flow
-                else:
-                    phase = 0  # Keep liquid
-
-            else:  # Gas
-                H1 = H2
-                H2 = H1 + Q / debitmass
-                Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
-                if 0 < Quality < 1:
-                    phase = 1  # Two-phase flow
-                else:
-                    phase = 2  # Keep gaseous
-
-            if phase == 0 or phase == 2:
-                Tcoolant.append(Tfu)
-            else:
-                Tcoolant.append(Tcoolant[i])
+            # if phase == 0:  # Liquid
+            #     H1 = PropsSI("H", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
+            #     H2 = H1 + Q / debitmass
+            #     Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
+            #
+            #     if 0 < Quality < 1:
+            #         phase = 1  # Two-phase flow
+            #     else:
+            #         phase = 0  # Keep liquid
+            #
+            # else:  # Gas
+            #     H1 = H2
+            #     H2 = H1 + Q / debitmass
+            #     Quality = PropsSI("Q", "H", H2, "P", Pcoolant[i + 1], fluid)
+            #     if 0 < Quality < 1:
+            #         phase = 1  # Two-phase flow
+            #     else:
+            #         phase = 2  # Keep gaseous
+            #
+            # if phase == 0 or phase == 2:
+            #     Tcoolant.append(Tfu)
+            # else:
+            #     Tcoolant.append(Tcoolant[i])
 
             # Computing the new properties of the CH4
 
             # Single phase flow case
-            if phase == 0 or phase == 2:
-                newvisc = PropsSI("V", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                newcond = PropsSI("L", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                newcp = PropsSI("C", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                dens = PropsSI("D", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
-                cele = PropsSI("A", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            newvisc = PropsSI("V", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            newcond = PropsSI("L", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            newcp = PropsSI("C", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            dens = PropsSI("D", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
+            cele = PropsSI("A", "P", Pcoolant[i + 1], "T", Tcoolant[i], fluid)
 
-                visccoolant.append(newvisc)
-                condcoolant.append(newcond)
-                Cpmeth.append(newcp)
-                rho.append(dens)
-                Celerite.append(cele)
+            visccoolant.append(newvisc)
+            condcoolant.append(newcond)
+            Cpmeth.append(newcp)
+            rho.append(dens)
+            Celerite.append(cele)
 
-            # Two-phase flow
-            else:
-                # Gas phase properties
-                newvisc1 = PropsSI("V", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                newcond1 = PropsSI("L", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                newcp1 = PropsSI("C", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                dens1 = PropsSI("D", "Q", 1, "P", Pcoolant[i + 1], fluid)
-                cele1 = PropsSI("A", "Q", 1, "P", Pcoolant[i + 1], fluid)
-
-                # Liquid phase properties
-                newvisc2 = PropsSI("V", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                newcond2 = PropsSI("L", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                newcp2 = PropsSI("C", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                dens2 = PropsSI("D", "Q", 0, "P", Pcoolant[i + 1], fluid)
-                cele2 = PropsSI("A", "Q", 0, "P", Pcoolant[i + 1], fluid)
-
-                # Average the values between the two phases according to vapor quality
-                visccoolant.append(Quality * newvisc1 + (1 - Quality) * newvisc2)
-                condcoolant.append(Quality * newcond1 + (1 - Quality) * newcond2)
-                Cpmeth.append(Quality * newcp1 + (1 - Quality) * newcp2)
-                rho.append(Quality * dens1 + (1 - Quality) * dens2)
-                Celerite.append(Quality * cele1 + (1 - Quality) * cele2)
+            # # Two-phase flow
+            # else:
+            #     # Gas phase properties
+            #     newvisc1 = PropsSI("V", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            #     newcond1 = PropsSI("L", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            #     newcp1 = PropsSI("C", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            #     dens1 = PropsSI("D", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            #     cele1 = PropsSI("A", "Q", 1, "P", Pcoolant[i + 1], fluid)
+            #
+            #     # Liquid phase properties
+            #     newvisc2 = PropsSI("V", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            #     newcond2 = PropsSI("L", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            #     newcp2 = PropsSI("C", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            #     dens2 = PropsSI("D", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            #     cele2 = PropsSI("A", "Q", 0, "P", Pcoolant[i + 1], fluid)
+            #
+            #     # Average the values between the two phases according to vapor quality
+            #     visccoolant.append(Quality * newvisc1 + (1 - Quality) * newvisc2)
+            #     condcoolant.append(Quality * newcond1 + (1 - Quality) * newcond2)
+            #     Cpmeth.append(Quality * newcp1 + (1 - Quality) * newcp2)
+            #     rho.append(Quality * dens1 + (1 - Quality) * dens2)
+            #     Celerite.append(Quality * cele1 + (1 - Quality) * cele2)
 
             pbar_main.update(1)
 
@@ -825,7 +885,7 @@ plt.show()
 
 plt.figure(dpi=300)
 plt.plot(xcanauxre, inwall_temperature, color='magenta', label='Twg')
-plt.plot(xcanauxre, outwall_temperature, color='orangered', label='Twl')
+plt.plot(xcanauxre, outwall_temperature[1:], color='orangered', label='Twl')
 plt.title('Wall temperature (in K) as a function of engine axis')
 plt.legend()
 plt.show()
