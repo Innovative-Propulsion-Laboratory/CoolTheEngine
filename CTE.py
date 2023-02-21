@@ -6,7 +6,6 @@ Original author: Julien S
 Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R
 """
 
-# %% Imports
 import time
 import csv
 
@@ -15,7 +14,6 @@ import numpy as np
 from machsolve import mach_solv
 from pressuresolve import pressure_solv
 from temperaturesolve import temperature_solv
-from musolve import mu
 from Tcorsolve import tempcorrige
 import scipy.optimize as opt
 
@@ -23,9 +21,8 @@ import scipy.optimize as opt
 from Canaux import canaux
 
 # Graphics
-from graphic3d import view3d
 from heatequationsolve import carto2D
-from volume3d import carto3d
+from volume3d import carto3d, view3d
 import matplotlib.pyplot as plt
 from tqdm import tqdm  # For progress bars
 
@@ -40,16 +37,15 @@ print("█                                                                      
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█                                                                          █")
 print("█ Initialisation                                                           █")
-# %% Engine initialisation
-"Viserion settings"
+
+# %% Initial definitions
 
 mesh_size = 0.25  # Distance between two points of calculation
-
 x_coords_filename = f"input/{mesh_size}/x.txt"  # X coordinates of the Viserion
 y_coords_filename = f"input/{mesh_size}/y.txt"  # Y coordinates of the Viserion
 input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with CEA)
 
-"Constant input_data_list"
+# Constant input_data_list
 lim22 = 600  # Not used anymore
 size2 = 16  # Used for the height of the display in 3D view
 ange = -18.884  # Not used anymore ?
@@ -58,7 +54,7 @@ epso = 10  # Not used anymore ?
 machtype = 0  # 0 for one equation and else for another equation in calculation of mach
 limitation = 0.05  # used to build the scales in 3D view
 
-# %% Reading Viserion_2023.txt
+# %% Reading input data
 crinit = csv.reader(open(input_CEA_data, "r"))
 input_data_list = [row[1] for row in crinit]
 
@@ -81,9 +77,8 @@ Dcol = float(input_data_list[12])  # Convergent radius of curvature
 Rcol = float(input_data_list[13])  # Throat radius of curvature
 Ac = float(input_data_list[14])  # Throat diameter
 DiamCol = float(input_data_list[15])  # Throat diameter
-# %% Import of the (X,Y) coordinates of the Viserion
 
-# Reading the coordinate files
+# %% Import of the (X,Y) coordinates of the Viserion
 crx = csv.reader(open(x_coords_filename, "r"))
 cry = csv.reader(open(y_coords_filename, "r"))
 
@@ -91,35 +86,32 @@ cry = csv.reader(open(y_coords_filename, "r"))
 x_value = [float(row[0]) / 1000 for row in crx]
 y_value = [float(row[0]) / 1000 for row in cry]
 
-# Plot of the upper profile of the engine
-"""
-plt.figure(dpi=300)
-plt.plot(x_value, y_value, color='black')
-plt.title('Profile of the Viserion (left : chamber and right : divergent', color='black')
-plt.show()
-"""
+# Plot of the profile of the engine
+# plt.figure(dpi=300)
+# plt.plot(x_value, y_value, color='black')
+# plt.title('Profile of the Viserion (left : chamber and right : divergent', color='black')
+# plt.show()
+
 # Computation and plot of the mesh density of the engine
-"""
 R = [abs(x_value[i] - x_value[i + 1]) for i in range(0, len(x_value) - 1)]
 R.append(R[-1])
 colooo = plt.cm.binary
 inv = 1, 1, 1  # 1 means should be reversed
 view3d(inv, x_value, y_value, R, colooo, 'Mesh density', size2, limitation)
-"""
-# %% Computation of the cross-sectional areas of the engine
+
+# %% Computation of the cross-sectional area along the engine
 aire = [np.pi * r ** 2 for r in y_value]
 
 # Plots of the cross-sectionnal areas
 """
 plt.figure(dpi=300)
-plt.plot(x_value,aire,color='black')
+plt.plot(x_value, aire, color='black')
 plt.title("Area (in m²) as a function of engine axis")
 plt.show()
 """
-
 print("█                                                                          █")
+
 # %% Adiabatic constant (gamma) parametrization
-"Linear interpolation of gamma"
 print("█ Computing gamma                                                          █")
 i_conv = 0  # Index of the beginning of the convergent
 a = 1
@@ -128,6 +120,7 @@ while a == b:  # Read y values two per two in order to detect the beginning of t
     a = y_value[i_conv]
     i_conv += 1
     b = y_value[i_conv]
+
 # Gamma in the cylindrical chamber
 gamma = [gamma_c for i in
          range(0, i_conv)]  # Gamma is constant before the beginning of the convergent along the chamber
@@ -152,15 +145,13 @@ for q in range(-1, p - 1):  # Linear interpolation between beginning and end of 
     gamma.append(t)
 
 # Plot of the gamma linearisation
-"""
-#print(gamma)
-#print(len(gamma))
 plt.figure(dpi=300)
-plt.plot(x_value,gamma,color='gold')
+plt.plot(x_value, gamma, color='gold')
 plt.title("Gamma linearisation as a function of engine axis")
 plt.show()
-"""
+
 print("█                                                                          █")
+
 # %% Mach number computation
 "Computation of the initial velocity and mach number of the gases"
 v_init = (debit_LOX + debit_LCH4) / (rho_init * aire[0])  # Initial velocity of the gases
@@ -190,6 +181,7 @@ inv = 1, 1, 1  # 1 means should be reversed
 print("█ Plotting 3D graph                                                        █")
 print("█                                                                          █")
 view3d(inv, x_value, y_value, mach_function, colooo, 'Mach number', size2, limitation)
+
 # %% Static pressure computation
 pressure_function = [Pc]  # (in Pa)
 
@@ -219,9 +211,7 @@ inv = 1, 1, 1  # 1 means should be reversed
 print("█ Plotting graph                                                           █")
 print("█                                                                          █")
 view3d(inv, x_value, y_value, pressure_function, colooo, 'Static pressure (in Pa)', size2, limitation)
-# %% Temperature computation
-
-# Hot gas temperature computations along the engine
+# %% Hot gas temperature computation
 hotgas_temperature = [Tc]
 with tqdm(total=long - 1,
           desc="█ Computing gas temperature    ",
@@ -242,40 +232,36 @@ with tqdm(total=long - 1,
 hotgas_temp_corrected = [tempcorrige(hotgas_temperature[i], gamma[i], mach_function[i]) for i in range(0, long)]
 
 # Plots of the temperature in the engine (2D/3D)
-"""
 plt.figure(dpi=300)
-plt.plot(x_value,hotgas_temperature,color='gold')
+plt.plot(x_value, hotgas_temperature, color='gold')
 plt.title("Gas temperature (in K) as a function of the engine axis")
 plt.show()
-
-colooo = plt.cm.terrain_r
+colooo = plt.cm.coolwarm
 inv = 1, 1, 1  # 1 means should be reversed
 print("█ Plotting graph...                                                        █")
 view3d(inv, x_value, y_value, hotgas_temperature, colooo, 'Temperature of the gases (in K)', size2, limitation)
-"""
-# %% Channel parameters
-"Number of channels and manifold position"
+
+# %% Dimensions
 nbc = 40  # Number of channels
 tore = 0.104  # Position of the manifold from the throat (in m)
 
-"Width of the channels"
+# Widths
 lrg_inj = 0.002  # Width of the channel in at the injection plate (in m)
 lrg_conv = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
 lrg_col = 0.002  # Width of the channel in the throat (in m)
 lrg_tore = 0.002  # Width of the channel at the manifold (in m)
 
-"Height of the channels"
+# Heights
 ht_inj = 0.002  # Height of the channel at the injection plate (in m)
 ht_conv = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
 ht_col = 0.002  # Height of the channel in the throat (in m)
 ht_tore = 0.002  # Height of the channel at the manifold (in m)
 
-# %% Thicknesses
+# Thickness
 e_conv = 0.001  # Thickness of the wall at the chamber (in m)
 e_col = 0.001  # Thickness of the wall at the throat (in m)
 e_tore = 0.001  # Thickness of the wall at the manifold (in m)
 
-# %% Growth factors
 n1 = 1  # Width convergent
 n2 = 1  # Width divergent
 n3 = 1  # Height convergent
@@ -283,18 +269,16 @@ n4 = 1  # Height divergent
 n5 = 1  # Thickness convergent
 n6 = 1  # Thickness divergent
 
-# %% Material
-"Thermal conductivity of the material"
+# %% Material selection
 material = 0
 if material == 0:  # Pure copper
-    condcoeff1 = -0.065665283166
-    condcoeff2 = 421.82710859
+    condcoeff1 = -0.065665
+    condcoeff2 = 421.82
 elif material == 1:  # CuCrZr
     condcoeff1 = -0.0269
     condcoeff2 = 365.33
 
-# %% Coolant
-"Properties of the coolant"
+# %% Properties of the coolant
 fluid = "Methane"
 rho_initCH4 = 425  # Density of the CH4
 If_reg = debit_LCH4  # Total mass flow rate (in kg/s)
@@ -306,42 +290,39 @@ Ro = 15e-6  # Roughness (in micrometers)
 # %% Computation of channel geometry
 print("█ Channel geometric computation                                            █")
 
-"""Methode 2"""
+# Method 1
+# xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
+#                                                               nbc, lrg_col, ht_col, ht_c, ht_div, tore,
+#                                                               debit_total, epaisseur_chemise)
 
+# Method 2
 xcanauxre, ycanauxre, larg_canalre, larg_ailette, htre, epaiss_chemise, Areare, longc \
     = canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, ht_conv, ht_col, ht_tore,
              e_conv, e_col, e_tore, tore, debit_total, n1, n2, n3, n4, n5, n6)
 
-"""Methode 1"""
-"""
-xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
-                                                              nbc, lrg_col, ht_col, ht_c, ht_div, tore,
-                                                              debit_total, epaisseur_chemise)
-"""
-
-"Writing the results of the study in a CSV file"
+# Write the dimensions of the channels in a CSV file
 file_name = "channelvalue.csv"
 file = open(file_name, "w", newline="")
 writer = csv.writer(file)
-writer.writerow(
-    ("Engine x", "Engine y", "Channel width", "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
+writer.writerow(("Engine x", "Engine y", "Channel width",
+                 "Rib width", "Channel height", "Chamber wall thickness", "Channel area"))
 for i in range(0, longc):
-    writer.writerow(
-        (xcanauxre[i], ycanauxre[i], larg_canalre[i], larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
+    writer.writerow((xcanauxre[i], ycanauxre[i], larg_canalre[i],
+                     larg_ailette[i], htre[i], epaiss_chemise[i], Areare[i]))
 file.close()
 
 end_i = time.perf_counter()  # End of the initialisation timer
 time_elapsed_i = time.ctime(end_i - start_t)[14:19]  # Initialisation elapsed time converted in minutes:secondes
 start_m = time.perf_counter()  # Start of the main solution timer
-# %% Computation of the global solution
+# %% Prepare the lists before main computation
 
-# We reverse the data in order to calculate from the manifold to the injection (x is in reverse)
 epaiss_chemise.reverse()
 xcanauxre.reverse()
 larg_canalre.reverse()
 Areare.reverse()
 htre.reverse()
 ycanauxre.reverse()
+# We reverse the data in order to calculate from the manifold to the injection
 
 # Save the data for exporting, before altering the original lists
 hotgas_temperature_saved = hotgas_temperature[:]
@@ -361,17 +342,43 @@ aire.reverse()
 hotgas_temperature.reverse()
 
 
+# %% Main computation
 def flux_equations(vars, *data):
     x1, x2 = vars
-    hg, hl, Tg, Tl, L, e = data
-    f1 = hg * (Tg - x1) - (L / e) * (x1 - x2)
-    f2 = hl * (x2 - Tl) - (L / e) * (x1 - x2)
+    hg, hl, Tg, Tl, wall_conductivity, e = data
+    f1 = hg * (Tg - x1) - (wall_conductivity / e) * (x1 - x2)
+    f2 = hl * (x2 - Tl) - (wall_conductivity / e) * (x1 - x2)
     return [f1, f2]
+
+
+def initialize_wall_temp(hg, hl, Tg, Tl, wall_conductivity, e):
+    t_hotwall, t_coldwall = opt.fsolve(func=flux_equations,
+                                       x0=np.array([900.0, 700.0]),
+                                       args=(hg, hl, Tg, Tl, wall_conductivity, e))
+
+    return t_hotwall, t_coldwall
+
+
+def conductivity(Twg: float, Twl: float, material_name: str):
+    T_avg = (Twg + Twl) * 0.5
+    if material_name == "pure copper":
+        return -0.065665 * T_avg + 421.82
+    if material_name == "cucrzr":
+        return -0.0269 * T_avg + 365.33
+
+
+def mu(gas_temp, molar_mass, gamma):
+    mu = 17.858 * (46.61 * 10 ** (-10)) * (molar_mass ** 0.5) * ((9 / 5) * gas_temp) ** 0.6
+    Cp = 8314 * gamma / ((gamma - 1) * molar_mass)
+    Lamb = mu * (Cp + (8314.5 / (4 * molar_mass)))
+    Pr = 4 * gamma / (9 * gamma - 5)
+
+    return mu, Cp, Lamb, Pr
 
 
 def mainsolver(Sig, rho, Tcoolant,
                visccoolant, condcoolant,
-               Cpmeth, Pcoolant, LambdaTC,
+               Cpmeth, Pcoolant, wall_cond_list,
                entropy, current_rep, total_reps):
     """
     This is the main function used for solving the 1D case.
@@ -387,8 +394,8 @@ def mainsolver(Sig, rho, Tcoolant,
     lamb_function = []
     Prandtl_function = []
     hg_function = []
-    inwall_temperature = []
-    outwall_temperature = [Tcoolant[0]]
+    hotwall_temperature = [110]
+    coldwall_temperature = [110]
     fluxsolved = []
     Vitesse = []
     Celerite = []
@@ -399,13 +406,15 @@ def mainsolver(Sig, rho, Tcoolant,
     totalpha = 0
     positioncol = ycanauxre.index(min(ycanauxre))
 
+    length_from_inlet = 0
     with tqdm(total=longc,
               desc=f"█ Global resolution {current_rep}/{total_reps}        ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar_main:
+
         # Main computation loop
         for i in range(0, longc):
-            Lambda_tc = LambdaTC[i]
+            wall_cond = wall_cond_list[i]
             c = larg_canalre[i]
 
             # Hydraulic diameter (4*Area/Perimeter)
@@ -416,15 +425,14 @@ def mainsolver(Sig, rho, Tcoolant,
             Vitesse.append(V)
 
             # Reynolds number
-            Re_c = (V * Dhy * rho[i]) / visccoolant[i]
-            Re_function.append(Re_c)
+            Re_cool = (V * Dhy * rho[i]) / visccoolant[i]
+            Re_function.append(Re_cool)
 
             # Prandtl number
             Pr_cool = (visccoolant[i] * Cpmeth[i]) / condcoolant[i]
 
-            T1 = hotgas_temperature[i]
             # Compute viscosity, Cp, conductivity and Prandtl number with musolve.py
-            viscosite, cp, lamb, Pr = mu(T1, M, gamma[i])
+            viscosite, cp, lamb, Pr = mu(hotgas_temperature[i], M, gamma[i])
 
             # Store the results
             visc_function.append(viscosite)
@@ -443,90 +451,23 @@ def mainsolver(Sig, rho, Tcoolant,
             # emissivity = 0.02  # 2% emissivity for CH4
             # qr = emissivity * steff * (T1 ** 4)  # Radiative heat flux
 
-            # # This is not used, didn't delete because it might have a purpose later
-            # if i + 1 == len(xcanauxre):
-            #     EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i] - xcanauxre[i - 1])
-            # else:
-            #     EtalArea = (2 * c + 2 * htre[i]) * abs(xcanauxre[i + 1] - x)
+            # If last point in the list
+            if i == len(xcanauxre) - 1:
+                # Distance between current point and the previous (Pythagoras)
+                dr = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
+            else:
+                # Distance between current point and the next (Pythagoras)
+                dr = ((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5
 
-            Gdeb = debit_LCH4 / (Areare[i] * nbc)
-
-            length_from_inlet = abs(xcanauxre[i] - max(xcanauxre))  # TO BE IMPROVED TO TAKE CURVATURE INTO ACCOUNT
+            length_from_inlet += dr
 
             # Modified correlation from Taylor (NASA TN D-4332)
-            Nu = 0.023 * Re_c ** 0.705 * Pr ** 0.8 * (outwall_temperature[i] / Tcoolant[i]) ** -(
+            Nu = 0.023 * Re_cool ** 0.705 * Pr_cool ** 0.8 * (coldwall_temperature[i] / Tcoolant[i]) ** -(
                     -0.57 - 1.59 * Dhy / length_from_inlet)
 
             # Modified Pizzarelli correlation (best model)
             # lambda_pizza = None  # This requires properties of the coolant in the bulk flow AND near the wall
             # Nu = 0.0082 * Re_hg ** 0.8 * Pr ** 0.16 * lambda_pizza ** 0.33 * ( 1 + 10 * (Dhy / length_from_inlet)) ** 0.5
-
-            # # In case of single-phase flow
-            # if phase == 0 or phase == 2:
-            #     f = (1.82 * np.log10(Re_hg) - 1.64) ** (-2)
-            #     Nu = ((f / 8) * (Re_hg - 1000) * Pr_cool) / (1 + 12.7 * ((f / 8) ** 0.5) * ((Pr_cool ** (2 / 3)) - 1))
-            #
-            #     Xqual = PropsSI("Q", "P", Pcoolant[i], "T", Tcoolant[i], fluid)
-            #
-            # # In case of two-phase flow (boiling etc.)
-            # else:
-            #     # Grab all the fluid data using CoolProp
-            #     Base0 = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-            #     Base1 = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-            #     Xqual = (H2 - Base0) / (Base1 - Base0)
-            #     rhogp = PropsSI("D", "Q", 1, "P", Pcoolant[i], fluid)
-            #     rholp = PropsSI("D", "Q", 0, "P", Pcoolant[i], fluid)
-            #     mugp = PropsSI("V", "Q", 1, "P", Pcoolant[i], fluid)
-            #     mulp = PropsSI("V", "Q", 0, "P", Pcoolant[i], fluid)
-            #     Xeq = (((1 - Xqual) / Xqual) ** 0.9) * ((rhogp / rholp) ** 0.5) * ((mugp / mulp) ** 0.1)
-            #     SurfaceT = PropsSI("I", "Q", 0, "P", Pcoolant[i], fluid)
-            #     Kp = float(Pcoolant[i]) / ((SurfaceT * 9.81 * (rholp - rhogp)) ** 0.5)
-            #     We = (Gdeb ** 2) * Dhy / (rholp * SurfaceT)
-            #     # 1-0 H
-            #     HVP = PropsSI("H", "Q", 1, "P", Pcoolant[i], fluid)
-            #     HLP = PropsSI("H", "Q", 0, "P", Pcoolant[i], fluid)
-            #     HHV = HVP - HLP
-            #
-            #     flux1 = flux + 0.5
-            #     flux2 = flux
-            #     while (abs(flux1 - flux2) / flux2) > 0.000001:
-            #         flux1 = (flux1 + flux2) / 2
-            #         Bo = 1000000 * flux1 / (Gdeb * HHV)
-            #
-            #         # Use a different correlation for the Nusselt number,
-            #         # depending on the vapor quality
-            #         if Xqual < 0.6:
-            #             Nu = 12.46 * (Bo ** 0.544) * (We ** 0.035) * (Kp ** 0.614) * (Xeq ** 0.031)
-            #         else:
-            #             Nu = 0.00136 * (Bo ** (-1.442)) * (We ** 0.074)
-            #
-            #         # Compute the convective heat-transfer coefficient
-            #         hl = Nu * (condcoolant[i] / Dhy)
-            #
-            #         # Compute dimensions of the fins
-            #         D = 2 * (ycanauxre[i] - epaiss_chemise[i])
-            #         d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-            #         m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
-            #
-            #         # Corrected coefficient, taking the fin effect into account
-            #         hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * (
-            #                 (2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
-            #                          (np.tanh(m * htre[i])) / (np.pi * D))
-            #
-            #         # Grab data from lists
-            #         hg = hg_function[i]
-            #         hl = hl_cor
-            #         Tl = Tcoolant[i]
-            #         e = epaiss_chemise[i]
-            #         L = Lambda_tc
-            #
-            #         # Solve the system numerically, giving an initial guess
-            #         x_, y_ = opt.fsolve(func=flux_equations,
-            #                             x0=np.array([900.0, 700.0]),
-            #                             args=(hg, hl, Tg, Tl, L, e))
-            #
-            #         # Heat flux computation
-            #         flux2 = hl * (y_ - Tcoolant[i]) * 0.000001
 
             # Compute coolant-side convective heat-transfer coefficient
             hl = Nu * (condcoolant[i] / Dhy)
@@ -535,54 +476,46 @@ def mainsolver(Sig, rho, Tcoolant,
             # Fin dimensions
             D = 2 * (ycanauxre[i] - epaiss_chemise[i])
             d = (np.pi * (D + htre[i] + epaiss_chemise[i]) - nbc * c) / nbc
-            m = float(((2 * hl) / (d * Lambda_tc)) ** 0.5)
+            m = float(((2 * hl) / (d * wall_cond)) ** 0.5)
 
             # Correct for the fin effect
             hl_cor = hl * ((nbc * c) / (np.pi * D)) + nbc * \
-                     ((2 * hl * Lambda_tc * (((np.pi * D) / nbc) - c)) ** 0.5) * (
+                     ((2 * hl * wall_cond * (((np.pi * D) / nbc) - c)) ** 0.5) * (
                              (np.tanh(m * htre[i])) / (np.pi * D))
             hlcor.append(hl_cor)
 
-            # Store the results
+            # Grab the necessary variables from lists
             hg = hg_function[i]
             hl = hlcor[i]
             Tl = Tcoolant[i]
             Tg = hotgas_temperature[i]
             e = epaiss_chemise[i]
-            L = Lambda_tc
 
             # Solve a system of two equations to obtain the flux through the wall
-            x_, y_ = opt.fsolve(func=flux_equations,
-                                x0=np.array([900.0, 700.0]),
-                                args=(hg, hl, Tg, Tl, L, e))
+            T_hotwall, T_coldwall = opt.fsolve(func=flux_equations,
+                                               x0=np.array([900.0, 700.0]),
+                                               args=(hg, hl, Tg, Tl, wall_cond, e))
 
             # Temperature at the walls
-            inwall_temperature.append(x_)
-            outwall_temperature.append(y_)
+            hotwall_temperature.append(T_hotwall)
+            coldwall_temperature.append(T_coldwall)
 
             # Store heat flux through the coolant side
-            flux = hl * (y_ - Tcoolant[i]) * 0.000001
+            flux = hl * (T_coldwall - Tcoolant[i]) * 0.000001
             fluxsolved.append(flux)
 
             # Compute sigma (used in the Bartz equation)
-            Tw = inwall_temperature[i]
+            Twg = hotwall_temperature[i]
+            Twl = coldwall_temperature[i]
             Ts = hotgas_temperature[positioncol]
             Mak = mach_function[i]
-            sigm = 1 / ((((Tw / (2 * Ts)) * (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) + 0.5) ** 0.68) * (
+            sigm = 1 / ((((Twg / (2 * Ts)) * (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) + 0.5) ** 0.68) * (
                     (1 + (((gamma[i] - 1) / 2) * (Mak ** 2))) ** 0.12))
             Sig.append(sigm)
 
             # Compute thermal conductivity of the solid at a given temperature
-            Lambdatc = (condcoeff1 * ((Tw + outwall_temperature[i]) * 0.5) + condcoeff2)
-            LambdaTC.append(Lambdatc)
-
-            # If last point in the list
-            if i == len(xcanauxre) - 1:
-                # Distance between current point and the previous (Pythagoras)
-                dr = ((xcanauxre[i - 1] - xcanauxre[i]) ** 2 + (ycanauxre[i - 1] - ycanauxre[i]) ** 2) ** 0.5
-            else:
-                # Distance between current point and the next (Pythagoras)
-                dr = ((xcanauxre[i + 1] - xcanauxre[i]) ** 2 + (ycanauxre[i + 1] - ycanauxre[i]) ** 2) ** 0.5
+            new_wall_cond = conductivity(Twg=Twg, Twl=Twl, material_name="cucrzr")
+            wall_cond_list.append(new_wall_cond)
 
             # Compute heat exchange area between two points
             dA = dr * (2 * c + 2 * htre[i])
@@ -599,10 +532,10 @@ def mainsolver(Sig, rho, Tcoolant,
 
             # Solving Colebrook's formula
             fD1 = 1e-3
-            fD2 = (1 / (-2 * np.log10(((Ro / (Dhy * 3.7)) + 2.51 / (Re_c * (fD1 ** 0.5)))))) ** 2
+            fD2 = (1 / (-2 * np.log10(((Ro / (Dhy * 3.7)) + 2.51 / (Re_cool * (fD1 ** 0.5)))))) ** 2
             while abs((fD1 / fD2) - 1) > 0.0000001:
                 fD1 = fD2
-                fD2 = (1 / (-2 * np.log10(((Ro / (Dhy * 3.7)) + 2.51 / (Re_c * (fD1 ** 0.5)))))) ** 2
+                fD2 = (1 / (-2 * np.log10(((Ro / (Dhy * 3.7)) + 2.51 / (Re_cool * (fD1 ** 0.5)))))) ** 2
 
             # Computing pressure loss with the Darcy-Weisbach friction factor
             delta_p = 0.5 * fD2 * (dr / Dhy) * rho[i] * V ** 2
@@ -626,27 +559,20 @@ def mainsolver(Sig, rho, Tcoolant,
 
             pbar_main.update(1)
 
-        return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-               outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-               Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
+        return hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, hotwall_temperature, \
+               coldwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+               Vitesse, Pcoolant, wall_cond_list, Celerite, hlnormal, error_D_, singpertes, Pcoolant2
 
 
 Sig = [1]
-Tcoolant = []
-Pcoolant = []
-visccoolant = []
-condcoolant = []
-Cpmeth = []
-rho = []
-Tcoolant.append(Tl_init)
-Pcoolant.append(Pl_init)
-visccoolant.append(meth.viscCH4(Pcoolant[0], Tcoolant[0], fluid))
-condcoolant.append(meth.condCH4(Pcoolant[0], Tcoolant[0], fluid))
-Cpmeth.append(meth.cpCH4(Pcoolant[0], Tcoolant[0], fluid))
-rho.append(meth.rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
-LambdaTC = [330]
-entropy = [meth.entCH4(Pcoolant[0], Tcoolant[0], fluid)]
-
+LambdaTC = [350]
+Tcoolant = [Tl_init]
+Pcoolant = [Pl_init]
+visccoolant = [meth.viscCH4(Pl_init, Tl_init, fluid)]
+condcoolant = [meth.condCH4(Pl_init, Tl_init, fluid)]
+Cpmeth = [meth.cpCH4(Pl_init, Tl_init, fluid)]
+rho = [meth.rhoCH4(Pl_init, Tl_init, fluid)]
+entropy = [meth.entCH4(Pl_init, Tl_init, fluid)]
 reps_max = 2
 
 # First iteration of the solving
@@ -743,7 +669,7 @@ plt.show()
 """
 
 plt.figure(dpi=300)
-plt.plot(xcanauxre, inwall_temperature, color='magenta', label='Twg')
+plt.plot(xcanauxre, inwall_temperature[1:], color='magenta', label='Twg')
 plt.plot(xcanauxre, outwall_temperature[1:], color='orangered', label='Twl')
 plt.title('Wall temperature (in K) as a function of engine axis')
 plt.legend()

@@ -148,13 +148,13 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
         angulaire.append(np.rad2deg(np.arccos(vect2)))
         newep = ycanauxre[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
         newepaisseur.append(newep)
-    
+
     plt.plot(xcanauxre, ycanauxre, color='chocolate', label='old')  # (configuration qui
     plt.plot(xcanauxre, newepaisseur, color='blue', label='New')
     plt.title('Verif')  # et au Viserion)
     plt.legend()
     plt.show()
-    
+
     ycanauxre = [newepaisseur[i] for i in range(0, len(newepaisseur))]
     veritas = []
     for i in range(0, longc):
@@ -237,23 +237,23 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     file = open(file_name, "w", newline="")
     writer = csv.writer(file)
     writer.writerow(["StartCurve"])
-    for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i]), 1000*(larg_canalre[i] / 2)))
+    for i in range(0, longc, 3):
+        writer.writerow((1000 * xcanauxre[i], 1000 * (ycanauxre[i]), 1000 * (larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
-    for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i]), 1000*(-larg_canalre[i] / 2)))
+    for i in range(0, longc, 3):
+        writer.writerow((1000 * xcanauxre[i], 1000 * (ycanauxre[i]), 1000 * (-larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
-    for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + htre[i]), 1000*(larg_canalre[i] / 2)))
+    for i in range(0, longc, 3):
+        writer.writerow((1000 * xcanauxre[i], 1000 * (ycanauxre[i] + htre[i]), 1000 * (larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["StartCurve"])
-    for i in range(0, longc,3):
-        writer.writerow((1000*xcanauxre[i], 1000*(ycanauxre[i] + htre[i]), 1000*(- larg_canalre[i] / 2)))
+    for i in range(0, longc, 3):
+        writer.writerow((1000 * xcanauxre[i], 1000 * (ycanauxre[i] + htre[i]), 1000 * (- larg_canalre[i] / 2)))
     writer.writerow(["EndCurve"])
     writer.writerow(["End"])
-    file.close()    
+    file.close()
 
     plt.plot(xcanauxre, larg_ailette, label='Rib width', color='chocolate')
     plt.plot(xcanauxre, larg_canalre, label='Channel width', color='green')
@@ -261,7 +261,7 @@ def canaux(x_value, y_value, nbc, lrg_inj, lrg_conv, lrg_col, lrg_tore, ht_inj, 
     plt.title('Width of channels and ribs')
     plt.legend()
     plt.show()
-    
+
     plt.plot(xcanauxre, vitessere, color='chocolate')
     plt.title('Velocity of coolant in channels (in m/s) as a function of the engine axis')
     plt.show()
