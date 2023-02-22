@@ -46,8 +46,9 @@ size2 = 16  # Used for the height of the display in 3D view
 machtype = 0  # 0 for one equation and else for another equation in calculation of mach
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 1  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
+do_final_3d_plot = False
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -255,15 +256,15 @@ nbc = 40  # Number of channels
 manifold_pos = 0.104  # Position of the manifold from the throat (in m)
 
 # Widths
-lrg_inj = 0.002  # Width of the channel in at the injection plate (in m)
-lrg_conv = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
-lrg_col = 0.002  # Width of the channel in the throat (in m)
+lrg_inj = 0.0045  # Width of the channel in at the injection plate (in m)
+lrg_conv = 0.0025  # Width of the channel at the end of the cylindrical chamber (in m)
+lrg_col = 0.0015  # Width of the channel in the throat (in m)
 lrg_tore = 0.002  # Width of the channel at the manifold (in m)
 
 # Heights
 ht_inj = 0.002  # Height of the channel at the injection plate (in m)
 ht_conv = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
-ht_col = 0.002  # Height of the channel in the throat (in m)
+ht_col = 0.0015  # Height of the channel in the throat (in m)
 ht_tore = 0.002  # Height of the channel at the manifold (in m)
 
 # Thickness
@@ -279,11 +280,13 @@ n5 = 1  # Thickness convergent
 n6 = 1  # Thickness divergent
 
 # %% Material selection
-material = 0
+material = 1
 if material == 0:  # Pure copper
     material_name = "pure copper"
 elif material == 1:  # CuCrZr
     material_name = "cucrzr"
+elif material == 2:
+    material_name = "inconel"
 
 # %% Properties of the coolant
 fluid = "Methane"
@@ -356,6 +359,7 @@ hotgas_temp_list.reverse()
 
 
 # %% Main computation
+
 def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
                coolant_viscosity_list, coolant_cond_list, coolant_cp_list,
                coolant_pressure_list, wall_cond_list, current_rep, total_reps):
@@ -416,7 +420,7 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             hotgas_prandtl_list.append(hotgas_prandtl)
 
             # Gas-side convective heat transfer coefficient (Bartz equation)
-            hg = (0.026 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
+            hg = (0.0195 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
                     (Pc / c_star) ** 0.8) * ((diam_throat / curv_radius_pre_throat) ** 0.1) * (
                           (area_throat / cross_section_area_list[i]) ** 0.9)) * sigma_list[
                      i]
@@ -444,23 +448,29 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
                     coldwall_temperature_list[i] / coolant_temp_list[i]) ** -(
                     -0.57 - 1.59 * Dhy / (length_from_inlet + inlet_buffer))
 
+            zeta = t.darcy_weisbach(Dhy, Re_cool, roughness) / t.darcy_weisbach(Dhy, Re_cool, 0)
+
+            roughness_correction = zeta * ((1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool - 1)) / (
+                    1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool * zeta - 1)))
+
             # Modified Pizzarelli correlation (best model)
             # lambda_pizza = None  # This requires properties of the coolant in the bulk flow AND near the wall
-            # Nu = 0.0082 * Re_hg ** 0.8 * hotgas_prandtl ** 0.16 * lambda_pizza ** 0.33 * ( 1 + 10 * (Dhy / length_from_inlet)) ** 0.5
+            # Nu = 0.0082 * Re_hg ** 0.8 * hotgas_prandtl ** 0.16 \
+            # * lambda_pizza ** 0.33 * ( 1 + 10 * (Dhy / length_from_inlet)) ** 0.5
 
             # Compute coolant-side convective heat-transfer coefficient
-            hl = Nu * (coolant_cond_list[i] / Dhy)
+            hl = Nu * roughness_correction * (coolant_cond_list[i] / Dhy)
             hl_normal_list.append(hl)
 
             # Fin dimensions
             D = 2 * (ycanaux[i] - wall_thickness[i])
             d = (np.pi * (D + ht_canal[i] + wall_thickness[i]) - nbc * larg_canal[i]) / nbc
-            m = float(((2 * hl) / (d * wall_cond_list[i])) ** 0.5)
+            m_ = float(((2 * hl) / (d * wall_cond_list[i])) ** 0.5)
 
             # Correct for the fin effect
             hl_cor = hl * ((nbc * larg_canal[i]) / (np.pi * D)) + nbc * \
                      ((2 * hl * wall_cond_list[i] * (((np.pi * D) / nbc) - larg_canal[i])) ** 0.5) * (
-                             (np.tanh(m * ht_canal[i])) / (np.pi * D))
+                             (np.tanh(m_ * ht_canal[i])) / (np.pi * D))
             hl_corrected_list.append(hl_cor)
 
             # Solve a system to obtain the temperatures in the hot and cold wall
@@ -491,7 +501,7 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             sigma_list.append(sigma)
 
             # Compute thermal conductivity of the solid at a given temperature
-            wall_cond = t.conductivity(Twg=Twg, Twl=Twl, material_name="cucrzr")
+            wall_cond = t.conductivity(Twg=Twg, Twl=Twl, material_name=material_name)
             wall_cond_list.append(wall_cond)
 
             # Compute heat exchange area between two points
@@ -508,22 +518,17 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             coolant_temp_list.append(coolant_temp_list[i] + delta_T_coolant)
 
             # Solving Colebrook's formula to obtain the Darcy-Weisbach friction factor
-            friction_factor_1 = 1e-3
-            friction_factor_2 = (1 / (-2 * np.log10(
-                ((roughness / (Dhy * 3.7)) + 2.51 / (Re_cool * (friction_factor_1 ** 0.5)))))) ** 2
-
-            while abs((friction_factor_1 / friction_factor_2) - 1) > 0.0000001:
-                friction_factor_1 = friction_factor_2
-                friction_factor_2 = (1 / (-2 * np.log10(
-                    ((roughness / (Dhy * 3.7)) + 2.51 / (Re_cool * (friction_factor_1 ** 0.5)))))) ** 2
+            frict_factor = t.darcy_weisbach(Dhy, Re_cool, roughness)
 
             # Computing pressure loss with the Darcy-Weisbach friction factor
-            delta_p = 0.5 * friction_factor_2 * (dr / Dhy) * coolant_density_list[i] * v_cool ** 2
+            delta_p = 0.5 * frict_factor * (dr / Dhy) * coolant_density_list[i] * v_cool ** 2
 
             # Compute new pressure
             coolant_pressure_list.append(coolant_pressure_list[i] - delta_p)
 
             # Computing the new properties of the CH4
+            if coolant_pressure_list[i + 1] < 0:
+                raise ValueError("Negative pressure ! Pressure drop is too high.")
             new_cool_visc = flp.viscosity(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
             new_cool_cond = flp.conductivity(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
             new_cool_cp = flp.cp(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
@@ -566,29 +571,29 @@ hlnormal = mainsolver(Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth,
                       Pcoolant, wall_conductivity_list, 1, reps_max + 1)
 
 # Second and more iteration of the solving
-# for i in range(0, reps_max):
-#     newa = Sig[2]
-#     Sig = [newa]
-#     Tcoolant = []
-#     visccoolant = []
-#     condcoolant = []
-#     Cpmeth = []
-#     rho = []
-#     newLambdatc = LambdaTC[1]
-#     LambdaTC = []
-#     Pcoolant = []
-#     Tcoolant.append(Tl_init)
-#     Pcoolant.append(Pl_init)
-#     LambdaTC.append(newLambdatc)
-#     visccoolant.append(meth.viscCH4(Pcoolant[0], Tcoolant[0], fluid))
-#     condcoolant.append(meth.condCH4(Pcoolant[0], Tcoolant[0], fluid))
-#     Cpmeth.append(meth.cpCH4(Pcoolant[0], Tcoolant[0], fluid))
-#     rho.append(meth.rhoCH4(Pcoolant[0], Tcoolant[0], fluid))
-#     hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
-#     outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
-#     Vitesse, Pcoolant, LambdaTC, Celerite, hlnormal = \
-#         mainsolver(Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, LambdaTC, i + 2,
-#                    reps_max + 1)
+for i in range(0, reps_max):
+    newa = Sig[2]
+    Sig = [newa]
+    Tcoolant = []
+    visccoolant = []
+    condcoolant = []
+    Cpmeth = []
+    rho = []
+    newLambdatc = wall_conductivity_list[1]
+    wall_conductivity_list = []
+    Pcoolant = []
+    Tcoolant.append(Temp_cool_init)
+    Pcoolant.append(Pressure_cool_init)
+    wall_conductivity_list.append(newLambdatc)
+    visccoolant.append(flp.viscosity(Pcoolant[0], Tcoolant[0], fluid))
+    condcoolant.append(flp.conductivity(Pcoolant[0], Tcoolant[0], fluid))
+    Cpmeth.append(flp.cp(Pcoolant[0], Tcoolant[0], fluid))
+    rho.append(flp.density(Pcoolant[0], Tcoolant[0], fluid))
+    hlcor, visc_function, cp_function, lamb_function, Prandtl_function, hg_function, inwall_temperature, \
+    outwall_temperature, fluxsolved, Sig, Re_function, Tcoolant, visccoolant, condcoolant, Cpmeth, rho, \
+    Vitesse, Pcoolant, wall_conductivity_list, Celerite, hlnormal = \
+        mainsolver(Sig, rho, Tcoolant, visccoolant, condcoolant, Cpmeth, Pcoolant, wall_conductivity_list, i + 2,
+                   reps_max + 1)
 
 end_m = time.perf_counter()  # End of the main solution timer
 time_elapsed_m = time.ctime(end_m - start_main_time)[14:19]  # Main elapsed time converted in minutes:secondes
@@ -599,22 +604,11 @@ print("█ Execution time for the initialisation :", time_elapsed_i, "          
 print("█                                                                          █")
 print("█ Execution time for the computation of the main solution :", time_elapsed_m, "         █")
 print("█                                                                          █")
-# %% Display of the first results
+# %% Display of the 1D analysis results
 "Display of the results"
-print("█ Display of results in 2D                                                 █")
-
-if plot_detail >= 2 and show_3d_plots:
-    colormap = plt.cm.magma
-    inv = 0, 0, 0  # 1 means should be reversed
-    view3d(inv, xcanaux, ycanaux, inwall_temperature, colormap, "Wall temperature on the gas side (in K)", size2,
-           limitation)
+print("█ Display of results in 1D                                                 █")
 
 Cel03 = [x * 0.3 for x in Celerite]
-if plot_detail >= 3:
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, Re_function, color='blue')
-    plt.title("Reynolds number of the coolant as a function of the engine axis")
-    plt.show()
 
 if plot_detail >= 1:
     plt.figure(dpi=figure_dpi)
@@ -624,42 +618,9 @@ if plot_detail >= 1:
     plt.legend()
     plt.show()
 
-if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, visc_function, color='orangered')
-    plt.title("Gas viscosity as a function of the engine axis")
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, cp_function, color='orangered')
-    plt.title("Gas Cp as a function of the engine axis")
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, lamb_function, color='orangered')
-    plt.title("Gas conductivity (lambda) as a function of engine axis")
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, Prandtl_function, color='orangered')
-    plt.title("Gas Prandtl number as a function of engine axis")
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hg_function, color='orangered')
-    plt.title('Convection coefficient Hg as a function of engine axis')
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    Sig.pop()
-    plt.plot(xcanaux, Sig, color='orangered')
-    plt.title("Sigma as a function of the engine axis")
-    plt.show()
-
-if plot_detail >= 1:
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, inwall_temperature[1:], color='magenta', label='Twg')
-    plt.plot(xcanaux, outwall_temperature[1:], color='orangered', label='Twl')
+    plt.plot(xcanaux, inwall_temperature[1:], color='orangered', label='Twg')
+    plt.plot(xcanaux, outwall_temperature[1:], color='blue', label='Twl')
     plt.title('Wall temperature (in K) as a function of engine axis')
     plt.legend()
     plt.show()
@@ -670,37 +631,6 @@ if plot_detail >= 1:
     plt.title('Coolant temperature (in K) as a function of engine axis')
     plt.show()
 
-if plot_detail >= 3:
-    plt.figure(dpi=figure_dpi)
-    rho.pop()
-    plt.plot(xcanaux, rho, color='blue')
-    plt.title('Density of the coolant as a function of engine axis')
-    plt.show()
-
-    visccoolant.pop()
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, visccoolant, color='blue')
-    plt.title('Viscosity of the coolant as a function of engine axis')
-    plt.show()
-
-    condcoolant.pop()
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, condcoolant, color='blue')
-    plt.title('Conductivity of the coolant as a function of engine axis')
-    plt.show()
-
-    Cpmeth.pop()
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, Cpmeth, color='blue')
-    plt.title('Cp of the coolant as a function of engine axis')
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, Celerite, color='pink')
-    plt.title('Sound velocity of the coolant as a function of engine axis')
-    plt.show()
-
-if plot_detail >= 1:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, Vitesse, color='blue', label='Coolant')
     plt.plot(xcanaux, Cel03, color='orange', label='Mach 0.3 limit')
@@ -722,6 +652,72 @@ if plot_detail >= 2:
     plt.title('Thermal conductivity of the wall as a function of engine axis')
     plt.show()
 
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, hg_function, color='orangered')
+    plt.title('Convection coefficient Hg as a function of engine axis')
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    rho.pop()
+    plt.plot(xcanaux, rho, color='blue')
+    plt.title('Density of the coolant as a function of engine axis')
+    plt.show()
+
+if plot_detail >= 3:
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, Re_function, color='blue')
+    plt.title("Reynolds number of the coolant as a function of the engine axis")
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, visc_function, color='orangered')
+    plt.title("Gas viscosity as a function of the engine axis")
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, cp_function, color='orangered')
+    plt.title("Gas Cp as a function of the engine axis")
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, lamb_function, color='orangered')
+    plt.title("Gas conductivity (lambda) as a function of engine axis")
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, Prandtl_function, color='orangered')
+    plt.title("Gas Prandtl number as a function of engine axis")
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    Sig.pop()
+    plt.plot(xcanaux, Sig, color='orangered')
+    plt.title("Sigma as a function of the engine axis")
+    plt.show()
+
+    condcoolant.pop()
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, condcoolant, color='blue')
+    plt.title('Conductivity of the coolant as a function of engine axis')
+    plt.show()
+
+    Cpmeth.pop()
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, Cpmeth, color='blue')
+    plt.title('Cp of the coolant as a function of engine axis')
+    plt.show()
+
+    visccoolant.pop()
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, visccoolant, color='blue')
+    plt.title('Viscosity of the coolant as a function of engine axis')
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, Celerite, color='pink')
+    plt.title('Sound velocity of the coolant as a function of engine axis')
+    plt.show()
+
 if plot_detail >= 1 and show_3d_plots:
     colormap = plt.cm.plasma
     inv = 0, 0, 0
@@ -731,7 +727,14 @@ if plot_detail >= 1 and show_3d_plots:
     inv = 0, 0, 0
     view3d(inv, xcanaux, ycanaux, Tcoolant, colormap, "Temperature of the coolant", size2, limitation)
 
+if plot_detail >= 2 and show_3d_plots:
+    colormap = plt.cm.magma
+    inv = 0, 0, 0  # 1 means should be reversed
+    view3d(inv, xcanaux, ycanaux, inwall_temperature, colormap, "Wall temperature on the gas side (in K)", size2,
+           limitation)
+
 # %% Flux computation in 2D and 3D
+
 """2D flux computation"""
 # At the beginning of the chamber
 larg_ailette.reverse()
@@ -749,6 +752,7 @@ print("█                                                                      
 print("█ Results at the beginning of the chamber :                                █")
 where = " at the beginning of the chamber"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where, plot_detail)
+
 # At the throat
 pos_col = ycanaux.index(min(ycanaux))
 pas = larg_ailette[pos_col] + larg_canal[pos_col]
@@ -765,6 +769,7 @@ print("█                                                                      
 print("█ Results at the throat :                                                  █")
 where = " at the throat"
 t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 15, 1, 2, where, plot_detail)
+
 # At the end of the divergent
 pas = larg_ailette[0] + larg_canal[0]
 epaisseur = e_tore
@@ -789,9 +794,7 @@ print("█ Execution time for the display of 2D :", time_elapsed_d2, "          
 print("█                                                                          █")
 
 "Computation for 3D graph"
-choix = int(input("█ 3D temperature contour visualisation ? (1 = yes, 2 = no)                 █"))
-
-if choix == 1:
+if do_final_3d_plot:
     # 3D display
     start_3d = time.perf_counter()
     eachT = []
@@ -967,7 +970,7 @@ time_elapsed_e = time.ctime(end_t - start_e)[14:19]  # End elapsed time converte
 print("█                                                                          █")
 print("█ Execution time of the end of the program :", time_elapsed_e, "                        █")
 
-if choix == 1:
+if do_final_3d_plot:
     time_elapsed_t_w3D = time.ctime((end_t - start_3d) + (end_d2 - start_time))[14:19]
     # Total elapsed time with 3D computation (without time waited to choose 3D) converted in minutes:secondes
     print("█                                                                          █")

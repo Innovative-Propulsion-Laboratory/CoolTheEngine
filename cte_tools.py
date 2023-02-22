@@ -123,6 +123,8 @@ def conductivity(Twg: float, Twl: float, material_name: str):
         return -0.065665 * T_avg + 421.82
     if material_name == "cucrzr":
         return -0.0269 * T_avg + 365.33
+    if material_name == "inconel":
+        return 0.0138 * T_avg + 5.577
 
 
 def hotgas_properties(gas_temp, molar_mass_, gamma):
@@ -151,3 +153,16 @@ def flux_equations(guess, *data):
     f2 = hl * (t_cold - t_c) - (wall_conductivity / wall_thickness) * (t_hot - t_cold)
 
     return [f1, f2]
+
+
+def darcy_weisbach(Dhy, Re, roughness):
+    friction_factor_1 = 1e-3
+    friction_factor_2 = (1 / (-2 * np.log10(
+        ((roughness / (Dhy * 3.7)) + 2.51 / (Re * (friction_factor_1 ** 0.5)))))) ** 2
+
+    while abs((friction_factor_1 / friction_factor_2) - 1) > 0.0000001:
+        friction_factor_1 = friction_factor_2
+        friction_factor_2 = (1 / (-2 * np.log10(
+            ((roughness / (Dhy * 3.7)) + 2.51 / (Re * (friction_factor_1 ** 0.5)))))) ** 2
+
+    return friction_factor_2
