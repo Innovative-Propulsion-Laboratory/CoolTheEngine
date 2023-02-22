@@ -10,104 +10,106 @@ import matplotlib.pyplot as plt
 
 
 # x_coords_filename,y_coords_filename
-def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total, epaisseur_chemise, e_col, e_div, e_c):
-    crx = csv.reader(open(plagex, "r"))  # ouverture des x
-    cry = csv.reader(open(plagey, "r"))  # ouverture des y
-    x_value = []  # en m
-    y_value = []  # en m
-
-    for row in crx:  #
-        a = float(row[0]) / 1000  #
-        x_value.append(a)  # Récupération des données des deux fichiers
-    for row in cry:  #
-        a = float(row[0]) / 1000  #
-        y_value.append(a)  #
-    # print(x_value,y_value)
-
-    xcanauxre = []
-    ycanauxre = []
-    i = 0
-    while x_value[i] <= tore:
-        xcanauxre.append(x_value[i])
-        ycanauxre.append(y_value[i] + epaisseur_chemise)
-        i += 1
-    # print(xcanauxre,ycanauxre)
-    longcanal = len(xcanauxre)
-
-    degportion = 360 / nbc
-    poscol = ycanauxre.index(min(ycanauxre))
-    # print(poscol)
-    expcoef = (((2 * np.pi * ycanauxre[poscol]) / nbc) / lrg_col)
-    # print(expcoef)
-
-    larg_canalre = []
-    reste = []
-    for i in range(0, longcanal, 1):
-        larg = (ycanauxre[i] / ycanauxre[poscol]) * lrg_col
-        rest = ((ycanauxre[i] * 2 * np.pi) / nbc) - larg
-        larg_canalre.append(larg)
-        reste.append(rest)
-
-    n = 1
-    while ycanauxre[n] == ycanauxre[n - 1]:
-        n = n + 1
-    # print(n)
-    htre = []
-    for i in range(0, longcanal, 1):
-        if ycanauxre[i] == ycanauxre[0]:
-            htre.append(ht_c)
-        elif i <= poscol:
-            adcoef = (ht - ht_c) / (xcanauxre[poscol] - xcanauxre[n])
-            # print(adcoef)
-            hauteur = ht + adcoef * xcanauxre[i]
-            # print(hauteur)
-            htre.append(hauteur)
-        else:
-            augcoef = (ht_div - ht) / (xcanauxre[longcanal - 1] - xcanauxre[poscol])
-            hauteur = ht + augcoef * xcanauxre[i]
-            htre.append(hauteur)
-    # print(htre)
-    plt.figure(dpi=200)
-    plt.plot(xcanauxre, ycanauxre, color='chocolate')
-    plt.title('trajet des canaux')
-    plt.show()
-    plt.figure(dpi=200)
-    plt.plot(xcanauxre, larg_canalre, label='largeur', color='red')
-    plt.plot(xcanauxre, htre, label='hauteur', color='royalblue')
-    plt.plot(xcanauxre, reste, label='reste', color='chocolate')
-    plt.title('largeur, hauteur, reste des canaux')
-    plt.legend()
-    plt.show()
-
-    # calcul des aires
-    Areare = []
-    for i in range(0, longcanal, 1):
-        A = larg_canalre[i] * htre[i]
-        Areare.append(A)
-
-    # calcul indicatif des vitesses
-    vitessere = []
-    for i in range(0, longcanal, 1):
-        V = (debit_total / nbc) / Areare[i]
-        vitessere.append(V)
-    plt.figure(dpi=200)
-    plt.plot(xcanauxre, Areare, color='chocolate')
-    plt.title('Aire des canaux')
-    plt.show()
-    plt.figure(dpi=200)
-    plt.plot(xcanauxre, vitessere, color='chocolate')
-    plt.title('Vitesse représentative dans les canaux')
-    plt.show()
-    return xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste
+# def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total, epaisseur_chemise, e_col, e_div, e_c):
+#     figure_dpi = 150
+#     crx = csv.reader(open(plagex, "r"))  # ouverture des x
+#     cry = csv.reader(open(plagey, "r"))  # ouverture des y
+#     x_value = []  # en m
+#     y_value = []  # en m
+#
+#     for row in crx:  #
+#         a = float(row[0]) / 1000  #
+#         x_value.append(a)  # Récupération des données des deux fichiers
+#     for row in cry:  #
+#         a = float(row[0]) / 1000  #
+#         y_value.append(a)  #
+#     # print(x_value,y_value)
+#
+#     xcanauxre = []
+#     ycanauxre = []
+#     i = 0
+#     while x_value[i] <= tore:
+#         xcanauxre.append(x_value[i])
+#         ycanauxre.append(y_value[i] + epaisseur_chemise)
+#         i += 1
+#     # print(xcanauxre,ycanauxre)
+#     longcanal = len(xcanauxre)
+#
+#     degportion = 360 / nbc
+#     poscol = ycanauxre.index(min(ycanauxre))
+#     # print(poscol)
+#     expcoef = (((2 * np.pi * ycanauxre[poscol]) / nbc) / lrg_col)
+#     # print(expcoef)
+#
+#     larg_canalre = []
+#     reste = []
+#     for i in range(0, longcanal, 1):
+#         larg = (ycanauxre[i] / ycanauxre[poscol]) * lrg_col
+#         rest = ((ycanauxre[i] * 2 * np.pi) / nbc) - larg
+#         larg_canalre.append(larg)
+#         reste.append(rest)
+#
+#     n = 1
+#     while ycanauxre[n] == ycanauxre[n - 1]:
+#         n = n + 1
+#     # print(n)
+#     htre = []
+#     for i in range(0, longcanal, 1):
+#         if ycanauxre[i] == ycanauxre[0]:
+#             htre.append(ht_c)
+#         elif i <= poscol:
+#             adcoef = (ht - ht_c) / (xcanauxre[poscol] - xcanauxre[n])
+#             # print(adcoef)
+#             hauteur = ht + adcoef * xcanauxre[i]
+#             # print(hauteur)
+#             htre.append(hauteur)
+#         else:
+#             augcoef = (ht_div - ht) / (xcanauxre[longcanal - 1] - xcanauxre[poscol])
+#             hauteur = ht + augcoef * xcanauxre[i]
+#             htre.append(hauteur)
+#     # print(htre)
+#     plt.figure(dpi=figure_dpi)
+#     plt.plot(xcanauxre, ycanauxre, color='chocolate')
+#     plt.title('trajet des canaux')
+#     plt.show()
+#     plt.figure(dpi=figure_dpi)
+#     plt.plot(xcanauxre, larg_canalre, label='largeur', color='red')
+#     plt.plot(xcanauxre, htre, label='hauteur', color='royalblue')
+#     plt.plot(xcanauxre, reste, label='reste', color='chocolate')
+#     plt.title('largeur, hauteur, reste des canaux')
+#     plt.legend()
+#     plt.show()
+#
+#     # calcul des aires
+#     Areare = []
+#     for i in range(0, longcanal, 1):
+#         A = larg_canalre[i] * htre[i]
+#         Areare.append(A)
+#
+#     # calcul indicatif des vitesses
+#     vitessere = []
+#     for i in range(0, longcanal, 1):
+#         V = (debit_total / nbc) / Areare[i]
+#         vitessere.append(V)
+#     plt.figure(dpi=figure_dpi)
+#     plt.plot(xcanauxre, Areare, color='chocolate')
+#     plt.title('Aire des canaux')
+#     plt.show()
+#     plt.figure(dpi=figure_dpi)
+#     plt.plot(xcanauxre, vitessere, color='chocolate')
+#     plt.title('Vitesse représentative dans les canaux')
+#     plt.show()
+#     return xcanauxre, ycanauxre, larg_canalre, Areare, htre, reste
 
 
 def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
-           tore_pos, debit_volumique_total, nbc):
+           tore_pos, debit_volumique_total, nbc, plot_detail, figure_dpi):
     """
     This function computes the caracteristics of channels on each point
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
     throat (col) and extremity of the nozzle (div).
     """
+
     x_value, y_value = profile_data
     lrg_inj, lrg_conv, lrg_col, lrg_tore = width_data
     ht_inj, ht_conv, ht_col, ht_tore = height_data
@@ -154,11 +156,13 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         newep = ycanaux[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
         newepaisseur.append(newep)
 
-    plt.plot(xcanaux, ycanaux, color='chocolate', label='old')  # (configuration qui
-    plt.plot(xcanaux, newepaisseur, color='blue', label='New')
-    plt.title('Verif')  # et au Viserion)
-    plt.legend()
-    plt.show()
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, ycanaux, color='chocolate', label='old')  # (configuration qui
+        plt.plot(xcanaux, newepaisseur, color='blue', label='New')
+        plt.title('Verif')  # et au Viserion)
+        plt.legend()
+        plt.show()
 
     ycanaux = [newepaisseur[i] for i in range(0, len(newepaisseur))]
     veritas = []
@@ -166,15 +170,17 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
                 np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
         veritas.append(verifepe)
-    """
-    plt.plot(xcanaux, veritas)  # (configuration qui
-    plt.title('vérification epaisseur canaux')  # et au Viserion)
-    plt.show()
 
-    plt.plot(xcanaux, ycanaux, color='chocolate')  # (configuration qui
-    plt.title('trajet des canaux')  # et au Viserion)
-    plt.show()
-    """
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, veritas)  # (configuration qui
+        plt.title('vérification epaisseur canaux')  # et au Viserion)
+        plt.show()
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, ycanaux, color='chocolate')  # (configuration qui
+        plt.title('trajet des canaux')  # et au Viserion)
+        plt.show()
+
     debit_volumique_canal = debit_volumique_total / nbc  # Volumic flow rate in a channel
     y_col = ycanaux[pos_col]  # y coordonate of the cold wall at the throat
     y_inj = ycanaux[0]  # y coordonate of the cold wall at the injection plate
@@ -260,27 +266,29 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     writer.writerow(["End"])
     file.close()
 
-    plt.plot(xcanaux, larg_ailette, label='Rib width', color='chocolate')
-    plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
-    plt.plot(xcanaux, ht_canal, label='Channel height', color='blue')
-    plt.title('Width of channels and ribs')
-    plt.legend()
-    plt.show()
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, larg_ailette, label='Rib width', color='chocolate')
+        plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
+        plt.plot(xcanaux, ht_canal, label='Channel height', color='blue')
+        plt.title('Width of channels and ribs')
+        plt.legend()
+        plt.show()
 
-    plt.plot(xcanaux, vitesse_coolant, color='chocolate')
-    plt.title('Velocity of coolant in channels (in m/s) as a function of the engine axis')
-    plt.show()
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, epaiss_chemise, color='chocolate')
+        plt.title('Thickness of chamber wall as a function of the engine axis')
+        plt.show()
 
-    plt.plot(xcanaux, epaiss_chemise, color='chocolate')
-    plt.title('Thickness of chamber wall as a function of the engine axis')
-    plt.show()
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, ht_canal, color='chocolate')
+        plt.title('Channel height as a function of the engine axis')
+        plt.show()
 
-    plt.plot(xcanaux, ht_canal, color='chocolate')
-    plt.title('Channel height as a function of the engine axis')
-    plt.show()
-
-    plt.plot(xcanaux, area_channel, color='chocolate')
-    plt.title('Channel cross-sectionnal area as a function of the engine axis')
-    plt.show()
+    if plot_detail >= 1:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, area_channel, color='chocolate')
+        plt.title('Channel cross-sectionnal area as a function of the engine axis')
+        plt.show()
 
     return xcanaux, ycanaux, larg_canal, larg_ailette, ht_canal, epaiss_chemise, area_channel, longc

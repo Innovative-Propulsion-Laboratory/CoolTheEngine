@@ -21,7 +21,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     # Bar = ProgressBar(100, 30, "3D results computation          ")
     # av = 100 / len(x)
 
-    fig = plt.figure(figsize=(10, 17), dpi=500)
+    fig = plt.figure(figsize=(10, 17), dpi=200)
     ax = fig.add_subplot(111, projection='3d')
     xu = []
     yu = []
@@ -37,8 +37,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
                 for j in range(0, len(mesure[i]) - 1):
                     the = theta[j] + (2 * np.pi / (number * len(mesure[i] * 2)))
                     theta.append(the)
-                # theta=np.linspace((2*np.pi/number)*k,(2*np.pi/number)+k*(2*np.pi/number),2*np.pi/(number*len(temp[
-                # 0])))
+
                 eh = 0
                 for t in theta:
                     yu.append(y[i] * np.cos(t))
@@ -50,8 +49,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
                     cu.append(mesure[i][eh])
                     cu.append(mesure[i][eh])
                     eh += 1
-            # b += av
-            # Bar.update(b)
+
             pbar.update(1)
 
     Tcolor = [cu[i] for i in range(0, len(cu))]
@@ -95,7 +93,7 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
     cu = []  # List of mesure on each point
     theta = np.linspace(0, 2 * np.pi, 100)  # List of angles in order to make a whole circle
 
-    for i in range(0, len(x), 5):  # step=3 to reduce computation time (this doesn't reduce quality much)
+    for i in range(0, len(x), 3):  # step=3 to reduce computation time (this doesn't reduce quality much)
         for j in range(0, len(theta)):
             yu.append(y[i] * np.cos(theta[j]))
             zu.append(y[i] * np.sin(theta[j]))
@@ -111,7 +109,7 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
     ax.set_ylim(may + limitation, -may - limitation)
     ax.set_zlim(mas, mis)
     ax.view_init(15, 150)
-    plt.title(title, fontsize=25)
+    plt.title(title)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
     plt.show()
 

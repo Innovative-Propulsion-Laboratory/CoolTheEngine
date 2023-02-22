@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where):
+def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where, plot_detail):
     # def de la zone paroi
     npxp = round(pas / (2 * dx) + 1, 0)
     npyp = round(epaisseur / dx + 1, 0)
@@ -331,17 +331,18 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         # plt.axis("equal")
         # plt.colorbar(p, shrink=0.4, aspect=15)
         # plt.show()
-        title = "2D temperature distribution (in K)" + where
-        plt.figure(dpi=200)
-        p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag
-        plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
-        plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-        plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
+        if plot_detail >= 1:
+            title = "2D temperature distribution (in K)" + where
+            plt.figure(dpi=200)
+            p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag
+            plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
+            plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
+            plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
 
-        plt.title(title, fontsize=15)
-        plt.axis("equal")
-        plt.colorbar(p, shrink=0.4, aspect=15)
-        plt.show()
+            plt.title(title, fontsize=15)
+            plt.axis("equal")
+            plt.colorbar(p, shrink=0.4, aspect=15)
+            plt.show()
 
     t3d = []
     for i in range(0, int(npxp), 1):
