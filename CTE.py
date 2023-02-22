@@ -11,9 +11,7 @@ import csv
 
 # Calculations
 import numpy as np
-from machsolve import mach_solv
-from pressuresolve import pressure_solv
-from temperaturesolve import temperature_solv
+import cte_tools as t
 import scipy.optimize as opt
 
 # Data
@@ -26,48 +24,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm  # For progress bars
 
 # Chemical species data
-from CoolProp.CoolProp import PropsSI
-import methan as meth
-
-
-# %% Function definitions
-def tempcorrige(temp_original, gamma, mach_number):
-    Pr = 4 * gamma / (9 * gamma - 5)
-    temp_corrected = temp_original * (1 + (Pr ** 0.33) * (
-            (gamma - 1) / gamma) * mach_number ** 2) / (1 + (
-            (gamma - 1) / gamma) * mach_number ** 2)
-    return temp_corrected
-
-
-def flux_equations(vars, *data):
-    """
-    Used by scipy.optimize.fsolve() to compute hot and cold wall temperature.
-    """
-    t_hot, t_cold = vars  # Initial guess
-    hg, hl, t_g, t_c, wall_cond, wall_thickness = data
-
-    # System of equations to solve
-    f1 = hg * (t_g - t_hot) - (wall_cond / wall_thickness) * (t_hot - t_cold)
-    f2 = hl * (t_cold - t_c) - (wall_cond / wall_thickness) * (t_hot - t_cold)
-    return [f1, f2]
-
-
-def conductivity(Twg: float, Twl: float, material_name: str):
-    T_avg = (Twg + Twl) * 0.5
-    if material_name == "pure copper":
-        return -0.065665 * T_avg + 421.82
-    if material_name == "cucrzr":
-        return -0.0269 * T_avg + 365.33
-
-
-def mu(gas_temp, molar_mass_, gamma):
-    dyn_viscosity = 17.858 * (46.61 * 10 ** (-10)) * (molar_mass_ ** 0.5) * ((9 / 5) * gas_temp) ** 0.6
-    Cp = 8314 * gamma / ((gamma - 1) * molar_mass_)
-    Lamb = dyn_viscosity * (Cp + (8314.5 / (4 * molar_mass_)))
-    Pr = 4 * gamma / (9 * gamma - 5)
-
-    return dyn_viscosity, Cp, Lamb, Pr
-
+import fluid_properties as flp
 
 start_time = time.perf_counter()  # Beginning of the timer
 
@@ -202,9 +159,9 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        mach_gas = mach_solv(cross_section_area_list[i],
-                             cross_section_area_list[i + 1],
-                             mach_gas, gamma_list[i], i, machtype)
+        mach_gas = t.mach_solv(cross_section_area_list[i],
+                               cross_section_area_list[i + 1],
+                               mach_gas, gamma_list[i], i, machtype)
         mach_list.append(mach_gas)
         progressbar.update(1)
 
@@ -234,7 +191,7 @@ with tqdm(total=nb_points - 1,
         else:  # All the other points
             mach_gas = mach_list[i]
             mach_gas_2 = mach_list[i + 1]
-        pressure = pressure_solv(mach_gas, mach_gas_2, pressure_list[i], gamma_list[i])
+        pressure = t.pressure_solv(mach_gas, mach_gas_2, pressure_list[i], gamma_list[i])
         pressure_list.append(pressure)
         progressbar.update(1)
 
@@ -262,12 +219,12 @@ with tqdm(total=nb_points - 1,
         else:
             mach_gas = mach_list[i]
             mach_gas_2 = mach_list[i + 1]
-        temperature = temperature_solv(mach_gas, mach_gas_2, hotgas_temp_list[i], gamma_list[i])
+        temperature = t.temperature_solv(mach_gas, mach_gas_2, hotgas_temp_list[i], gamma_list[i])
         hotgas_temp_list.append(temperature)
         progressbar.update(1)
 
 # List of corrected gas temperatures (max diff with original is about 75 K)
-hotgas_temp_list_corrected = [tempcorrige(hotgas_temp_list[i], gamma_list[i], mach_list[i]) for i in
+hotgas_temp_list_corrected = [t.tempcorrige(hotgas_temp_list[i], gamma_list[i], mach_list[i]) for i in
                               range(0, nb_points)]
 
 # Plots of the temperature in the engine (2D/3D)
@@ -346,7 +303,7 @@ xcanaux, ycanaux, larg_canal, larg_ailette, ht_canal, wall_thickness, area_chann
     = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volum_coolant, nbc)
 
 # Write the dimensions of the channels in a CSV file
-file_name = "channelvalue.csv"
+file_name = "output/channelvalue.csv"
 with open(file_name, "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width",
@@ -437,7 +394,9 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             Pr_cool = (coolant_viscosity_list[i] * coolant_cp_list[i]) / coolant_cond_list[i]
 
             # Compute viscosity, Cp, conductivity and Prandtl number of the hot gases
-            hotgas_visc, hotgas_cp, hotgas_cond, hotgas_prandtl = mu(hotgas_temp_list[i], molar_mass, gamma_list[i])
+            hotgas_visc, hotgas_cp, hotgas_cond, hotgas_prandtl = t.hotgas_properties(hotgas_temp_list[i],
+                                                                                      molar_mass,
+                                                                                      gamma_list[i])
 
             # Store the results
             hotgas_viscosity_list.append(hotgas_visc)
@@ -494,7 +453,7 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             hl_corrected_list.append(hl_cor)
 
             # Solve a system to obtain the temperatures in the hot and cold wall
-            T_hotwall, T_coldwall = opt.fsolve(func=flux_equations,
+            T_hotwall, T_coldwall = opt.fsolve(func=t.flux_equations,
                                                x0=np.array([900.0, 700.0]),
                                                args=(hg, hl_cor,
                                                      hotgas_temp_list[i],
@@ -521,7 +480,7 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             sigma_list.append(sigma)
 
             # Compute thermal conductivity of the solid at a given temperature
-            wall_cond = conductivity(Twg=Twg, Twl=Twl, material_name="cucrzr")
+            wall_cond = t.conductivity(Twg=Twg, Twl=Twl, material_name="cucrzr")
             wall_cond_list.append(wall_cond)
 
             # Compute heat exchange area between two points
@@ -554,11 +513,11 @@ def mainsolver(sigma_list, coolant_density_list, coolant_temp_list,
             coolant_pressure_list.append(coolant_pressure_list[i] - delta_p)
 
             # Computing the new properties of the CH4
-            new_cool_visc = PropsSI("V", "P", coolant_pressure_list[i + 1], "T", coolant_temp_list[i], fluid)
-            new_cool_cond = PropsSI("L", "P", coolant_pressure_list[i + 1], "T", coolant_temp_list[i], fluid)
-            new_cool_cp = PropsSI("C", "P", coolant_pressure_list[i + 1], "T", coolant_temp_list[i], fluid)
-            new_cool_dens = PropsSI("D", "P", coolant_pressure_list[i + 1], "T", coolant_temp_list[i], fluid)
-            new_cool_sound_spd = PropsSI("A", "P", coolant_pressure_list[i + 1], "T", coolant_temp_list[i], fluid)
+            new_cool_visc = flp.viscosity(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
+            new_cool_cond = flp.conductivity(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
+            new_cool_cp = flp.cp(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
+            new_cool_dens = flp.density(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
+            new_cool_sound_spd = flp.sound_speed(P=coolant_pressure_list[i + 1], T=coolant_temp_list[i], fluid=fluid)
 
             coolant_viscosity_list.append(new_cool_visc)
             coolant_cond_list.append(new_cool_cond)
@@ -582,10 +541,10 @@ Sig = [1]
 LambdaTC = [350]
 Tcoolant = [Temp_cool_init]
 Pcoolant = [Pressure_cool_init]
-visccoolant = [meth.viscCH4(Pressure_cool_init, Temp_cool_init, fluid)]
-condcoolant = [meth.condCH4(Pressure_cool_init, Temp_cool_init, fluid)]
-Cpmeth = [meth.cpCH4(Pressure_cool_init, Temp_cool_init, fluid)]
-rho = [meth.densityCH4(Pressure_cool_init, Temp_cool_init, fluid)]
+visccoolant = [flp.viscosity(Pressure_cool_init, Temp_cool_init, fluid)]
+condcoolant = [flp.conductivity(Pressure_cool_init, Temp_cool_init, fluid)]
+Cpmeth = [flp.cp(Pressure_cool_init, Temp_cool_init, fluid)]
+rho = [flp.density(Pressure_cool_init, Temp_cool_init, fluid)]
 reps_max = 2
 
 # First iteration of the solving
@@ -928,9 +887,9 @@ plt.show()
 
 # %% Writing the results of the study in a CSV file
 
-valuexport = open("valuexport.csv", "w", newline="")
-geometry1 = open("geometry1.csv", "w", newline="")
-geometry2 = open("geometry2.csv", "w", newline="")
+valuexport = open("output/valuexport.csv", "w", newline="")
+geometry1 = open("output/geometry1.csv", "w", newline="")
+geometry2 = open("output/geometry2.csv", "w", newline="")
 valuexport_writer = csv.writer(valuexport)
 geometry1_writer = csv.writer(geometry1)
 geometry2_writer = csv.writer(geometry2)

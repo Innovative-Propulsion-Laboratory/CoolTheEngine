@@ -238,7 +238,7 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         vitesse_coolant.append(v)
 
     "Writing the results of the study in a CSV file"
-    file_name = "channel_macro_catia.csv"
+    file_name = "output/channel_macro_catia.csv"
     file = open(file_name, "w", newline="")
     writer = csv.writer(file)
     writer.writerow(["StartCurve"])
