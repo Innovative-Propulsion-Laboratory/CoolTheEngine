@@ -100,12 +100,12 @@ if plot_detail >= 3 and show_3d_plots:
 cross_section_area_list = [np.pi * r ** 2 for r in y_coord_list]
 
 # Plots of the cross-sectionnal areas
-"""
-plt.figure(dpi=figure_dpi)
-plt.plot(x_value, aire, color='black')
-plt.title("Area (in m²) as a function of engine axis")
-plt.show()
-"""
+if plot_detail >= 3:
+    plt.figure(dpi=figure_dpi)
+    plt.plot(x_coord_list, cross_section_area_list, color='black')
+    plt.title("Area (in m²) as a function of engine axis")
+    plt.show()
+
 print("█                                                                          █")
 
 # %% Adiabatic constant (gamma) parametrization
@@ -811,7 +811,7 @@ if choix == 1:
             wall_cond_throat = wall_conductivity_list[i]
             t3d = carto2D(larg_ailette[i] + larg_canal[i], wall_thickness[i], ht_canal[i], larg_canal[i], dx,
                           hg_function[i], wall_cond_throat,
-                          hotgas_temp_list[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "")
+                          hotgas_temp_list[i], hlnormal[i], Tcoolant[i], 3, 0, 1, "", plot_detail)
             eachT.append(t3d)
             progressbar.update(1)
 
