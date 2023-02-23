@@ -47,7 +47,7 @@ size2 = 16  # Used for the height of the display in 3D view
 machtype = 0  # 0 for one equation and else for another equation in calculation of mach
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 1  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 do_final_3d_plot = False
 
@@ -82,6 +82,7 @@ y_coords_reader = csv.reader(open(y_coords_filename, "r"))
 # Storing the X,Y coordinates in lists
 x_coord_list = [float(row[0]) / 1000 for row in x_coords_reader]
 y_coord_list = [float(row[0]) / 1000 for row in y_coords_reader]
+nb_points = len(x_coord_list)  # Number of points (or the index of the end of the divergent)
 
 # Plot of the profile of the engine
 if plot_detail >= 3:
@@ -150,13 +151,12 @@ if plot_detail >= 3:
     plt.show()
 
 # %% Mach number computation
-"Computation of the initial velocity and mach number of the gases"
+"Computation of gases mach number of the hot gases (and their initial velocity)"
 
 v_init_gas = (debit_LOX + debit_mass_coolant) / (rho_init * cross_section_area_list[0])  # Initial velocity of the gases
 mach_init_gas = v_init_gas / sound_speed_init  # Initial mach number
 mach_gas = mach_init_gas
 mach_list = [mach_init_gas]
-nb_points = len(x_coord_list)  # Number of points (or the index of the end of the divergent)
 
 #  Mach number computations along the engine
 with tqdm(total=nb_points - 1,
@@ -164,11 +164,32 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        mach_gas = t.mach_solv(cross_section_area_list[i],
-                               cross_section_area_list[i + 1],
+        mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
                                mach_gas, gamma_list[i], i, machtype)
         mach_list.append(mach_gas)
         progressbar.update(1)
+
+mach_gas = 0.1
+mach_test = [mach_init_gas]
+for i in range(0, nb_points - 1):
+    mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
+                           mach_gas, gamma_list[i], i, 1)
+    mach_test.append(mach_gas)
+
+mach_gas = mach_init_gas
+mach_test_bis = [mach_init_gas]
+for i in range(0, nb_points - 1):
+    mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
+                           mach_gas, gamma_list[i], i, 2)
+    mach_test_bis.append(mach_gas)
+
+plt.figure(dpi=figure_dpi)
+plt.plot(x_coord_list, mach_list, color='gold', label='solveur')
+plt.plot(x_coord_list, mach_test, color='red', label='solving sympy')
+plt.plot(x_coord_list, mach_test, color='blue', label='solving scipy')
+plt.title("Mach number as a function of the engine axis")
+plt.legend(loc='upper left')
+plt.show()
 
 # Plots of the Mach number in the engine (2D/3D)
 if plot_detail >= 1:
@@ -862,43 +883,34 @@ pcoolant_list.reverse()
 angles = []
 newxhtre = []
 newyhtre = []
-
-with tqdm(total=nb_points_channel,
-          desc="█ Computing channel height     ",
-          unit="|   █", bar_format="{l_bar}{bar}{unit}",
-          ncols=76) as progressbar:
-    for i in range(0, nb_points_channel):
-        if i == 0:
-            angle = 0
-            angles.append(angle)
-        elif i == (nb_points_channel - 1):
-            angle = angles[i - 1]
-            angles.append(angle)
-        else:
-            vect1 = (xcanaux[i] - xcanaux[i - 1]) / (
-                    (((ycanaux[i] - ycanaux[i - 1]) ** 2) + ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
-            vect2 = (xcanaux[i + 1] - xcanaux[i]) / (
-                    (((ycanaux[i + 1] - ycanaux[i]) ** 2) + ((xcanaux[i + 1] - xcanaux[i]) ** 2)) ** 0.5)
-            angle1 = np.rad2deg(np.arccos(vect1))
-            angle2 = np.rad2deg(np.arccos(vect2))
-            angle = angle2
-            angles.append(angle)
-        newx = xcanaux[i] + ht_canal[i] * np.sin(np.deg2rad(angles[i]))
-        newy = ycanaux[i] + ht_canal[i] * np.cos(np.deg2rad(angles[i]))
-        newxhtre.append(newx)
-        newyhtre.append(newy)
-        progressbar.update(1)
+print("█ Computing channel height                                                 █")
+for i in range(0, nb_points_channel):
+    if i == 0:
+        angle = 0
+        angles.append(angle)
+    elif i == (nb_points_channel - 1):
+        angle = angles[i - 1]
+        angles.append(angle)
+    else:
+        vect1 = (xcanaux[i] - xcanaux[i - 1]) / (
+            (((ycanaux[i] - ycanaux[i - 1]) ** 2) + ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
+        vect2 = (xcanaux[i + 1] - xcanaux[i]) / (
+            (((ycanaux[i + 1] - ycanaux[i]) ** 2) + ((xcanaux[i + 1] - xcanaux[i]) ** 2)) ** 0.5)
+        angle1 = np.rad2deg(np.arccos(vect1))
+        angle2 = np.rad2deg(np.arccos(vect2))
+        angle = angle2
+        angles.append(angle)
+    newx = xcanaux[i] + ht_canal[i] * np.sin(np.deg2rad(angles[i]))
+    newy = ycanaux[i] + ht_canal[i] * np.cos(np.deg2rad(angles[i]))
+    newxhtre.append(newx)
+    newyhtre.append(newy)
 
 # Checking the height of channels
 verification = []
-with tqdm(total=nb_points_channel,
-          desc="█ Checking channel height      ",
-          unit="|   █", bar_format="{l_bar}{bar}{unit}",
-          ncols=76) as progressbar:
-    for i in range(0, nb_points_channel):
-        verifhtre = (((newxhtre[i] - xcanaux[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
-        verification.append(verifhtre)
-        progressbar.update(1)
+print("█ Checking channel height                                                  █")
+for i in range(0, nb_points_channel):
+    verifhtre = (((newxhtre[i] - xcanaux[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
+    verification.append(verifhtre)
 
 if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)

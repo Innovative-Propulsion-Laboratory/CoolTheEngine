@@ -137,13 +137,13 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     acc = (e_conv - e_col) / (y_inj - y_col)
     for i in range(0, pos_col + 1):  # Chamber + convergent computation
         r = ycanaux[i]
-        aug = ((y_col - r) / (y_inj - y_col))
+        aug = (y_col - r) / (y_inj - y_col)
         epp_x = ((-aug) ** n5) * (r - y_col) * acc + e_col
         epaiss_chemise.append(epp_x)
     acc = (e_tore - e_col) / (y_tore - y_col)
     for i in range(pos_col + 1, longc):  # Divergent computation
         r = ycanaux[i]
-        aug = ((y_tore - r) / (y_tore - y_col))
+        aug = (y_tore - r) / (y_tore - y_col)
         epp_x = ((1 - aug) ** n6) * (r - y_col) * acc + e_col
         epaiss_chemise.append(epp_x)
 
@@ -199,7 +199,7 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     acc = (lrg_conv - lrg_col) / (y_inj - y_col)
     for i in range(pos_conv + 1, pos_col + 1):  # Convergent computation
         r = ycanaux[i]
-        aug = ((y_col - r) / (y_inj - y_col))
+        aug = (y_col - r) / (y_inj - y_col)
         lrg_x = ((-aug) ** n1) * (r - y_col) * acc + lrg_col
         lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
         larg_ailette.append(lrg_aill)
@@ -207,7 +207,7 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     acc = (lrg_tore - lrg_col) / (y_tore - y_col)
     for i in range(pos_col + 1, longc):  # Divergent computation
         r = ycanaux[i]
-        aug = ((y_tore - r) / (y_tore - y_col))
+        aug = (y_tore - r) / (y_tore - y_col)
         lrg_x = ((1 - aug) ** n2) * (r - y_col) * acc + lrg_col
         lrg_aill = (r * 2 * np.pi / nbc) - lrg_x
         larg_ailette.append(lrg_aill)
@@ -221,13 +221,13 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     acc = (ht_conv - ht_col) / (y_inj - y_col)
     for i in range(pos_conv + 1, pos_col):  # Convergent computation
         r = ycanaux[i]
-        aug = ((y_col - r) / (y_inj - y_col))
+        aug = (y_col - r) / (y_inj - y_col)
         htr_x = ((-aug) ** n3) * (r - y_col) * acc + ht_col
         ht_canal.append(htr_x)
     acc = (ht_tore - ht_col) / (y_tore - y_col)
     for i in range(pos_col, longc):  # Divergent computation
         r = ycanaux[i]
-        aug = ((y_tore - r) / (y_tore - y_col))
+        aug = (y_tore - r) / (y_tore - y_col)
         htr_x = ((1 - aug) ** n4) * (r - y_col) * acc + ht_col
         ht_canal.append(htr_x)
     """
