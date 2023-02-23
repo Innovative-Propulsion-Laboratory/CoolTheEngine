@@ -17,9 +17,6 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
         y.reverse()
     if inv[2] == 1:
         mesure.reverse()
-    # b = 0
-    # Bar = ProgressBar(100, 30, "3D results computation          ")
-    # av = 100 / len(x)
 
     fig = plt.figure(figsize=(10, 17), dpi=200)
     ax = fig.add_subplot(111, projection='3d')
@@ -105,12 +102,12 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
     mis = min(xu)
     mas = max(xu)
     may = max(yu)
-    ax.set_xlim(may + limitation, -may - limitation)
-    ax.set_ylim(may + limitation, -may - limitation)
+    ax.set_xlim(may + limitation, - may - limitation)
+    ax.set_ylim(may + limitation, - may - limitation)
     ax.set_zlim(mas, mis)
     ax.view_init(15, 150)
-    plt.title(title)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
+    plt.title(title, fontsize=25)
     plt.show()
 
     if inv[0] == 1:

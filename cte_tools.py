@@ -6,23 +6,11 @@ import numpy as np
 def mach_solv(A1, A2, M1, gamma, pos, machtype):
     def solveur(A1, A2, M1, gamma, ome):
         def part2(A1, A2, M1, gamma, ome):
-            part2 = (A1 / A2) * (M1 / ((1 + ((gamma - 1) / 2) * M1 * M1) ** ome))
-
-            return part2
+            return (A1 / A2) * (M1 / ((1 + ((gamma - 1) / 2) * M1 * M1) ** ome))
 
         def part1(M2, ome, gamma):
-            part1 = M2 * ((1 + (((gamma - 1) / 2) * M2 * M2)) ** (-ome))
+            return M2 * ((1 + (((gamma - 1) / 2) * M2 * M2)) ** (-ome))
 
-            return part1
-
-        """
-        def mini(liste):
-            mini = liste[0][0]
-            for i in liste:
-                if i[0] <= mini:
-                    mini = i[0]
-            return mini
-        """
         if 320 < pos < 370:
             a = 10
         else:
@@ -34,18 +22,15 @@ def mach_solv(A1, A2, M1, gamma, pos, machtype):
             M2 = M1
             liste = []
             mach = []
-            for i in range(0, 2000, 1):
+            for i in range(0, 2000):
                 M2 += 0.00001
                 part_1 = part1(M2, ome, gamma)
-                diff = abs(part_1 - part_2)
-                liste.append(diff)
+                liste.append(abs(part_1 - part_2))
                 mach.append(M2)
                 # print("For mach =",M2,"diff=",diff)
 
-            soluce = min(liste)
-            indice = liste.index(soluce)
-            solution_mach = mach[indice]
-        # print("Le nombre de mach est ",solution_mach,"avec une erreur de l'ordre de",soluce)
+            solution_mach = mach[liste.index(min(liste))]
+        # print("Le nombre de mach est ",solution_mach,"avec une erreur de l'ordre de", min(liste))
         return solution_mach
 
     #  er=(1/0.07)*part_2**(ome/(2*ome+1))

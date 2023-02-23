@@ -308,6 +308,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         print(f"█ Mean wall temperature at hot side  = {tg_avg} K                              █")
         print(f"█ Mean wall temperature at cool side = {tl_avg} K                              █")
         print(f"█ Maximum temperature in the wall    = {t_max} K                              █")
+        print("█                                                                          █")
         if leg == 1:
             a1 = 0.003
             a2 = -0.0025

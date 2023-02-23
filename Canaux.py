@@ -158,13 +158,14 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
-        plt.plot(xcanaux, ycanaux, color='chocolate', label='old')  # (configuration qui
-        plt.plot(xcanaux, newepaisseur, color='blue', label='New')
-        plt.title('Verif')  # et au Viserion)
-        plt.legend()
+        plt.plot(xcanaux, ycanaux, color='chocolate', label='y on hot side')
+        plt.plot(xcanaux, newepaisseur, color='blue', label='y on cold side')
+        plt.title('y coordinate of wall as a function of the engine axis')
+        plt.legend(loc='lower left')
         plt.show()
 
     ycanaux = [newepaisseur[i] for i in range(0, len(newepaisseur))]
+    
     veritas = []
     for i in range(0, longc):
         verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
@@ -173,12 +174,13 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
-        plt.plot(xcanaux, veritas)  # (configuration qui
-        plt.title('vérification epaisseur canaux')  # et au Viserion)
+        plt.plot(xcanaux, veritas)
+        plt.title('Channel thickness verification')
         plt.show()
+        
         plt.figure(dpi=figure_dpi)
-        plt.plot(xcanaux, ycanaux, color='chocolate')  # (configuration qui
-        plt.title('trajet des canaux')  # et au Viserion)
+        plt.plot(xcanaux, ycanaux, color='chocolate')
+        plt.title('Channel travel as a function of the engine axis (y of the cold wall)')
         plt.show()
 
     debit_volumique_canal = debit_volumique_total / nbc  # Volumic flow rate in a channel
@@ -272,7 +274,7 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
         plt.plot(xcanaux, ht_canal, label='Channel height', color='blue')
         plt.title('Width of channels and ribs')
-        plt.legend()
+        plt.legend(loc='upper left')
         plt.show()
 
         plt.figure(dpi=figure_dpi)
