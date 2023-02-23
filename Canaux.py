@@ -164,7 +164,7 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         plt.legend()
         plt.show()
 
-    ycanaux = [newepaisseur[i] for i in range(0, len(newepaisseur))]
+    ycanaux = [i for i in newepaisseur]
     veritas = []
     for i in range(0, longc):
         verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
