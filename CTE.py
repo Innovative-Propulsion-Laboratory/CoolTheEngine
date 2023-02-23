@@ -44,11 +44,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 
 # Constant input_data_list
 size2 = 16  # Used for the height of the display in 3D view
-machtype = 0  # 0 for one equation and else for another equation in calculation of mach
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
 plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
+show_2D_temperature = False
 do_final_3d_plot = False
 
 # %% Reading input data
@@ -158,38 +158,16 @@ mach_init_gas = v_init_gas / sound_speed_init  # Initial mach number
 mach_gas = mach_init_gas
 mach_list = [mach_init_gas]
 
-#  Mach number computations along the engine
+# Mach number computations along the engine
 with tqdm(total=nb_points - 1,
           desc="█ Computing mach number        ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
         mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                               mach_gas, gamma_list[i], i, machtype)
+                               mach_gas, gamma_list[i])
         mach_list.append(mach_gas)
         progressbar.update(1)
-
-mach_gas = 0.1
-mach_test = [mach_init_gas]
-for i in range(0, nb_points - 1):
-    mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                           mach_gas, gamma_list[i], i, 1)
-    mach_test.append(mach_gas)
-
-mach_gas = mach_init_gas
-mach_test_bis = [mach_init_gas]
-for i in range(0, nb_points - 1):
-    mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                           mach_gas, gamma_list[i], i, 2)
-    mach_test_bis.append(mach_gas)
-
-plt.figure(dpi=figure_dpi)
-plt.plot(x_coord_list, mach_list, color='gold', label='solveur')
-plt.plot(x_coord_list, mach_test, color='red', label='solving sympy')
-plt.plot(x_coord_list, mach_test, color='blue', label='solving scipy')
-plt.title("Mach number as a function of the engine axis")
-plt.legend(loc='upper left')
-plt.show()
 
 # Plots of the Mach number in the engine (2D/3D)
 if plot_detail >= 1:
@@ -765,52 +743,55 @@ print("█                                                                      
 print("█ Display of results                                                       █")
 print("█                                                                          █")
 """2D flux computation"""
-# At the beginning of the chamber
-print("█ Results at the beginning of the chamber :                                █")
 larg_ailette_list.reverse()
-pas = larg_ailette_list[-1] + larg_canal[-1]
-epaisseur = e_conv
-hauteur = ht_canal[-1]
-largeur = larg_canal[-1]
-Hg = hg_list[-1]
-Tg = hotgas_temp_list[-1]
-Hl = hlnormal_list[-1]
-Tl = tempcoolant_list[-1]
-dx = 0.00004  # *3.5
-wall_cond_throat = wallcond_list[-1]
-where = " at the beginning of the chamber"
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where, plot_detail)
 
-# At the throat
-print("█ Results at the throat :                                                  █")
-pos_col = ycanaux.index(min(ycanaux))
-pas = larg_ailette_list[pos_col] + larg_canal[pos_col]
-epaisseur = e_col
-hauteur = ht_canal[pos_col]
-largeur = larg_canal[pos_col]
-Hg = hg_list[pos_col]
-Tg = hotgas_temp_list[pos_col]
-Hl = hlnormal_list[pos_col]
-Tl = tempcoolant_list[pos_col]
-dx = 0.000025  # *3.5
-wall_cond_throat = wallcond_list[pos_col]
-where = " at the throat"
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 15, 1, 2, where, plot_detail)
+if show_2D_temperature:
+    
+    # At the beginning of the chamber
+    print("█ Results at the beginning of the chamber :                                █")
+    pas = larg_ailette_list[-1] + larg_canal[-1]
+    epaisseur = e_conv
+    hauteur = ht_canal[-1]
+    largeur = larg_canal[-1]
+    Hg = hg_list[-1]
+    Tg = hotgas_temp_list[-1]
+    Hl = hlnormal_list[-1]
+    Tl = tempcoolant_list[-1]
+    dx = 0.00004  # *3.5
+    wall_cond_throat = wallcond_list[-1]
+    where = " at the beginning of the chamber"
+    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where, show_2D_temperature)
 
-# At the end of the divergent
-print("█ Results at the end of the divergent :                                    █")
-pas = larg_ailette_list[0] + larg_canal[0]
-epaisseur = e_tore
-hauteur = ht_canal[0]
-largeur = larg_canal[0]
-Hg = hg_list[0]
-Tg = hotgas_temp_list[0]
-Hl = hlnormal_list[0]
-Tl = tempcoolant_list[0]
-dx = 0.00004
-wall_cond_throat = wallcond_list[0]
-where = " at the end of the divergent"
-t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where, plot_detail)
+    # At the throat
+    print("█ Results at the throat :                                                  █")
+    pos_col = ycanaux.index(min(ycanaux))
+    pas = larg_ailette_list[pos_col] + larg_canal[pos_col]
+    epaisseur = e_col
+    hauteur = ht_canal[pos_col]
+    largeur = larg_canal[pos_col]
+    Hg = hg_list[pos_col]
+    Tg = hotgas_temp_list[pos_col]
+    Hl = hlnormal_list[pos_col]
+    Tl = tempcoolant_list[pos_col]
+    dx = 0.000025  # *3.5
+    wall_cond_throat = wallcond_list[pos_col]
+    where = " at the throat"
+    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 15, 1, 2, where, show_2D_temperature)
+
+    # At the end of the divergent
+    print("█ Results at the end of the divergent :                                    █")
+    pas = larg_ailette_list[0] + larg_canal[0]
+    epaisseur = e_tore
+    hauteur = ht_canal[0]
+    largeur = larg_canal[0]
+    Hg = hg_list[0]
+    Tg = hotgas_temp_list[0]
+    Hl = hlnormal_list[0]
+    Tl = tempcoolant_list[0]
+    dx = 0.00004
+    wall_cond_throat = wallcond_list[0]
+    where = " at the end of the divergent"
+    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where, show_2D_temperature)
 
 end_d2 = time.perf_counter()  # End of the display of 2D timer
 time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]  # Display of 2D elapsed time converted in minutes:secondes
@@ -847,7 +828,6 @@ if do_final_3d_plot:
 start_e = time.perf_counter()  # Start of the end timer
 
 # %% Reversion of the lists
-print("█                                                                          █")
 
 cross_section_area_list.reverse()
 gamma_list.reverse()

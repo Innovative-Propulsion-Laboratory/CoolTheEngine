@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where, plot_detail):
+def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where, show_2D_temperature):
     # def de la zone paroi
     npxp = round(pas / (2 * dx) + 1, 0)
     npyp = round(epaisseur / dx + 1, 0)
@@ -332,7 +332,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
         # plt.axis("equal")
         # plt.colorbar(p, shrink=0.4, aspect=15)
         # plt.show()
-        if plot_detail >= 1:
+        if show_2D_temperature:
             title = "2D temperature distribution (in K)" + where
             plt.figure(dpi=200)
             p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag

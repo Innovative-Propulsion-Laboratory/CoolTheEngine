@@ -1,62 +1,23 @@
-from sympy import Symbol, nsolve
-import sympy as mp
 import numpy as np
-import scipy.optimize as opt
 
-def mach_solv(area_1, area_2, mach_1, gamma, position, machtype):
-    def solveur(area_1, area_2, mach_1, gamma, ome):
-        """
-        if 320 < position < 370:
-            a = 10
-        else:
-            a = 1
-        """
-        if area_1 == area_2:
-            solution_mach = mach_1
-        else:
-            part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
-            M2 = mach_1
-            liste = []
-            mach = []
-            for i in range(0, 2000):
-                M2 += 0.00001
-                part_1 = M2 * ((1 + (((gamma - 1) / 2) * M2 * M2)) ** (-ome))
-                liste.append(abs(part_1 - part_2))
-                mach.append(M2)
-                # print("For mach =",M2,"diff=",diff)
 
-            solution_mach = mach[liste.index(min(liste))]
-        # print("Le nombre de mach est ",solution_mach,"avec une erreur de l'ordre de", min(liste))
-        return solution_mach
-
-    #  er=(1/0.07)*part_2**(ome/(2*ome+1))
-    #  er2=part_2**ome
-    #  print(er)
-    #  print(er2)
-    def solving(area_1, area_2, mach_1, gamma, ome):
-        mp.dps = 1
-        cx = Symbol('cx')
-        f1 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome)) - cx * (
-                (1 + (((gamma - 1) / 2) * cx * cx)) ** (-ome))
-        M2 = nsolve(f1, cx, mach_1, verify=False)
-        return M2
-
-    def solving_bis(area_1, area_2, mach_1, gamma, ome):
-        def f1(x):
-            f = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome)) - x * (
-                (1 + (((gamma - 1) / 2) * x * x)) ** (-ome))
-            return f
-        M2 = opt.fsolve(func=f1, x0=mach_1)
-        return M2
-
-    ome = (gamma + 1) / (2 * (gamma - 1))
-    if machtype == 0:
-        final = solveur(area_1, area_2, mach_1, gamma, ome)
-    elif(machtype == 1):
-        final = solving(area_1, area_2, mach_1, gamma, ome)
+def mach_solv(area_1, area_2, mach_1, gamma):
+    if area_1 == area_2:
+        solution_mach = mach_1
     else:
-        final = solving_bis(area_1, area_2, mach_1, gamma, ome)
-    return final
+        ome = (gamma + 1) / (2 * (gamma - 1))
+        part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
+        mach_2 = mach_1
+        liste = []
+        mach = []
+        # Search of the mach_2 for which part_1 is minimum (750 was ideal when tested)
+        for i in range(0, 750):
+            mach_2 += 0.00001
+            part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
+            liste.append(abs(part_1 - part_2))
+            mach.append(mach_2)
+        solution_mach = mach[liste.index(min(liste))]
+    return solution_mach
 
 
 def pressure_solv(M1, M2, P1, gamma):
