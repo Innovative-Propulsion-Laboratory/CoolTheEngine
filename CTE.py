@@ -324,7 +324,7 @@ with open(file_name, "w", newline="") as file:
                          ht_canal[i], wall_thickness[i], area_channel[i]))
 
 end_init_time = time.perf_counter()  # End of the initialisation timer
-time_elapsed_i = time.ctime(end_init_time - start_time)[14:19]  # Initialisation time converted in min:sec
+time_elapsed_i = round(end_init_time - start_time, 2)  # Initialisation time
 start_main_time = time.perf_counter()  # Start of the main solution timer
 
 # %% Prepare the lists before main computation
@@ -363,6 +363,7 @@ data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
 data_chamber = (nbc, diam_throat, curv_radius_pre_throat, area_throat,
                 roughness, cross_section_area_list, mach_list, material_name)
 
+# Call the main solving loop
 hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
 hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
 sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
@@ -371,7 +372,7 @@ pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list \
     = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 end_m = time.perf_counter()  # End of the main solution timer
-time_elapsed_m = time.ctime(end_m - start_main_time)[14:19]  # Main elapsed time converted in minutes:secondes
+time_elapsed_m = round(end_m - start_main_time, 2)  # Main elapsed time converted in minutes:secondes
 start_d2 = time.perf_counter()  # Start of the display of 2D timer
 
 # %% Display of the 1D analysis results
@@ -400,6 +401,11 @@ if plot_detail >= 1:
     plt.show()
 
     plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, flux_list, color='red')
+    plt.title('Heat flux (in W) as a function of engine axis')
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, velocitycoolant_list, color='blue', label='Coolant')
     plt.plot(xcanaux, mach_03, color='orange', label='Mach 0.3 limit')
     plt.title('Velocity (in m/s) of the coolant as a function of engine axis')
@@ -413,7 +419,6 @@ if plot_detail >= 1:
     plt.show()
 
 if plot_detail >= 2:
-    wallcond_list.pop()
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, wallcond_list, color='orangered')
     plt.title('Conductivity of the wall as a function of engine axis')
@@ -510,85 +515,77 @@ if show_2D_temperature:
     # At the beginning of the chamber
     print("█ Results at the beginning of the chamber :                                █")
     pas = larg_ailette_list[-1] + larg_canal[-1]
-    epaisseur = e_conv
-    hauteur = ht_canal[-1]
-    largeur = larg_canal[-1]
-    Hg = hg_list[-1]
-    Tg = hotgas_temp_list[-1]
-    Hl = hlnormal_list[-1]
-    Tl = tempcoolant_list[-1]
     dx = 0.00004  # *3.5
-    wall_cond_throat = wallcond_list[-1]
-    where = " at the beginning of the chamber"
-    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where,
-                  show_2D_temperature)
+    location = " at the beginning of the chamber"
+    carto2D(pas, e_conv, ht_canal[-1], larg_canal[-1], dx, hg_list[-1],
+            wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1],
+            tempcoolant_list[-1], 5, 1, 1, location, show_2D_temperature)
 
     # At the throat
     print("█ Results at the throat :                                                  █")
     pos_col = ycanaux.index(min(ycanaux))
-    pas = larg_ailette_list[pos_col] + larg_canal[pos_col]
-    epaisseur = e_col
-    hauteur = ht_canal[pos_col]
-    largeur = larg_canal[pos_col]
-    Hg = hg_list[pos_col]
-    Tg = hotgas_temp_list[pos_col]
-    Hl = hlnormal_list[pos_col]
-    Tl = tempcoolant_list[pos_col]
+    pas_throat = larg_ailette_list[pos_col] + larg_canal[pos_col]
     dx = 0.000025  # *3.5
-    wall_cond_throat = wallcond_list[pos_col]
-    where = " at the throat"
-    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 15, 1, 2, where,
-                  show_2D_temperature)
+    location = " at the throat"
+    carto2D(pas_throat, e_col, ht_canal[pos_col], larg_canal[pos_col], dx,
+            hg_list[pos_col], wallcond_list[pos_col],
+            hotgas_temp_list[pos_col], hlcor_list[pos_col],
+            tempcoolant_list[pos_col], 15, 1, 2, location,
+            show_2D_temperature)
 
     # At the end of the divergent
     print("█ Results at the end of the divergent :                                    █")
-    pas = larg_ailette_list[0] + larg_canal[0]
-    epaisseur = e_tore
-    hauteur = ht_canal[0]
-    largeur = larg_canal[0]
-    Hg = hg_list[0]
-    Tg = hotgas_temp_list[0]
-    Hl = hlnormal_list[0]
-    Tl = tempcoolant_list[0]
+    pas_div = larg_ailette_list[0] + larg_canal[0]
     dx = 0.00004
-    wall_cond_throat = wallcond_list[0]
-    where = " at the end of the divergent"
-    t3d = carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, wall_cond_throat, Tg, Hl, Tl, 5, 1, 1, where,
-                  show_2D_temperature)
+    location = " at the end of the divergent"
+    carto2D(pas_div, e_tore, ht_canal[0], larg_canal[0], dx, hg_list[0],
+            wallcond_list[0], hotgas_temp_list[0], hlcor_list[0],
+            tempcoolant_list[0], 5, 1, 1, location, show_2D_temperature)
 
 end_d2 = time.perf_counter()  # End of the display of 2D timer
-time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]  # Display of 2D elapsed time converted in minutes:secondes
+if end_d2 - start_d2 > 60:
+    # 2D elapsed time converted in minutes:secondes
+    time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]
+else:
+    time_elapsed_d2 = round(end_d2 - start_d2, 2)
 
 "Computation for 3D graph"
 if do_final_3d_plot:
-    # 3D display
     start_3d = time.perf_counter()
-    eachT = []
+    temperature_slice_list = []
     lim1 = 0
     lim2 = 650
     dx = 0.0001
+
+    # Compute a (low-resolution) 2D slice for each point in the engine
     with tqdm(total=nb_points_channel,
-              desc="█ 3D graph initialisation      ",
+              desc="█ 3D graph computation       ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as progressbar:
         for i in range(0, nb_points_channel, 1):
-            # if lim1 <= i <= lim2:
-            #     dx = 0.0001
-            # else:
-            #     dx = 0.0001
-
             wall_cond_throat = wallcond_list[i]
-            t3d = carto2D(larg_ailette_list[i] + larg_canal[i], wall_thickness[i], ht_canal[i], larg_canal[i], dx,
-                          hg_list[i], wall_cond_throat,
-                          hotgas_temp_list[i], hlnormal_list[i], tempcoolant_list[i], 3, 0, 1, "", plot_detail)
-            eachT.append(t3d)
+            temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i],
+                                        wall_thickness[i], ht_canal[i],
+                                        larg_canal[i], dx, hg_list[i],
+                                        wall_cond_throat, hotgas_temp_list[i],
+                                        hlnormal_list[i], tempcoolant_list[i],
+                                        3, 0, 1, "", plot_detail)
+            temperature_slice_list.append(temperature_slice)
             progressbar.update(1)
 
-    carto3d([0, 0, 0], xcanaux, ycanaux, eachT, plt.cm.Spectral_r, '3D view of wall temperatures (in K)', nbc,
+    # Stack all these slices in a final 3D plot
+    carto3d([0, 0, 0], xcanaux, ycanaux, temperature_slice_list,
+            plt.cm.Spectral_r, '3D view of wall temperatures (in K)', nbc,
             limitation)
 
-    end_d3 = time.perf_counter()  # End of the display of 3D timer
-    time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]  # Display of 3D elapsed time converted in minutes:secondes
+    # End of the 3D display timer
+    end_d3 = time.perf_counter()
+    if end_d3 - start_d2 > 60:
+        # 3D elapsed time converted in minutes:secondes
+        time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]
+    else:
+        time_elapsed_d3 = round(end_d3 - start_d2, 2)
+
 start_e = time.perf_counter()  # Start of the end timer
 
 # %% Reversion of the lists
@@ -721,30 +718,39 @@ geometry2.close()
 # %% Execution time display
 
 end_t = time.perf_counter()  # End of the total timer
-time_elapsed_e = time.ctime(end_t - start_e)[14:19]  # End elapsed time converted in minutes:secondes
-time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_time))[14:19]
-# Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
+
+if (end_t - start_e) > 60:
+    # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
+    time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_time))[14:19]
+    # End elapsed time converted in minutes:secondes
+    time_elapsed_e = time.ctime(end_t - start_e)[14:19]
+else:
+    time_elapsed_t = round((end_t - start_e) + (end_d2 - start_time), 2)
+    time_elapsed_e = round(end_t - start_e, 2)
 
 print("█                                                                          █")
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
-print("█ Execution time for the initialisation       :", time_elapsed_i, "                     █")
+print(f"█ Execution time for the initialisation       : {time_elapsed_i}s                      █")
 print("█                                                                          █")
-print("█ Execution time for the computation of main  :", time_elapsed_m, "                     █")
+print(f"█ Execution time for the main computation     : {time_elapsed_m}s                      █")
+
+if show_2D_temperature:
+    print("█                                                                          █")
+    print(f"█ Execution time for the display of 2D        : {time_elapsed_d2}s                     █")
+
 print("█                                                                          █")
-print("█ Execution time for the display of 2D        :", time_elapsed_d2, "                     █")
-print("█                                                                          █")
-print("█ Execution time of the end of the program    :", time_elapsed_e, "                     █")
+print(f"█ Execution time for the end of the program   : {time_elapsed_e}s                      █")
 
 if do_final_3d_plot:
     time_elapsed_t_w3D = time.ctime((end_t - start_3d) + (end_d2 - start_time))[14:19]
     # Total elapsed time with 3D computation (without time waited to choose 3D) converted in minutes:secondes
     print("█                                                                          █")
-    print("█ Execution time for the display of 3D        :", time_elapsed_d3, "                     █")
+    print(f"█ Execution time for the display of 3D        : {time_elapsed_d3}s                     █")
     print("█                                                                          █")
-    print("█ Total execution time with 3D computation    :", time_elapsed_t_w3D, "                     █")
+    print(f"█ Total execution time with 3D computation    : {time_elapsed_t_w3D}s                     █")
 
 print("█                                                                          █")
-print("█ Total execution time without 3D computation :", time_elapsed_t, "                     █")
+print(f"█ Total execution time without 3D computation : {time_elapsed_t}s                     █")
 print("█                                                                          █")
 print("███████████████████████████████████ END ████████████████████████████████████")

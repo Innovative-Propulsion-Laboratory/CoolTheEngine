@@ -11,6 +11,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     The function uses a marching algorithm, and computes all the relevant physical
     quantities at each point. The values obtained are then used on the next point.
     """
+
     hotgas_temp_list, molar_mass, gamma_list, Pc, c_star = hotgas_data
     init_coolant_temp, init_coolant_pressure, fluid, \
     debit_mass_coolant = coolant_data
@@ -44,7 +45,10 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     hl_corrected_list_2 = []
     index_throat = ycanaux.index(min(ycanaux))
 
-    length_from_inlet = 0.02
+    # This is to avoid oscillations near the inlet because of division by zero
+    length_from_inlet = 0.03
+
+    # Initial guess for the wall temperature
     coldwall_temp = 300
     hotwall_temp = 300
 
@@ -84,15 +88,16 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
             length_from_inlet += dl
 
-            # Reuse the value at previous point for a more accurate first guess
+            # Reuse the value at previous point for a more accurate first guess (and faster convergence)
             wall_cond = 350 if i == 0 else wall_cond_list[i - 1]
             sigma = 1 if i == 0 else sigma_list[i - 1]
 
-            # Arbitrarly create a difference to enter the loop
+            # Arbitrarely create a difference to enter the loop
             new_coldwall_temp = coldwall_temp + 10
             new_hotwall_temp = hotwall_temp + 10
 
             # This loop's goal is to find sigma and the wall conductivity
+            # It iterates until the wall temperatures have converged
             while abs(new_coldwall_temp - coldwall_temp) > 0.1 and abs(new_hotwall_temp - hotwall_temp) > 0.1:
                 coldwall_temp = new_coldwall_temp
                 hotwall_temp = new_hotwall_temp
@@ -106,7 +111,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 Nu = 0.023 * Re_cool ** 0.705 * Pr_cool ** 0.8 * (coldwall_temp / coolant_temp_list[i]) ** -(
                         -0.57 - 1.59 * Dhy / length_from_inlet)
 
-                # Correction factor for the channel roughness
+                # Nusselt number correction for the channel roughness
                 xi = t.darcy_weisbach(Dhy, Re_cool, roughness) / t.darcy_weisbach(Dhy, Re_cool, 0)
                 roughness_correction = xi * ((1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool - 1)) / (
                         1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool * xi - 1)))
@@ -130,13 +135,13 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 nf = np.tanh(intermediate_calc_1) / intermediate_calc_1
                 hl_cor2 = hl * (larg_canal[i] + 2 * nf * ht_canal[i]) / (larg_canal[i] + fin_width)
 
-                # Alternative but equivalent way of computing the heat flux and wall temperatures (Luka Denies)
+                # Computing the heat flux and wall temperatures (Luka Denies)
                 flux = (hotgas_temp_list[i] - coolant_temp_list[i]) / (
                         1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
                 new_hotwall_temp = hotgas_temp_list[i] - flux / hg
                 new_coldwall_temp = coolant_temp_list[i] + flux / hl
 
-                # Compute sigma (used in the Bartz equation)
+                # Compute new value of sigma (used in the Bartz equation)
                 T_hotgas_throat = hotgas_temp_list[index_throat]
                 mach_hot_gases = mach_list[i]
                 sigma = (((new_hotwall_temp / (2 * T_hotgas_throat)) * (
