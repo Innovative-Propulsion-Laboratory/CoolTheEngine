@@ -43,10 +43,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 1  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
+write_in_csv = True
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -248,6 +249,10 @@ if plot_detail >= 2 and show_3d_plots:
            limitation)
 
 # %% Dimensions
+print("█                                                                          █")
+print("█ Computing channel geometric                                              █")
+print("█                                                                          █")
+
 nbc = 40  # Number of channels
 manifold_pos = 0.104  # Position of the manifold from the throat (in m)
 
@@ -293,9 +298,7 @@ Pressure_cool_init = 7000000  # Pressure of the coolant at inlet (Pa)
 roughness = 15e-6  # Roughness (m)
 
 # %% Computation of channel geometry
-print("█                                                                          █")
-print("█ Channel geometric computation                                            █")
-print("█                                                                          █")
+
 # Method 1
 # xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
 #                                                               nbc, lrg_col, ht_col, ht_c, ht_div, tore,
@@ -311,7 +314,7 @@ coeffs = (n1, n2, n3, n4, n5, n6)
 # Compute dimensions
 xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel \
     = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volum_coolant, nbc, plot_detail,
-             figure_dpi)
+             write_in_csv, figure_dpi)
 
 # Write the dimensions of the channels in a CSV file
 file_name = "output/channelvalue.csv"
@@ -324,7 +327,15 @@ with open(file_name, "w", newline="") as file:
                          ht_canal[i], wall_thickness[i], area_channel[i]))
 
 end_init_time = time.perf_counter()  # End of the initialisation timer
-time_elapsed_i = round(end_init_time - start_time, 2)  # Initialisation time
+time_elapsed = f"{round(end_init_time - start_time, 2)}"  # Initialisation elapsed time (in s)
+if len(time_elapsed) <= 3:
+    time_elapsed_i = f"   {time_elapsed} s"
+elif len(time_elapsed) == 4:
+    time_elapsed_i = f"  {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_i = f" {time_elapsed} s"
+else:
+    time_elapsed_i = f"{time_elapsed} s"
 start_main_time = time.perf_counter()  # Start of the main solution timer
 
 # %% Prepare the lists before main computation
@@ -372,13 +383,23 @@ pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list \
     = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 end_m = time.perf_counter()  # End of the main solution timer
-time_elapsed_m = round(end_m - start_main_time, 2)  # Main elapsed time converted in minutes:secondes
-start_d2 = time.perf_counter()  # Start of the display of 2D timer
+time_elapsed = f"{round(end_m - start_main_time, 2)}"  # Main computation elapsed time (in s)
+if len(time_elapsed) <= 3:
+    time_elapsed_m = f"   {time_elapsed} s"
+elif len(time_elapsed) == 4:
+    time_elapsed_m = f"  {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_m = f" {time_elapsed} s"
+else:
+    time_elapsed_m = f"{time_elapsed} s"
 
 # %% Display of the 1D analysis results
-mach_03 = [x * 0.3 for x in sound_speed_coolant_list]
 
 if plot_detail >= 1:
+    start_d1 = time.perf_counter()  # Start of the display of 1D timer
+    print("█                                                                          █")
+    print("█ Display of results                                                       █")
+    print("█                                                                          █")
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, hlcor_list_2, color='blue', label='Hl corrected (Luka Denies)')
     plt.plot(xcanaux, hlcor_list, color='blue', label='Hl corrected (Julien)')
@@ -405,6 +426,7 @@ if plot_detail >= 1:
     plt.title('Heat flux (in W) as a function of engine axis')
     plt.show()
 
+    mach_03 = [x * 0.3 for x in sound_speed_coolant_list]
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, velocitycoolant_list, color='blue', label='Coolant')
     plt.plot(xcanaux, mach_03, color='orange', label='Mach 0.3 limit')
@@ -504,14 +526,24 @@ if plot_detail >= 2 and show_3d_plots:
     view3d(inv, xcanaux, ycanaux, coldwall_temp_list, colormap, "Wall temperature on the gas side (in K)", size2,
            limitation)
 
+if plot_detail >= 1:
+    end_d1 = time.perf_counter()  # End of the display of 1D timer
+    time_elapsed = f"{round(end_d1 - start_d1, 2)}"  # 1D display elapsed time (in s)
+    if len(time_elapsed) <= 3:
+        time_elapsed_d1 = f"   {time_elapsed} s"
+    elif len(time_elapsed) == 4:
+        time_elapsed_d1 = f"  {time_elapsed} s"
+    elif len(time_elapsed) == 5:
+        time_elapsed_d1 = f" {time_elapsed} s"
+    else:
+        time_elapsed_d1 = f"{time_elapsed} s"
+
 # %% Flux computation in 2D and 3D
-print("█                                                                          █")
-print("█ Display of results                                                       █")
-print("█                                                                          █")
 """2D flux computation"""
 larg_ailette_list.reverse()
 
 if show_2D_temperature:
+    start_d2 = time.perf_counter()  # Start of the display of 2D timer
     # At the beginning of the chamber
     print("█ Results at the beginning of the chamber :                                █")
     pas = larg_ailette_list[-1] + larg_canal[-1]
@@ -542,12 +574,16 @@ if show_2D_temperature:
             wallcond_list[0], hotgas_temp_list[0], hlcor_list[0],
             tempcoolant_list[0], 5, 1, 1, location, show_2D_temperature)
 
-end_d2 = time.perf_counter()  # End of the display of 2D timer
-if end_d2 - start_d2 > 60:
-    # 2D elapsed time converted in minutes:secondes
-    time_elapsed_d2 = time.ctime(end_d2 - start_d2)[14:19]
-else:
-    time_elapsed_d2 = round(end_d2 - start_d2, 2)
+    end_d2 = time.perf_counter()  # End of the display of 2D timer
+    time_elapsed = f"{round(end_d2 - start_d2, 2)}"  # 2D display elapsed time (in s)
+    if len(time_elapsed) <= 3:
+        time_elapsed_d2 = f"   {time_elapsed} s"
+    elif len(time_elapsed) == 4:
+        time_elapsed_d2 = f"  {time_elapsed} s"
+    elif len(time_elapsed) == 5:
+        time_elapsed_d2 = f" {time_elapsed} s"
+    else:
+        time_elapsed_d2 = f"{time_elapsed} s"
 
 "Computation for 3D graph"
 if do_final_3d_plot:
@@ -559,7 +595,7 @@ if do_final_3d_plot:
 
     # Compute a (low-resolution) 2D slice for each point in the engine
     with tqdm(total=nb_points_channel,
-              desc="█ 3D graph computation       ",
+              desc="█ 3D graph computation         ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as progressbar:
         for i in range(0, nb_points_channel, 1):
@@ -580,12 +616,15 @@ if do_final_3d_plot:
 
     # End of the 3D display timer
     end_d3 = time.perf_counter()
-    if end_d3 - start_d2 > 60:
-        # 3D elapsed time converted in minutes:secondes
-        time_elapsed_d3 = time.ctime(end_d3 - start_d2)[14:19]
+    time_elapsed = f"{round(end_d3 - start_d2, 2)}"  # 3D display elapsed time (in s)
+    if len(time_elapsed) <= 3:
+        time_elapsed_d3 = f"   {time_elapsed} s"
+    elif len(time_elapsed) == 4:
+        time_elapsed_d3 = f"  {time_elapsed} s"
+    elif len(time_elapsed) == 5:
+        time_elapsed_d3 = f" {time_elapsed} s"
     else:
-        time_elapsed_d3 = round(end_d3 - start_d2, 2)
-
+        time_elapsed_d3 = f"{time_elapsed} s"
 start_e = time.perf_counter()  # Start of the end timer
 
 # %% Reversion of the lists
@@ -624,7 +663,6 @@ pcoolant_list.reverse()
 angles = []
 newxhtre = []
 newyhtre = []
-print("█ Computing channel height                                                 █")
 for i in range(0, nb_points_channel):
     if i == 0:
         angle = 0
@@ -648,7 +686,8 @@ for i in range(0, nb_points_channel):
 
 # Checking the height of channels
 verification = []
-print("█ Checking channel height                                                  █")
+print("█                                                                          █")
+print("█ Checking and computing channel height                                    █")
 for i in range(0, nb_points_channel):
     verifhtre = (((newxhtre[i] - xcanaux[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
@@ -668,89 +707,100 @@ if plot_detail >= 3:
     plt.show()
 
 # %% Writing the results of the study in a CSV file
-print("█ Writing results in .csv files                                            █")
 
-valuexport = open("output/valuexport.csv", "w", newline="")
-geometry1 = open("output/geometry1.csv", "w", newline="")
-geometry2 = open("output/geometry2.csv", "w", newline="")
-valuexport_writer = csv.writer(valuexport)
-geometry1_writer = csv.writer(geometry1)
-geometry2_writer = csv.writer(geometry2)
-valuexport_writer.writerow(
-    ("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma",
-     "Mach number", "Gas pressure", "Total pressure", "Gas temperature",
-     "Channels x axis", "Engine + chamber wall diameter", "Channels width",
-     "Channels height", "Channels area", "Gas viscosity", "Cp gas",
-     "Gas conductivity", "Prandtl gaz", "Coeff Hg", "Sigma", " Twg ", " Twl ",
-     "Heat flux", "Tl", "Reynolds CH4", "Coeff Hl", "Rho coolant",
-     "Viscosity CH4", "Conductivity CH4", "Cp CH4", "Coolant velocity",
-     "Coolant pressure", "Wall conductivity", "x real height", "y real height"))
-geometry1_writer.writerow(("x real height", "y real height"))
-geometry2_writer.writerow(("Engine + chamber wall radius", "x real height"))
+if write_in_csv:
+    print("█                                                                          █")
+    print("█ Writing results in .csv files                                            █")
+    valuexport = open("output/valuexport.csv", "w", newline="")
+    geometry1 = open("output/geometry1.csv", "w", newline="")
+    geometry2 = open("output/geometry2.csv", "w", newline="")
+    valuexport_writer = csv.writer(valuexport)
+    geometry1_writer = csv.writer(geometry1)
+    geometry2_writer = csv.writer(geometry2)
+    valuexport_writer.writerow(
+        ("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma",
+         "Mach number", "Gas pressure", "Total pressure", "Gas temperature",
+         "Channels x axis", "Engine + chamber wall diameter", "Channels width",
+         "Channels height", "Channels area", "Gas viscosity", "Cp gas",
+         "Gas conductivity", "Prandtl gaz", "Coeff Hg", "Sigma", " Twg ", " Twl ",
+         "Heat flux", "Tl", "Reynolds CH4", "Coeff Hl", "Rho coolant",
+         "Viscosity CH4", "Conductivity CH4", "Cp CH4", "Coolant velocity",
+         "Coolant pressure", "Wall conductivity", "x real height", "y real height"))
+    geometry1_writer.writerow(("x real height", "y real height"))
+    geometry2_writer.writerow(("Engine + chamber wall radius", "x real height"))
 
-for i in range(0, nb_points):
-    if i < nb_points_channel:
-        geometry1_writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
-        geometry2_writer.writerow((ycanaux[i] * 1000, newxhtre[i] * (-1000)))
-        valuexport_writer.writerow((x_coord_list[i], y_coord_list[i], aire_saved[i], gamma_saved[i],
-                                    mach_list_saved[i], pressure_list[i],
-                                    hotgas_temperature_saved[i], xcanaux[i], ycanaux[i],
-                                    larg_canal[i], ht_canal[i], area_channel[i], hotgas_visc_list[i],
-                                    hotgas_cp_list[i], hotgas_cond_list[i], hotgas_prandtl_list[i],
-                                    hg_list[i], sigma_list[i], coldwall_temp_list[i],
-                                    hotwall_temp_list[i], flux_list[i], tempcoolant_list[i],
-                                    coolant_reynolds_list[i], hlnormal_list[i], densitycoolant_list[i],
-                                    visccoolant_list[i],
-                                    condcoolant_list[i], cpcoolant_list[i], velocitycoolant_list[i], pcoolant_list[i],
-                                    wallcond_list[i], newxhtre[i], newyhtre[i]))
-    else:
-        valuexport_writer.writerow(
-            (x_coord_list[i], y_coord_list[i], aire_saved[i], gamma_saved[i],
-             mach_list_saved[i], pressure_list[i],
-             hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ',
-             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-             ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
+    for i in range(0, nb_points):
+        if i < nb_points_channel:
+            geometry1_writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
+            geometry2_writer.writerow((ycanaux[i] * 1000, newxhtre[i] * (-1000)))
+            valuexport_writer.writerow((x_coord_list[i], y_coord_list[i], aire_saved[i], gamma_saved[i],
+                                        mach_list_saved[i], pressure_list[i],
+                                        hotgas_temperature_saved[i], xcanaux[i], ycanaux[i],
+                                        larg_canal[i], ht_canal[i], area_channel[i], hotgas_visc_list[i],
+                                        hotgas_cp_list[i], hotgas_cond_list[i], hotgas_prandtl_list[i],
+                                        hg_list[i], sigma_list[i], coldwall_temp_list[i],
+                                        hotwall_temp_list[i], flux_list[i], tempcoolant_list[i],
+                                        coolant_reynolds_list[i], hlnormal_list[i], densitycoolant_list[i],
+                                        visccoolant_list[i],
+                                        condcoolant_list[i], cpcoolant_list[i], velocitycoolant_list[i], pcoolant_list[i],
+                                        wallcond_list[i], newxhtre[i], newyhtre[i]))
+        else:
+            valuexport_writer.writerow(
+                (x_coord_list[i], y_coord_list[i], aire_saved[i], gamma_saved[i],
+                 mach_list_saved[i], pressure_list[i],
+                 hotgas_temperature_saved[i], ' ', ' ', ' ', ' ', ' ', ' ',
+                 ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+                 ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '))
 
-valuexport.close()
-geometry1.close()
-geometry2.close()
+    valuexport.close()
+    geometry1.close()
+    geometry2.close()
 
 # %% Execution time display
 
 end_t = time.perf_counter()  # End of the total timer
-
-if (end_t - start_e) > 60:
-    # Total elapsed time (without time waited to choose 3D) converted in minutes:secondes
-    time_elapsed_t = time.ctime((end_t - start_e) + (end_d2 - start_time))[14:19]
-    # End elapsed time converted in minutes:secondes
-    time_elapsed_e = time.ctime(end_t - start_e)[14:19]
+time_elapsed = f"{round(end_t - start_e, 2)}"  # End elapsed time (in s)
+if len(time_elapsed) <= 3:
+    time_elapsed_e = f"   {time_elapsed} s"
+elif len(time_elapsed) == 4:
+    time_elapsed_e = f"  {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_e = f" {time_elapsed} s"
 else:
-    time_elapsed_t = round((end_t - start_e) + (end_d2 - start_time), 2)
-    time_elapsed_e = round(end_t - start_e, 2)
+    time_elapsed_e = f"{time_elapsed} s"
+
+time_elapsed = f"{round(end_t - start_time, 2)}"  # Total elapsed time
+if len(time_elapsed) <= 3:
+    time_elapsed_t = f"   {time_elapsed} s"
+elif len(time_elapsed) == 4:
+    time_elapsed_t = f"  {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_t = f" {time_elapsed} s"
+else:
+    time_elapsed_t = f"{time_elapsed} s"
 
 print("█                                                                          █")
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
-print(f"█ Execution time for the initialisation       : {time_elapsed_i}s                      █")
+print(f"█ Execution time for the initialisation       : {time_elapsed_i}                   █")
 print("█                                                                          █")
-print(f"█ Execution time for the main computation     : {time_elapsed_m}s                      █")
+print(f"█ Execution time for the main computation     : {time_elapsed_m}                   █")
+
+if plot_detail >= 1:
+    print("█                                                                          █")
+    print(f"█ Execution time for the display of 1D        : {time_elapsed_d1}                   █")
 
 if show_2D_temperature:
     print("█                                                                          █")
-    print(f"█ Execution time for the display of 2D        : {time_elapsed_d2}s                     █")
-
-print("█                                                                          █")
-print(f"█ Execution time for the end of the program   : {time_elapsed_e}s                      █")
+    print(f"█ Execution time for the display of 2D        : {time_elapsed_d2}                   █")
 
 if do_final_3d_plot:
-    time_elapsed_t_w3D = time.ctime((end_t - start_3d) + (end_d2 - start_time))[14:19]
-    # Total elapsed time with 3D computation (without time waited to choose 3D) converted in minutes:secondes
     print("█                                                                          █")
-    print(f"█ Execution time for the display of 3D        : {time_elapsed_d3}s                     █")
-    print("█                                                                          █")
-    print(f"█ Total execution time with 3D computation    : {time_elapsed_t_w3D}s                     █")
+    print(f"█ Execution time for the display of 3D        : {time_elapsed_d3}                   █")
 
 print("█                                                                          █")
-print(f"█ Total execution time without 3D computation : {time_elapsed_t}s                     █")
+print(f"█ Execution time for the end of the program   : {time_elapsed_e}                   █")
+print("█                                                                          █")
+print(f"█ Total execution time                        : {time_elapsed_t}                   █")
 print("█                                                                          █")
 print("███████████████████████████████████ END ████████████████████████████████████")

@@ -103,7 +103,7 @@ import matplotlib.pyplot as plt
 
 
 def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
-           tore_pos, debit_volumique_total, nbc, plot_detail, figure_dpi):
+           tore_pos, debit_volumique_total, nbc, plot_detail, write_in_csv, figure_dpi):
     """
     This function computes the caracteristics of channels on each point
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
@@ -245,28 +245,29 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         v = debit_volumique_canal / aire
         vitesse_coolant.append(v)
 
-    "Writing the results of the study in a CSV file"
-    file_name = "output/channel_macro_catia.csv"
-    file = open(file_name, "w", newline="")
-    writer = csv.writer(file)
-    writer.writerow(["StartCurve"])
-    for i in range(0, longc, 3):
-        writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
-    writer.writerow(["EndCurve"])
-    writer.writerow(["StartCurve"])
-    for i in range(0, longc, 3):
-        writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
-    writer.writerow(["EndCurve"])
-    writer.writerow(["StartCurve"])
-    for i in range(0, longc, 3):
-        writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
-    writer.writerow(["EndCurve"])
-    writer.writerow(["StartCurve"])
-    for i in range(0, longc, 3):
-        writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
-    writer.writerow(["EndCurve"])
-    writer.writerow(["End"])
-    file.close()
+    if write_in_csv:
+        "Writing the results of the study in a CSV file"
+        file_name = "output/channel_macro_catia.csv"
+        file = open(file_name, "w", newline="")
+        writer = csv.writer(file)
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["End"])
+        file.close()
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
