@@ -47,7 +47,7 @@ plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
-write_in_csv = True
+write_in_csv = False
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -394,10 +394,10 @@ else:
     time_elapsed_m = f"{time_elapsed} s"
 
 # %% Display of the 1D analysis results
+print("█                                                                          █")
 
 if plot_detail >= 1:
     start_d1 = time.perf_counter()  # Start of the display of 1D timer
-    print("█                                                                          █")
     print("█ Display of results                                                       █")
     print("█                                                                          █")
     plt.figure(dpi=figure_dpi)
@@ -546,33 +546,25 @@ if show_2D_temperature:
     start_d2 = time.perf_counter()  # Start of the display of 2D timer
     # At the beginning of the chamber
     print("█ Results at the beginning of the chamber :                                █")
-    pas = larg_ailette_list[-1] + larg_canal[-1]
     dx = 0.00004  # *3.5
     location = " at the beginning of the chamber"
-    carto2D(pas, e_conv, ht_canal[-1], larg_canal[-1], dx, hg_list[-1],
-            wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1],
-            tempcoolant_list[-1], 5, 1, 1, location, show_2D_temperature)
+    carto2D(larg_ailette_list[-1] + larg_canal[-1], larg_canal[-1], e_conv, ht_canal[-1], dx, hg_list[-1],
+            wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1, location, False)
 
     # At the throat
     print("█ Results at the throat :                                                  █")
     pos_col = ycanaux.index(min(ycanaux))
-    pas_throat = larg_ailette_list[pos_col] + larg_canal[pos_col]
     dx = 0.000025  # *3.5
     location = " at the throat"
-    carto2D(pas_throat, e_col, ht_canal[pos_col], larg_canal[pos_col], dx,
-            hg_list[pos_col], wallcond_list[pos_col],
-            hotgas_temp_list[pos_col], hlcor_list[pos_col],
-            tempcoolant_list[pos_col], 15, 1, 2, location,
-            show_2D_temperature)
-
+    carto2D(larg_ailette_list[pos_col] + larg_canal[pos_col], larg_canal[pos_col], e_col, ht_canal[pos_col],
+            dx, hg_list[pos_col], wallcond_list[pos_col], hotgas_temp_list[pos_col], hlcor_list[pos_col],
+            tempcoolant_list[pos_col], 15, True, 2, location, False)
     # At the end of the divergent
-    print("█ Results at the end of the divergent :                                    █")
-    pas_div = larg_ailette_list[0] + larg_canal[0]
+    print("█ Results at the manifold :                                                █")
     dx = 0.00004
-    location = " at the end of the divergent"
-    carto2D(pas_div, e_tore, ht_canal[0], larg_canal[0], dx, hg_list[0],
-            wallcond_list[0], hotgas_temp_list[0], hlcor_list[0],
-            tempcoolant_list[0], 5, 1, 1, location, show_2D_temperature)
+    location = " at the manifold"
+    carto2D(larg_ailette_list[0] + larg_canal[0], larg_canal[0], e_tore, ht_canal[0], dx, hg_list[0],
+            wallcond_list[0], hotgas_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location, False)
 
     end_d2 = time.perf_counter()  # End of the display of 2D timer
     time_elapsed = f"{round(end_d2 - start_d2, 2)}"  # 2D display elapsed time (in s)
@@ -598,21 +590,16 @@ if do_final_3d_plot:
               desc="█ 3D graph computation         ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as progressbar:
-        for i in range(0, nb_points_channel, 1):
-            wall_cond_throat = wallcond_list[i]
-            temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i],
-                                        wall_thickness[i], ht_canal[i],
-                                        larg_canal[i], dx, hg_list[i],
-                                        wall_cond_throat, hotgas_temp_list[i],
-                                        hlnormal_list[i], tempcoolant_list[i],
-                                        3, 0, 1, "", plot_detail)
+        for i in range(0, nb_points_channel):
+            temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i], larg_canal[i], wall_thickness[i],
+                                        ht_canal[i], dx, hg_list[i], wallcond_list[i], hotgas_temp_list[i],
+                                        hlnormal_list[i], tempcoolant_list[i], 3, False, 1, "", True)
             temperature_slice_list.append(temperature_slice)
             progressbar.update(1)
 
     # Stack all these slices in a final 3D plot
-    carto3d([0, 0, 0], xcanaux, ycanaux, temperature_slice_list,
-            plt.cm.Spectral_r, '3D view of wall temperatures (in K)', nbc,
-            limitation)
+    carto3d([0, 0, 0], xcanaux, ycanaux, temperature_slice_list, plt.cm.Spectral_r,
+            '3D view of wall temperatures (in K)', nbc, limitation)
 
     # End of the 3D display timer
     end_d3 = time.perf_counter()

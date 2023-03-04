@@ -1,205 +1,121 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 11 20:47:01 2021
-
-@author: julie
-"""
-
 import casthermo as ct
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, leg, where, show_2D_temperature):
-    # def de la zone paroi
-    npxp = round(pas / (2 * dx) + 1, 0)
-    npyp = round(epaisseur / dx + 1, 0)
-    # print(npxp,npyp)
-    # def de la zone ailette
-    npxa = round(((pas - largeur) / (2 * dx)) + 1, 0)
-    npya = round(hauteur / dx, 0)
-    # print(npxa,npya)
-    # def du nombre de point à chercher
-    nbp = npxp * npyp + npxa * npya
-    # print(nbp)
+def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type, location, return_temp):
+    npx_wall = round(larg_wall / (2 * dx) + 1)  # Number of point in the x axis at the wall
+    npy_wall = round(ep_wall / dx + 1)  # Number of point in the y axis at the wall
+    npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)  # Number of points in the x axis at the rib
+    npy_rib = round(ep_rib / dx)  # Number of point in the y axis at the rib
+    nb_point = npx_wall * npy_wall + npx_rib * npy_rib  # Number of point to compute
 
-    # def du type de config, orientation, symétrie et indice des points alentours
-    listing = []
-    coord = []
-    # rangée de surface
-    for i in range(0, int(npxp), 1):
-        point = [2, 3]
-        if i == 0:
-            sym = 1
-            n = -1
-            e = len(listing) + 1
-            s = len(listing) + npxp
-            o = -1
-        elif i == (npxp - 1):
-            sym = 2
-            n = -1
-            e = -1
-            s = len(listing) + npxp
-            o = len(listing) - 1
-        else:
-            sym = 0
-            n = -1
-            e = len(listing) + 1
-            s = len(listing) + npxp
-            o = len(listing) - 1
-        u = i * dx
-        v = 0
-        coord.append([u, v])
-        card = [n, o, s, e]
-        point.append(sym)
-        point.append(card)
-        listing.append(point)
-    # rangée dans la paroi
-    for h in range(0, int(npyp) - 2, 1):
-        for i in range(0, int(npxp), 1):
-            point = [3, 0]
-            if i == 0:
-                sym = 1
-                o = -1
-                n = len(listing) - npxp
-                e = len(listing) + 1
-                s = len(listing) + npxp
-            elif i == (npxp - 1):
-                sym = 2
-                o = len(listing) - 1
-                n = len(listing) - npxp
-                e = -1
-                s = len(listing) + npxp
-            else:
-                sym = 0
-                o = len(listing) - 1
-                n = len(listing) - npxp
-                e = len(listing) + 1
-                s = len(listing) + npxp
-            card = [n, o, s, e]
-            point.append(sym)
-            point.append(card)
-            listing.append(point)
-            u = i * dx
-            v = h * dx + dx
-            coord.append([u, v])
-    # changement de fluide
-    abop = len(listing) - 1
-    for i in range(0, int(npxp), 1):
-        if i == 0:
-            point = [2, 1]
-            e = len(listing) + 1
-            o = -1
-            n = len(listing) - npxp
-            s = -1
-        elif i <= (npxp - npxa - 1):
-            point = [2, 1]
-            e = len(listing) + 1
-            o = len(listing) - 1
-            n = len(listing) - npxp
-            s = -1
-        elif i == (npxp - npxa):
-            point = [2, 1]
-            e = len(listing) + 1
-            o = len(listing) - 1
-            n = len(listing) - npxp
-            s = len(listing) + npxa
-        elif i == (npxp - 1):
-            point = [3, 0]
-            e = -1
-            o = len(listing) - 1
-            n = len(listing) - npxp
-            s = len(listing) + npxa
-        else:
-            point = [3, 0]
-            e = len(listing) + 1
-            o = len(listing) - 1
-            n = len(listing) - npxp
-            s = len(listing) + npxa
-        if i == 0:
-            sym = 1
-        elif i == (npxp - 1):
-            sym = 2
-        else:
-            sym = 0
-        card = [n, o, s, e]
-        point.append(sym)
-        point.append(card)
-        listing.append(point)
-        u = i * dx
-        v = (npyp - 1) * dx
-        coord.append([u, v])
-    for h in range(0, int(npya) - 1, 1):
-        for i in range(0, int(npxa), 1):
-            if i == 0:
-                point = [2, 2]
-                o = -1
-                n = len(listing) - npxa
-                e = len(listing) + 1
-                s = len(listing) + npxa
-            elif i == (npxa - 1):
-                point = [3, 0]
-                o = len(listing) - 1
-                n = len(listing) - npxa
-                e = -1
-                s = len(listing) + npxa
-            else:
-                point = [3, 0]
-                o = len(listing) - 1
-                n = len(listing) - npxa
-                e = len(listing) + 1
-                s = len(listing) + npxa
-            if i == (npxa - 1):
-                sym = 2
-            else:
-                sym = 0
-            card = [n, o, s, e]
-            point.append(sym)
-            point.append(card)
-            listing.append(point)
-            u = i * dx + (npxp - npxa) * dx
-            v = (npyp - 1) * dx + (h + 1) * dx
-            coord.append([u, v])
-    for i in range(0, int(npxa), 1):
-        if i == 0:
-            point = [4, 0]
-            o = -1
-            n = len(listing) - npxa
-            e = len(listing) + 1
-            s = -1
-        elif i == (npxa - 1):
-            point = [5, 0]
-            o = len(listing) - 1
-            n = len(listing) - npxa
-            e = -1
-            s = -1
-        else:
-            point = [5, 0]
-            o = len(listing) - 1
-            n = len(listing) - npxa
-            e = len(listing) + 1
-            s = -1
-        if i == (npxa - 1):
-            sym = 2
-        else:
-            sym = 0
-        card = [n, o, s, e]
-        point.append(sym)
-        point.append(card)
-        listing.append(point)
-        u = i * dx + (npxp - npxa) * dx
-        v = (npya + npyp - 1) * dx
-        coord.append([u, v])
-    # print(len(listing))
-    # print(listing)
+    # Definition of configuration type, orientation, symetry and index of surrounded points
+    listing = []  # List with the caracteristics useful to build the graphic for each point
+    coord = []  # Coordinate of each point related to listing
+    lenl = 0  # Length of the list "listing" that will be incremented in parallel with it
 
-    # résolution de la matrice inversible
-    # shaping de la matrice inversible
-    reso = np.zeros(shape=(int(nbp), int(nbp)))
-    membre = np.zeros(shape=(int(nbp), 1))
-    for k in range(0, len(listing), 1):
-        # définition du fluide si présent en ce point
-        if k < abop:
+    # Computation of the temperature at the surface of the hot wall
+    listing.append([2, 3, 1, [-1, -1, npx_wall, 1]])
+    lenl += 1
+    coord.append([0, 0])
+    for i in range(1, npx_wall - 1):
+        o = lenl - 1
+        s = lenl + npx_wall
+        e = lenl + 1
+        listing.append([2, 3, 0, [-1, o, s, e]])
+        lenl += 1
+        coord.append([i * dx, 0])
+    listing.append([2, 3, 2, [-1, lenl - 1, lenl + npx_wall, -1]])
+    lenl += 1
+    coord.append([(npx_wall - 1) * dx, 0])
+
+    # Computation of raws in the wall
+    for h in range(1, npy_wall - 1):
+        listing.append([3, 0, 1, [lenl - npx_wall, -1, lenl + npx_wall, lenl + 1]])
+        lenl += 1
+        coord.append([0, h * dx])
+        for i in range(1, npx_wall - 1):
+            n = lenl - npx_wall
+            o = lenl - 1
+            s = lenl + npx_wall
+            e = lenl + 1
+            listing.append([3, 0, 0, [n, o, s, e]])
+            lenl += 1
+            coord.append([i * dx, h * dx])
+        listing.append([3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_wall, -1]])
+        lenl += 1
+        coord.append([(npx_wall - 1) * dx, h * dx])
+    
+    begin_coolant = lenl - 1
+    
+    # Last raw of the wall
+    listing.append([2, 1, 1, [lenl - npx_wall, -1, -1, lenl + 1]])
+    lenl += 1
+    coord.append([0, (npy_wall - 1) * dx])
+    for i in range(1, npx_wall - npx_rib):
+        n = lenl - npx_wall
+        o = lenl - 1
+        e = lenl + 1
+        listing.append([2, 1, 0, [n, o, -1, e]])
+        lenl += 1
+        coord.append([i * dx, (npy_wall - 1) * dx])
+    n = lenl - npx_wall
+    o = lenl - 1
+    s = lenl + npx_rib
+    e = lenl + 1
+    listing.append([2, 1, 0, [n, o, s, e]])
+    lenl += 1
+    coord.append([(npx_wall - npx_rib) * dx, (npy_wall - 1) * dx])
+    for i in range(npx_wall - npx_rib + 1, npx_wall - 1):
+        n = lenl - npx_wall
+        o = lenl - 1
+        s = lenl + npx_rib
+        e = lenl + 1
+        listing.append([3, 0, 0, [n, o, s, e]])
+        lenl += 1
+        coord.append([i * dx, (npy_wall - 1) * dx])
+    listing.append([3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_rib, -1]])
+    lenl += 1
+    coord.append([(npy_wall - 1) * dx, (npy_wall - 1) * dx])
+
+    # Computation of raws in the rib
+    for h in range(1, npy_rib):
+        listing.append([2, 2, 0, [lenl - npx_rib, -1, lenl + npx_rib, lenl + 1]])
+        lenl += 1
+        coord.append([(npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
+        for i in range(1, npx_rib - 1):
+            n = lenl - npx_rib
+            o = lenl - 1
+            s = lenl + npx_rib
+            e = lenl + 1
+            listing.append([3, 0, 0, [n, o, s, e]])
+            lenl += 1
+            coord.append([(i + npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
+        listing.append([3, 0, 2, [lenl - npx_rib, lenl - 1, lenl + npx_rib, -1]])
+        lenl += 1
+        coord.append([(npx_rib - 1 + npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
+
+    # Last raw of the rib
+    listing.append([4, 0, 0, [lenl - npx_rib, -1, -1, lenl + 1]])
+    lenl += 1
+    coord.append([(npx_wall - npx_rib) * dx, (npy_rib + npy_wall - 1) * dx])
+    for i in range(1, npx_rib - 1):
+        n = lenl - npx_rib
+        o = lenl - 1
+        e = lenl + 1
+        listing.append([5, 0, 0, [n, o, -1, e]])
+        lenl += 1
+        coord.append([(i + npx_wall - npx_rib) * dx, (npy_rib + npy_wall - 1) * dx])
+    listing.append([5, 0, 2, [lenl - npx_rib, lenl - 1, -1, -1]])
+    lenl += 1
+    coord.append([(npx_rib - 1 + npx_wall - npx_rib) * dx, (npy_rib + npy_wall - 1) * dx])
+
+    # Invertible matrix solving
+    reso = np.zeros(shape=(nb_point, nb_point))
+    membre = np.zeros(shape=(nb_point, 1))
+    for k in range(0, lenl):
+        if k < begin_coolant:
             h = Hg
             Tf = Tg
             inv = 1
@@ -207,7 +123,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             h = Hl
             Tf = Tl
             inv = 1
-        # résolution des coefficients
+        # Coefficient resolution
         if listing[k][0] == 1:
             a, b, c, d, x, plus = ct.cas1(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 2:
@@ -218,7 +134,7 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             a, b, c, d, x, plus = ct.cas4(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 5:
             a, b, c, d, x, plus = ct.cas5(h, dx, lamb, Tf, inv)
-            # résolution de l'orientation
+        # Orientation resolution
         if listing[k][1] == 0:
             coef1 = a
             coef2 = b
@@ -240,115 +156,81 @@ def carto2D(pas, epaisseur, hauteur, largeur, dx, Hg, lamb, Tg, Hl, Tl, w, oui, 
             coef3 = b
             coef4 = c
 
-        # résolution symétrie
+        # Symetry resolution
         if listing[k][2] == 1:
-            coef4 = coef2 + coef4
+            coef4 += coef2
         elif listing[k][2] == 2:
-            coef2 = coef4 + coef2
+            coef2 += coef4
 
-        # Déduction du placement des coef par rapport aux points accolant
+        # Placement deduction of coefficients comared to surrounded points
         insert = []
         pos = 1
         for z in listing[k][3]:
-            if 0 <= z <= (nbp - 1):
+            if 0 <= z <= (nb_point - 1):
                 if pos == 1:
-                    inn = [coef1, z]
-                    insert.append(inn)
+                    insert.append([coef1, z])
                 elif pos == 2:
-                    inn = [coef2, z]
-                    insert.append(inn)
+                    insert.append([coef2, z])
                 elif pos == 3:
-                    inn = [coef3, z]
-                    insert.append(inn)
+                    insert.append([coef3, z])
                 elif pos == 4:
-                    inn = [coef4, z]
-                    insert.append(inn)
+                    insert.append([coef4, z])
                 else:
                     print("error placing")
             pos += 1
 
-        # introduction des coefs dans la matrice
+        # Introduction of coefficients in the matrix
         for values in insert:
             implacement = int(values[1])
             reso[k][implacement] = values[0]
             reso[k][k] = x
             membre[k] = plus
-    # print(reso)
-    # print(membre)
+
     reso_inv = np.linalg.inv(reso)
-    # reso_inv=sc.linalg.inv(reso)
-    # print(np.dot(reso_inv,reso))
     T = np.dot(reso_inv, membre)
-    # print(T)
 
-    minimum = min(T)
-    maximum = max(T)
+    abcisse = [m[0] for m in coord]
+    ordonnee = [-m[1] for m in coord]
+    temperature = [t[0] for t in T]
 
-    abcisse = []
-    ordonee = []
-    temperature = []
-    bis = 1
-    paroigas = 0
-    for m in coord:
-        abcisse.append(m[0])
-        ordonee.append(-m[1])
-    for t in T:
-        temperature.append(t[0])
-        if bis <= npxp:
-            paroigas = paroigas + t[0]
-        bis += 1
-    if oui == 1:
-        # This is just for formatting
-        tg_avg = f"{round(temperature[0])}" if len(
-            f'{round(temperature[0])}') == 4 else f" {round(temperature[0])}"
-        tl_avg = f"{round(temperature[abop + 1])}" if len(
-            f'{round(temperature[abop + 1])}') == 4 else f" {round(temperature[abop + 1])}"
-        t_max = f"{round(max(temperature))}" if len(
-            f'{round(max(temperature))}') == 4 else f" {round(max(temperature))}"
-        print(f"█ Mean wall temperature at hot side  = {tg_avg} K                              █")
-        print(f"█ Mean wall temperature at cool side = {tl_avg} K                              █")
-        print(f"█ Maximum temperature in the wall    = {t_max} K                              █")
+    if display:
+        moyT_hotwall = round(sum(temperature[:npx_wall]) / npx_wall)
+        moyT_coolant = round(2 * sum(temperature[begin_coolant-1:begin_coolant-1+int(npx_wall/2)]) / npx_wall)
+        maxT = round(max(temperature))
+
+        tg_avg = f"{moyT_hotwall}" if len(f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
+        tl_avg = f"{moyT_coolant}" if len(f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
+        t_max = f"{maxT}" if len(f'{maxT}') == 4 else f" {maxT}"
+        print(f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
+        print(f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
+        print(f"█ Maximum temperature in the wall       = {t_max} K                           █")
         print("█                                                                          █")
-        if leg == 1:
+
+        if legend_type == 1:
             a1 = 0.003
             a2 = -0.0025
             a3 = 0.00025
             a4 = -0.0025
             a5 = 0.002
             a6 = -0.0005
-        elif leg == 2:
+        elif legend_type == 2:
             a1 = 0.0015
             a2 = -0.002
             a3 = 0.00025
             a4 = -0.002
             a5 = 0.001
             a6 = -0.0005
-        # plt.figure(dpi=200)
-        # p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='flag')  # rainbow#prism#flag
-        # plt.text(a1, a2, 'Hot gases', horizontalalignment='center', verticalalignment='center')
-        # plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-        #
-        # plt.title("Distribution 2D des températures", fontsize=15)
-        # plt.axis("equal")
-        # plt.colorbar(p, shrink=0.4, aspect=15)
-        # plt.show()
-        if show_2D_temperature:
-            title = "2D temperature distribution (in K)" + where
-            plt.figure(dpi=200)
-            p = plt.scatter(abcisse, ordonee, c=temperature, marker='s', s=w, cmap='rainbow')  # rainbow#prism#flag
-            plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
-            plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-            plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
 
-            plt.title(title, fontsize=15)
-            plt.axis("equal")
-            plt.colorbar(p, shrink=0.4, aspect=15)
-            plt.show()
+        title = "2D temperature distribution (in K)" + location
+        plt.figure(dpi=200)
+        p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size, cmap='rainbow')  # rainbow#prism#flag
+        plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
+        plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
+        plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
+        plt.title(title, fontsize=15)
+        plt.axis("equal")
+        plt.colorbar(p, shrink=0.4, aspect=15)
+        plt.show()
 
-    t3d = []
-    for i in range(0, int(npxp), 1):
-        t3d.append(temperature[i])
-
-    return t3d
-
-# r=carto2D(pas,epaisseur,hauteur,largeur,dx,Hg,lamb,Tg,Hl,Tl,20)
+    if return_temp:
+        return [t for t in temperature[:npx_wall]]
