@@ -13,7 +13,6 @@ import csv
 import numpy as np
 import cte_tools as t
 from main_solver import mainsolver
-from scipy.interpolate import interp1d
 
 # Data
 from Canaux import canaux
@@ -44,7 +43,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = -1  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
@@ -480,7 +479,7 @@ if plot_detail >= 2:
     plt.title('Volumic mass of the coolant as a function of engine axis')
     plt.show()
 
-if plot_detail == -1:
+if plot_detail >=3:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, coolant_reynolds_list, color='blue')
     plt.title("Reynolds number of the coolant as a function of the engine axis")
