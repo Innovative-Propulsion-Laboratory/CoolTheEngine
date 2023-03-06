@@ -4,6 +4,7 @@ from tqdm import tqdm
 import cte_tools as t
 
 
+
 def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     """
     This is the main function used for solving the 1D case.
@@ -12,13 +13,13 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     quantities at each point. The values obtained are then used on the next point.
     """
 
-    hotgas_temp_list, molar_mass, gamma_list, Pc, c_star = hotgas_data
+    hotgas_temp_list, molar_mass, gamma_list, Pc, c_star,pressure_list,PH2O,PCO2 = hotgas_data
     init_coolant_temp, init_coolant_pressure, fluid, \
     debit_mass_coolant = coolant_data
     xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, \
     area_channel, nb_points_channel = channel_data
     nbc, diam_throat, curv_radius_pre_throat, area_throat, roughness, \
-    cross_section_area_list, mach_list, material_name = chamber_data
+    cross_section_area_list, mach_list, material_name, y_coord_list = chamber_data
 
     # Lists containing the physical quantities at each point
     coolant_temp_list = [init_coolant_temp]
@@ -43,6 +44,9 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     hl_normal_list = []
     hl_corrected_list = []
     hl_corrected_list_2 = []
+    q_list_H2O = []
+    q_list_CO2 = []
+    qRad_list=[]
     index_throat = ycanaux.index(min(ycanaux))
 
     # This is to avoid oscillations near the inlet because of division by zero
@@ -135,8 +139,13 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 nf = np.tanh(intermediate_calc_1) / intermediate_calc_1
                 hl_cor2 = hl * (larg_canal[i] + 2 * nf * ht_canal[i]) / (larg_canal[i] + fin_width)
 
+                # compute radiative heat transfer (H2O/CO2)
+                qW = 5.74 * (PH2O[i]/ 1e5 * y_coord_list[i]) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                qC = 4 * (PCO2[i]/ 1e5 * y_coord_list[i]) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                qRad = qW + qC
+
                 # Computing the heat flux and wall temperatures (Luka Denies)
-                flux = (hotgas_temp_list[i] - coolant_temp_list[i]) / (
+                flux = (hotgas_temp_list[i] - coolant_temp_list[i] +qRad/hg) / (
                         1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
                 new_hotwall_temp = hotgas_temp_list[i] - flux / hg
                 new_coldwall_temp = coolant_temp_list[i] + flux / hl
@@ -201,7 +210,9 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
             coolant_cp_list.append(new_cool_cp)
             coolant_density_list.append(new_cool_dens)
             sound_speed_list.append(new_cool_sound_spd)
-
+            qRad_list.append(qRad)
+            q_list_CO2.append(qC)
+            q_list_H2O.append(qW)
             pbar_main.update(1)
 
         return hl_corrected_list, hl_corrected_list_2, hotgas_viscosity_list, \
@@ -210,4 +221,4 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
                coolant_cond_list, coolant_cp_list, coolant_density_list, \
                coolant_velocity_list, coolant_pressure_list, wall_cond_list, \
-               sound_speed_list, hl_normal_list
+               sound_speed_list, hl_normal_list,qRad_list,q_list_CO2,q_list_H2O

@@ -13,6 +13,7 @@ import csv
 import numpy as np
 import cte_tools as t
 from main_solver import mainsolver
+from scipy.interpolate import interp1d
 
 # Data
 from Canaux import canaux
@@ -43,7 +44,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = -1  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
@@ -66,6 +67,12 @@ gamma_t_input = float(input_data_list[8])  # Gamma in the throat
 gamma_e_input = float(input_data_list[9])  # Gamma at the exit
 molar_mass = float(input_data_list[10])  # Molar mass of the gases
 c_star = float(input_data_list[11])  # Caracteristic velocity
+nH2O_c_input = float(input_data_list[16]) # Molar fraction of the water in the chamber
+nH2O_t_input = float(input_data_list[17]) # Molar fraction of the water in the throat
+nH2O_e_input = float(input_data_list[18]) # Molar fraction of the water in the exit
+nCO2_c_input = float(input_data_list[19]) # Molar fraction of the CO2 in the chamber
+nCO2_t_input = float(input_data_list[20]) # Molar fraction of the CO2 in the throat
+nCO2_e_input = float(input_data_list[21]) # Molar fraction of the CO2 in the exit
 
 # Store input dimensions in lists
 curv_radius_pre_throat = float(input_data_list[12])  # Radius of curvature before the throat
@@ -212,6 +219,20 @@ if plot_detail >= 2 and show_3d_plots:
     print("█ Plotting 3D graph                                                        █")
     print("█                                                                          █")
     view3d(inv, x_coord_list, y_coord_list, pressure_list, colormap, 'Static pressure (in Pa)', size2, limitation)
+
+# %% Interpolation of the molar fraction
+index_throat = y_coord_list.index(min(y_coord_list)) # Index of the throat location
+Molfrac_H2O=[nH2O_c_input,nH2O_t_input,nH2O_e_input] # Molar fraction of the water
+Molfrac_CO2=[nCO2_c_input,nCO2_t_input,nCO2_e_input] # Molar fraction of the CO2
+x_Molfrac=[x_coord_list[0],x_coord_list[index_throat],x_coord_list[-1]] # Location associated to the molar mass
+
+Molfrac_H2O_new=np.interp(x_coord_list,x_Molfrac,Molfrac_H2O) # Value of the molar mass of the water after interpolation
+Molfrac_CO2_new=np.interp(x_coord_list,x_Molfrac,Molfrac_CO2) # Value of the molar mass of the CO2 after interpolation
+PH2O=[]
+PCO2=[]
+for i in range(len(x_coord_list)):
+    PH2O.append(pressure_list[i]*Molfrac_H2O_new[i]) # Static pressure of the water
+    PCO2.append(pressure_list[i] * Molfrac_CO2_new[i]) # Static pressure of the CO2
 
 # %% Hot gas temperature computation
 hotgas_temp_list = [Tc]
@@ -365,21 +386,23 @@ mach_list.reverse()
 cross_section_area_list.reverse()
 hotgas_temp_list.reverse()
 
+
 # %% Main computation
 
-data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star)
+data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star,pressure_list,PH2O,PCO2)
 data_coolant = (Temp_cool_init, Pressure_cool_init, fluid, debit_mass_coolant)
 data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
                 wall_thickness, area_channel, nb_points_channel)
 data_chamber = (nbc, diam_throat, curv_radius_pre_throat, area_throat,
-                roughness, cross_section_area_list, mach_list, material_name)
+                roughness, cross_section_area_list, mach_list,material_name,y_coord_list)
 
 # Call the main solving loop
 hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
 hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
 sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
 condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
-pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list \
+pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
+qRad_list,q_list_CO2,q_list_H2O \
     = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 end_m = time.perf_counter()  # End of the main solution timer
@@ -457,7 +480,7 @@ if plot_detail >= 2:
     plt.title('Volumic mass of the coolant as a function of engine axis')
     plt.show()
 
-if plot_detail >= 3:
+if plot_detail == -1:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, coolant_reynolds_list, color='blue')
     plt.title("Reynolds number of the coolant as a function of the engine axis")
@@ -509,6 +532,17 @@ if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, sound_speed_coolant_list, color='pink')
     plt.title('Sound velocity of the coolant (in m/s) as a function of engine axis')
+    plt.show()
+
+    qRad_list.reverse()
+    q_list_CO2.reverse()
+    q_list_H2O.reverse()
+    plt.figure(dpi=figure_dpi)
+    plt.plot(x_coord_list, q_list_CO2, color='r', label='CO2')
+    plt.plot(x_coord_list, q_list_H2O, color='b', label='H2O')
+    plt.plot(x_coord_list, qRad_list, color='g', label='total')
+    plt.title('Radiative heat flux(W/m2)')
+    plt.legend()
     plt.show()
 
 if plot_detail >= 1 and show_3d_plots:
