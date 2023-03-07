@@ -31,6 +31,7 @@ print("█                  Innovative Propulsion Laboratory - IPL              
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
 print("█ Initialisation                                                           █")
+print("█                                                                          █")
 
 # %% Initial definitions
 
@@ -43,11 +44,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 0  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 3  # 0=No plots; 1=Important plots; 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
-write_in_csv = False
+write_in_csv = True
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -66,12 +67,12 @@ gamma_t_input = float(input_data_list[8])  # Gamma in the throat
 gamma_e_input = float(input_data_list[9])  # Gamma at the exit
 molar_mass = float(input_data_list[10])  # Molar mass of the gases
 c_star = float(input_data_list[11])  # Caracteristic velocity
-nH2O_c_input = float(input_data_list[16]) # Molar fraction of the water in the chamber
-nH2O_t_input = float(input_data_list[17]) # Molar fraction of the water in the throat
-nH2O_e_input = float(input_data_list[18]) # Molar fraction of the water in the exit
-nCO2_c_input = float(input_data_list[19]) # Molar fraction of the CO2 in the chamber
-nCO2_t_input = float(input_data_list[20]) # Molar fraction of the CO2 in the throat
-nCO2_e_input = float(input_data_list[21]) # Molar fraction of the CO2 in the exit
+xH2O_c_input = float(input_data_list[16])  # Molar fraction of the H2O in the chamber
+xH2O_t_input = float(input_data_list[17])  # Molar fraction of the H20 in the throat
+xH2O_e_input = float(input_data_list[18])  # Molar fraction of the H20 at the exit
+xCO2_c_input = float(input_data_list[19])  # Molar fraction of the CO2 in the chamber
+xCO2_t_input = float(input_data_list[20])  # Molar fraction of the CO2 in the throat
+xCO2_e_input = float(input_data_list[21])  # Molar fraction of the CO2 at the exit
 
 # Store input dimensions in lists
 curv_radius_pre_throat = float(input_data_list[12])  # Radius of curvature before the throat
@@ -114,9 +115,8 @@ if plot_detail >= 3:
     plt.show()
 
 # %% Adiabatic constant (gamma) parametrization
-print("█                                                                          █")
 print("█ Computing gamma                                                          █")
-print("█                                                                          █")
+
 i_conv = 0  # Index of the beginning of the convergent
 y1 = 1
 y2 = 1
@@ -130,9 +130,8 @@ gamma_list = [gamma_c_input for i in range(0, i_conv)]  # Gamma is constant befo
 
 # Gamma in the convergent
 i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
-nb_points_convergent = i_throat - i_conv  # Number of points in the convergent
 gamma_convergent = gamma_c_input
-for m in range(-1, nb_points_convergent - 1):
+for m in range(-1, i_throat - i_conv - 1):
     # Linear interpolation between beginning and end of convergent:
     # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
     gamma_convergent += ((gamma_t_input - gamma_c_input) / (x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
@@ -140,9 +139,8 @@ for m in range(-1, nb_points_convergent - 1):
     gamma_list.append(gamma_convergent)
 
 # Gamma in the divergent nozzle
-nb_points_divergent = len(x_coord_list) - i_throat  # Number of points in the divergent
 gamma_divergent = gamma_t_input
-for q in range(-1, nb_points_divergent - 1):  # Linear interpolation between beginning and end of divergent
+for q in range(-1, nb_points - i_throat - 1):  # Linear interpolation between beginning and end of divergent
     gamma_divergent += ((gamma_e_input - gamma_t_input) / (x_coord_list[-1] - x_coord_list[i_throat])) * abs(
         x_coord_list[i_throat + 1 + q] - x_coord_list[i_throat + q])
     gamma_list.append(gamma_divergent)
@@ -184,7 +182,6 @@ if plot_detail >= 1 and show_3d_plots:
     colormap = plt.cm.Spectral
     inv = 1, 1, 1  # 1 means should be reversed
     print("█ Plotting 3D graph                                                        █")
-    print("█                                                                          █")
     view3d(inv, x_coord_list, y_coord_list, mach_list, colormap, 'Mach number of hot gases', size2, limitation)
 
 # %% Static pressure computation
@@ -195,13 +192,7 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        if i == nb_points + 1:  # If last point
-            mach_gas = mach_list[i]
-            mach_gas_2 = mach_list[i]
-        else:  # All the other points
-            mach_gas = mach_list[i]
-            mach_gas_2 = mach_list[i + 1]
-        pressure = t.pressure_solv(mach_gas, mach_gas_2, pressure_list[i], gamma_list[i])
+        pressure = t.pressure_solv(mach_list[i], mach_list[i + 1], pressure_list[i], gamma_list[i])
         pressure_list.append(pressure)
         progressbar.update(1)
 
@@ -209,29 +200,42 @@ with tqdm(total=nb_points - 1,
 if plot_detail >= 2:
     plt.figure(dpi=figure_dpi)
     plt.plot(x_coord_list, pressure_list, color='gold')
-    plt.title("Static pressure (in Pa) as a function of the engine axis")
+    plt.title("Global static pressure (in Pa) as a function of the engine axis")
     plt.show()
 
 if plot_detail >= 2 and show_3d_plots:
     colormap = plt.cm.gist_rainbow_r
     inv = 1, 1, 1  # 1 means should be reversed
     print("█ Plotting 3D graph                                                        █")
-    print("█                                                                          █")
     view3d(inv, x_coord_list, y_coord_list, pressure_list, colormap, 'Static pressure (in Pa)', size2, limitation)
 
-# %% Interpolation of the molar fraction
-index_throat = y_coord_list.index(min(y_coord_list)) # Index of the throat location
-Molfrac_H2O=[nH2O_c_input,nH2O_t_input,nH2O_e_input] # Molar fraction of the water
-Molfrac_CO2=[nCO2_c_input,nCO2_t_input,nCO2_e_input] # Molar fraction of the CO2
-x_Molfrac=[x_coord_list[0],x_coord_list[index_throat],x_coord_list[-1]] # Location associated to the molar mass
+# %% Partial pressure computation and interpolation of the molar fraction
+x_Molfrac = [x_coord_list[0], x_coord_list[i_throat], x_coord_list[-1]]  # Location associated to the molar mass
 
-Molfrac_H2O_new=np.interp(x_coord_list,x_Molfrac,Molfrac_H2O) # Value of the molar mass of the water after interpolation
-Molfrac_CO2_new=np.interp(x_coord_list,x_Molfrac,Molfrac_CO2) # Value of the molar mass of the CO2 after interpolation
-PH2O=[]
-PCO2=[]
-for i in range(len(x_coord_list)):
-    PH2O.append(pressure_list[i]*Molfrac_H2O_new[i]) # Static pressure of the water
-    PCO2.append(pressure_list[i] * Molfrac_CO2_new[i]) # Static pressure of the CO2
+# Value of the molar fraction of the H20 after interpolation
+Molfrac_H2O = np.interp(x_coord_list, x_Molfrac, [xH2O_c_input, xH2O_t_input, xH2O_e_input])  
+
+# Value of the molar fraction of the CO2 after interpolation
+Molfrac_CO2 = np.interp(x_coord_list, x_Molfrac, [xCO2_c_input, xCO2_t_input, xCO2_e_input])  
+
+PH2O_list = [pressure_list[i] * Molfrac_H2O[i] for i in range(0, nb_points)]  # Partial pressure of the H2O
+PCO2_list = [pressure_list[i] * Molfrac_CO2[i] for i in range(0, nb_points)]  # Partial pressure of the CO2
+
+# Plots of molar fraction and partial pressure
+if plot_detail >= 3:
+    plt.figure(dpi=figure_dpi)
+    plt.plot(x_coord_list, Molfrac_H2O, color='blue', label='H20')
+    plt.plot(x_coord_list, Molfrac_CO2, color='orange', label='C02')
+    plt.title("Molar fraction of as a function of the engine axis")
+    plt.legend(loc='center left')
+    plt.show()
+    
+    plt.figure(dpi=figure_dpi)
+    plt.plot(x_coord_list, PH2O_list, color='blue', label='H20')
+    plt.plot(x_coord_list, PCO2_list, color='orange', label='C02')
+    plt.title("Partial static pressure (in Pa) of as a function of the engine axis")
+    plt.legend(loc='center left')
+    plt.show()
 
 # %% Hot gas temperature computation
 hotgas_temp_list = [Tc]
@@ -240,13 +244,7 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        if i == nb_points + 1:
-            mach_gas = mach_list[i]
-            mach_gas_2 = mach_list[i]
-        else:
-            mach_gas = mach_list[i]
-            mach_gas_2 = mach_list[i + 1]
-        temperature = t.temperature_solv(mach_gas, mach_gas_2, hotgas_temp_list[i], gamma_list[i])
+        temperature = t.temperature_solv(mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
         hotgas_temp_list.append(temperature)
         progressbar.update(1)
 
@@ -269,7 +267,6 @@ if plot_detail >= 2 and show_3d_plots:
            limitation)
 
 # %% Dimensions
-print("█                                                                          █")
 print("█ Computing channel geometric                                              █")
 print("█                                                                          █")
 
@@ -319,11 +316,6 @@ roughness = 15e-6  # Roughness (m)
 
 # %% Computation of channel geometry
 
-# Method 1
-# xcanauxre, ycanauxre, larg_canalre, Areare, htre = canauxangl(x_coords_filename, y_coords_filename,
-#                                                               nbc, lrg_col, ht_col, ht_c, ht_div, tore,
-#                                                               debit_total, epaisseur_chemise)
-# Method 2
 # Pack the data in tuples
 profile = (x_coord_list, y_coord_list)
 widths = (lrg_inj, lrg_conv, lrg_col, lrg_tore)
@@ -373,27 +365,32 @@ hotgas_temperature_saved = hotgas_temp_list[:]
 aire_saved = cross_section_area_list[:]
 mach_list_saved = mach_list[:]
 gamma_saved = gamma_list[:]
+PH2O_list_saved = PH2O_list[:]
+PCO2_list_saved = PCO2_list[:]
 
 # Remove the data points before the manifold
 hotgas_temp_list = hotgas_temp_list[:nb_points_channel]
 cross_section_area_list = cross_section_area_list[:nb_points_channel]
 mach_list = mach_list[:nb_points_channel]
 gamma_list = gamma_list[:nb_points_channel]
+PH2O_list = PH2O_list[:nb_points_channel]
+PCO2_list = PCO2_list[:nb_points_channel]
 
 gamma_list.reverse()
 mach_list.reverse()
 cross_section_area_list.reverse()
 hotgas_temp_list.reverse()
-
+PH2O_list.reverse()
+PCO2_list.reverse()
 
 # %% Main computation
 
-data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star,pressure_list,PH2O,PCO2)
+data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O_list, PCO2_list)
 data_coolant = (Temp_cool_init, Pressure_cool_init, fluid, debit_mass_coolant)
 data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
                 wall_thickness, area_channel, nb_points_channel)
 data_chamber = (nbc, diam_throat, curv_radius_pre_throat, area_throat,
-                roughness, cross_section_area_list, mach_list,material_name,y_coord_list)
+                roughness, cross_section_area_list, mach_list, material_name)
 
 # Call the main solving loop
 hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
@@ -401,7 +398,7 @@ hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, 
 sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
 condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
 pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
-qRad_list,q_list_CO2,q_list_H2O \
+qRad_list, q_list_CO2, q_list_H2O \
     = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 end_m = time.perf_counter()  # End of the main solution timer
@@ -424,15 +421,15 @@ if plot_detail >= 1:
     print("█                                                                          █")
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, hlcor_list_2, color='blue', label='Hl corrected (Luka Denies)')
-    plt.plot(xcanaux, hlcor_list, color='blue', label='Hl corrected (Julien)')
+    plt.plot(xcanaux, hlcor_list, color='green', label='Hl corrected (Julien)')
     plt.plot(xcanaux, hlnormal_list, color='cyan', label='Hl')
     plt.title("Convection coeff as a function of the engine axis")
     plt.legend(loc='upper left')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, coldwall_temp_list, color='red', label='Twg')
-    plt.plot(xcanaux, hotwall_temp_list, color='blue', label='Twl')
+    plt.plot(xcanaux, coldwall_temp_list, color='blue', label='Twl')
+    plt.plot(xcanaux, hotwall_temp_list, color='red', label='Twg')
     plt.title('Wall temperature (in K) as a function of engine axis')
     plt.legend(loc='lower left')
     plt.show()
@@ -533,13 +530,10 @@ if plot_detail >=3:
     plt.title('Sound velocity of the coolant (in m/s) as a function of engine axis')
     plt.show()
 
-    qRad_list.reverse()
-    q_list_CO2.reverse()
-    q_list_H2O.reverse()
     plt.figure(dpi=figure_dpi)
-    plt.plot(x_coord_list, q_list_CO2, color='r', label='CO2')
-    plt.plot(x_coord_list, q_list_H2O, color='b', label='H2O')
-    plt.plot(x_coord_list, qRad_list, color='g', label='total')
+    plt.plot(xcanaux, q_list_CO2, color='r', label='CO2')
+    plt.plot(xcanaux, q_list_H2O, color='b', label='H2O')
+    plt.plot(xcanaux, qRad_list, color='g', label='total')
     plt.title('Radiative heat flux(W/m2)')
     plt.legend()
     plt.show()
@@ -612,7 +606,7 @@ if show_2D_temperature:
 
 "Computation for 3D graph"
 if do_final_3d_plot:
-    start_3d = time.perf_counter()
+    start_d3 = time.perf_counter()
     temperature_slice_list = []
     lim1 = 0
     lim2 = 650
@@ -633,10 +627,10 @@ if do_final_3d_plot:
     # Stack all these slices in a final 3D plot
     carto3d([0, 0, 0], xcanaux, ycanaux, temperature_slice_list, plt.cm.Spectral_r,
             '3D view of wall temperatures (in K)', nbc, limitation)
-
+    print("█                                                                          █")
     # End of the 3D display timer
     end_d3 = time.perf_counter()
-    time_elapsed = f"{round(end_d3 - start_d2, 2)}"  # 3D display elapsed time (in s)
+    time_elapsed = f"{round(end_d3 - start_d3, 2)}"  # 3D display elapsed time (in s)
     if len(time_elapsed) <= 3:
         time_elapsed_d3 = f"   {time_elapsed} s"
     elif len(time_elapsed) == 4:
@@ -676,18 +670,17 @@ visccoolant_list.reverse()
 condcoolant_list.reverse()
 cpcoolant_list.reverse()
 pcoolant_list.reverse()
+PH2O_list.reverse()
+PCO2_list.reverse()
 
 # %% Preparation of the lists for CAD modelisation
 "Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"
 
-angles = []
-newxhtre = []
-newyhtre = []
-for i in range(0, nb_points_channel):
-    if i == 0:
-        angle = 0
-        angles.append(angle)
-    elif i == (nb_points_channel - 1):
+angles = [0]
+newxhtre = [xcanaux[0]]
+newyhtre = [ycanaux[0] + ht_canal[0]]
+for i in range(1, nb_points_channel):
+    if i == (nb_points_channel - 1):
         angle = angles[i - 1]
         angles.append(angle)
     else:
@@ -706,7 +699,6 @@ for i in range(0, nb_points_channel):
 
 # Checking the height of channels
 verification = []
-print("█                                                                          █")
 print("█ Checking and computing channel height                                    █")
 for i in range(0, nb_points_channel):
     verifhtre = (((newxhtre[i] - xcanaux[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
@@ -729,7 +721,6 @@ if plot_detail >= 3:
 # %% Writing the results of the study in a CSV file
 
 if write_in_csv:
-    print("█                                                                          █")
     print("█ Writing results in .csv files                                            █")
     valuexport = open("output/valuexport.csv", "w", newline="")
     geometry1 = open("output/geometry1.csv", "w", newline="")

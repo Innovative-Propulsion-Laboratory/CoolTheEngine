@@ -162,7 +162,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         elif listing[k][2] == 2:
             coef2 += coef4
 
-        # Placement deduction of coefficients comared to surrounded points
+        # Placement deduction of coefficients compared to surrounded points
         insert = []
         pos = 1
         for z in listing[k][3]:
@@ -195,7 +195,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
 
     if display:
         moyT_hotwall = round(sum(temperature[:npx_wall]) / npx_wall)
-        moyT_coolant = round(2 * sum(temperature[begin_coolant-1:begin_coolant-1+int(npx_wall/2)]) / npx_wall)
+        moyT_coolant = round(sum(temperature[begin_coolant-1:begin_coolant-1+int(npx_wall-npx_rib)]) / (npx_wall-npx_rib))
         maxT = round(max(temperature))
 
         tg_avg = f"{moyT_hotwall}" if len(f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
