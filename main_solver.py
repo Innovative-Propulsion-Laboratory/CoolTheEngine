@@ -139,14 +139,14 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 nf = np.tanh(intermediate_calc_1) / intermediate_calc_1
                 hl_cor2 = hl * (larg_canal[i] + 2 * nf * ht_canal[i]) / (larg_canal[i] + fin_width)
 
-                # Compute radiative heat transfer (H2O/CO2)
-                qW = 5.74 * (PH2O[i] / (1e5 * ycanaux[i])) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
-                qC = 4 * (PCO2[i] / (1e5 * ycanaux[i])) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                # Compute radiative heat transfer of H2O (W) and CO2 (C) (Luka Denies)
+                qW = 5.74 * ((PH2O[i] * ycanaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                qC = 4 * ((PCO2[i] * ycanaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
                 qRad = qW + qC
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
-                flux = (hotgas_temp_list[i] - coolant_temp_list[i]) / (
-                        1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond) + qRad / hg
+                flux = (hotgas_temp_list[i] - coolant_temp_list[i] + qRad / hg) / (
+                        1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond) 
                 new_hotwall_temp = hotgas_temp_list[i] - flux / hg
                 new_coldwall_temp = coolant_temp_list[i] + flux / hl
 

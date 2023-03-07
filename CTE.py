@@ -44,7 +44,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 3  # 0=No plots; 1=Important plots; 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
@@ -476,6 +476,14 @@ if plot_detail >= 2:
     plt.title('Volumic mass of the coolant as a function of engine axis')
     plt.show()
 
+    plt.figure(dpi=figure_dpi)
+    plt.plot(xcanaux, q_list_CO2, color='r', label='CO2')
+    plt.plot(xcanaux, q_list_H2O, color='b', label='H2O')
+    plt.plot(xcanaux, qRad_list, color='g', label='total')
+    plt.title('Radiative heat flux(W/m2)')
+    plt.legend()
+    plt.show()
+
 if plot_detail >=3:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, coolant_reynolds_list, color='blue')
@@ -528,14 +536,6 @@ if plot_detail >=3:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, sound_speed_coolant_list, color='pink')
     plt.title('Sound velocity of the coolant (in m/s) as a function of engine axis')
-    plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, q_list_CO2, color='r', label='CO2')
-    plt.plot(xcanaux, q_list_H2O, color='b', label='H2O')
-    plt.plot(xcanaux, qRad_list, color='g', label='total')
-    plt.title('Radiative heat flux(W/m2)')
-    plt.legend()
     plt.show()
 
 if plot_detail >= 1 and show_3d_plots:
