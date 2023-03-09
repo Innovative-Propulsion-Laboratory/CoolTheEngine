@@ -7,6 +7,7 @@ Created on Sun Apr 11 18:44:22 2021
 
 
 def cas1(h, dx, lamb, Tf, inv):  # validé
+    # No currently used
     a = 1
     b = 1
     c = 0.5
@@ -17,6 +18,7 @@ def cas1(h, dx, lamb, Tf, inv):  # validé
 
 
 def cas2(h, dx, lamb, Tf, inv):  # validé
+    # Convection with hot gases and coolant
     a = 0.5
     b = 1
     c = 0.5
@@ -27,6 +29,7 @@ def cas2(h, dx, lamb, Tf, inv):  # validé
 
 
 def cas3(h, dx, lamb, Tf, inv):  # trivial validé
+    # Conduction inside the wall and the rib
     a = 0.25
     b = 0.25
     c = 0.25
@@ -37,6 +40,7 @@ def cas3(h, dx, lamb, Tf, inv):  # trivial validé
 
 
 def cas4(h, dx, lamb, Tf, inv):
+    # Point with convection between rib and exterior and convection with coolant
     a = 0.5
     b = 0
     c = 0
@@ -47,7 +51,8 @@ def cas4(h, dx, lamb, Tf, inv):
 
 
 def cas5(h, dx, lamb, Tf, inv):
-    h = 0
+    # Convection between rib and exterior
+    h = 0  # ?????
     a = 1
     b = 0.5
     c = 0

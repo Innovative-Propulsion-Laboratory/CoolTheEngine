@@ -4,6 +4,16 @@ import matplotlib.pyplot as plt
 
 
 def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type, location, return_temp):
+    """
+    This function compute temperature of each point of one wall and the rib next to it.
+    It uses the finite difference method to solve that.
+    For each point, the neighboring points are named n for north, o for west, s for south and e for east.
+    In listing, points are computed as following :
+        - case from casthermo.py
+        - orientation
+        - symetry : 0 if no symetry, 1 if left symetry, 2 if right symetry
+        - [n, o, s, e] the position of neighboring points, if -1 : no point here
+    """
     npx_wall = round(larg_wall / (2 * dx) + 1)  # Number of point in the x axis at the wall
     npy_wall = round(ep_wall / dx + 1)  # Number of point in the y axis at the wall
     npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)  # Number of points in the x axis at the rib
@@ -77,7 +87,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         coord.append([i * dx, (npy_wall - 1) * dx])
     listing.append([3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_rib, -1]])
     lenl += 1
-    coord.append([(npy_wall - 1) * dx, (npy_wall - 1) * dx])
+    coord.append([(npx_wall - 1) * dx, (npy_wall - 1) * dx])
 
     # Computation of raws in the rib
     for h in range(1, npy_rib):
@@ -132,57 +142,38 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             a, b, c, d, x, plus = ct.cas3(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 4:
             a, b, c, d, x, plus = ct.cas4(h, dx, lamb, Tf, inv)
-        elif listing[k][0] == 5:
+        else: # == 5
             a, b, c, d, x, plus = ct.cas5(h, dx, lamb, Tf, inv)
+
         # Orientation resolution
+        # coef contains coeficient for respectively n, o, s, e
         if listing[k][1] == 0:
-            coef1 = a
-            coef2 = b
-            coef3 = c
-            coef4 = d
+            coef = [a, b, c, d]
         elif listing[k][1] == 1:
-            coef1 = b
-            coef2 = c
-            coef3 = d
-            coef4 = a
+            coef = [b, c, d, a]
         elif listing[k][1] == 2:
-            coef1 = c
-            coef2 = d
-            coef3 = a
-            coef4 = b
-        elif listing[k][1] == 3:
-            coef1 = d
-            coef2 = a
-            coef3 = b
-            coef4 = c
+            coef = [c, d, a, b]
+        else: # == 3
+            coef = [d, a, b, c]
 
         # Symetry resolution
         if listing[k][2] == 1:
-            coef4 += coef2
+            coef[3] += coef[1]
         elif listing[k][2] == 2:
-            coef2 += coef4
+            coef[1] += coef[3]
+        # else : (== 0)
 
         # Placement deduction of coefficients compared to surrounded points
         insert = []
-        pos = 1
+        pos = 0
         for z in listing[k][3]:
-            if 0 <= z <= (nb_point - 1):
-                if pos == 1:
-                    insert.append([coef1, z])
-                elif pos == 2:
-                    insert.append([coef2, z])
-                elif pos == 3:
-                    insert.append([coef3, z])
-                elif pos == 4:
-                    insert.append([coef4, z])
-                else:
-                    print("error placing")
+            if z != -1:
+                insert.append([coef[pos], z])
             pos += 1
 
         # Introduction of coefficients in the matrix
         for values in insert:
-            implacement = int(values[1])
-            reso[k][implacement] = values[0]
+            reso[k][int(values[1])] = values[0]
             reso[k][k] = x
             membre[k] = plus
 
