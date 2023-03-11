@@ -26,8 +26,8 @@ class Main_GUI(tk.Tk):
         self.primary_frame.grid(row=0, column=0, sticky="nesw")
 
         self.primary_frame.grid_rowconfigure(0, weight=1)
-        self.primary_frame.grid_columnconfigure(0, weight=2)
-        self.primary_frame.grid_columnconfigure(2, weight=8)
+        self.primary_frame.grid_columnconfigure(0, weight=15)
+        self.primary_frame.grid_columnconfigure(2, weight=85)
 
         self.secondary_l()
         self.secondary_r()
@@ -53,9 +53,37 @@ class Main_GUI(tk.Tk):
         self.inputs = tk.Listbox(self.secondary_l_frame)
         self.inputs.grid(row=1, sticky="nesw")
 
+        list_inputs_features = [
+            "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
+        for i in range(len(list_inputs_features)):
+            self.inputs.insert(i, list_inputs_features[i])
+
+        self.index_temp = None
+
+        def callback(event):
+            selection = event.widget.curselection()
+            index = selection[0]
+            if selection and self.index_temp != index:
+                self.secondary_m()
+                self.index_temp = index
+                print(index)
+            else:
+                self.inputs.selection_clear(0, "end")
+                self.secondary_m_frame.destroy()
+                self.primary_frame.grid_columnconfigure(0, weight=15)
+                self.primary_frame.grid_columnconfigure(1, weight=0)
+                self.primary_frame.grid_columnconfigure(2, weight=85)
+                self.index_temp = None
+
+        self.inputs.bind("<<ListboxSelect>>", callback)
+
     def tertiary_l2(self):
         self.inputs = tk.Listbox(self.secondary_l_frame)
         self.inputs.grid(row=3, sticky="nesw")
+
+        list_settings_features = ["Plots", "Other"]
+        for i in range(len(list_settings_features)):
+            self.inputs.insert(i, list_settings_features[i])
 
     def tertiary_l3(self):
         self.inputs = tk.Listbox(self.secondary_l_frame)
@@ -87,7 +115,7 @@ class Main_GUI(tk.Tk):
 
     def secondary_r2(self):
         self.secondary_r2_frame = tk.Frame(
-            self.secondary_r_frame, bd=2, relief="flat", bg="white")
+            self.secondary_r_frame, bd=2, relief="groove", bg="white")
         self.secondary_r2_frame.grid(row=2, column=0, sticky="nesw")
 
         self.secondary_r2_frame.grid_rowconfigure(0, weight=1)
@@ -95,6 +123,15 @@ class Main_GUI(tk.Tk):
 
         tk.Label(self.secondary_r2_frame,
                  text="Results text").grid(row=0, column=0)
+
+    def secondary_m(self):
+        self.secondary_m_frame = tk.Frame(
+            self.primary_frame, bd=2, relief="groove")
+        self.secondary_m_frame.grid(row=0, column=1, sticky="nesw")
+
+        self.primary_frame.grid_columnconfigure(0, weight=15)
+        self.primary_frame.grid_columnconfigure(1, weight=25)
+        self.primary_frame.grid_columnconfigure(2, weight=60)
 
     def info_frame(self):
         self.info = tk.Frame(self, borderwidth=2, relief="groove")
