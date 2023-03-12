@@ -1,3 +1,7 @@
+"""
+-*- coding: utf-8 -*-
+"""
+
 import tkinter as tk
 
 
@@ -5,11 +9,14 @@ class Main_GUI(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
+        self.index_temp = None
+        self.set_selected = None
+
         w = self.winfo_screenwidth()
         h = self.winfo_screenheight()
         self.geometry("%ix%i" % (w/2, h/2))
 
-        main_menu = tk.Menu(self, bg="blue", tearoff=0)
+        main_menu = tk.Menu(self, tearoff=0)
         menu_file = tk.Menu(main_menu, tearoff=0)
         main_menu.add_cascade(label="File", menu=menu_file)
         menu_file.add_command(label="Quit", command=self.quit)
@@ -58,36 +65,50 @@ class Main_GUI(tk.Tk):
         for i in range(len(list_inputs_features)):
             self.inputs.insert(i, list_inputs_features[i])
 
-        self.index_temp = None
-
-        def callback(event):
-            selection = event.widget.curselection()
-            index = selection[0]
-            if selection and self.index_temp != index:
-                self.secondary_m()
-                self.index_temp = index
-                print(index)
-            else:
-                self.inputs.selection_clear(0, "end")
-                self.secondary_m_frame.destroy()
-                self.primary_frame.grid_columnconfigure(0, weight=15)
-                self.primary_frame.grid_columnconfigure(1, weight=0)
-                self.primary_frame.grid_columnconfigure(2, weight=85)
-                self.index_temp = None
-
-        self.inputs.bind("<<ListboxSelect>>", callback)
+        self.inputs.bind("<<ListboxSelect>>", self.l1_selected)
 
     def tertiary_l2(self):
-        self.inputs = tk.Listbox(self.secondary_l_frame)
-        self.inputs.grid(row=3, sticky="nesw")
+        self.settings = tk.Listbox(self.secondary_l_frame)
+        self.settings.grid(row=3, sticky="nesw")
 
         list_settings_features = ["Plots", "Other"]
         for i in range(len(list_settings_features)):
-            self.inputs.insert(i, list_settings_features[i])
+            self.settings.insert(i, list_settings_features[i])
+
+        self.settings.bind("<<ListboxSelect>>", self.l2_selected)
 
     def tertiary_l3(self):
-        self.inputs = tk.Listbox(self.secondary_l_frame)
-        self.inputs.grid(row=5, sticky="nesw")
+        self.outputs = tk.Listbox(self.secondary_l_frame)
+        self.outputs.grid(row=5, sticky="nesw")
+
+    def l1_selected(self, event):
+        selected = event.widget.curselection()
+        if selected:
+            self.set_selected = 1
+            self.l1o2_selection(event)
+
+    def l2_selected(self, event):
+        selected = event.widget.curselection()
+        if selected:
+            self.set_selected = 2
+            self.l1o2_selection(event)
+
+    def l1o2_selection(self, event):
+        selection = event.widget.curselection()
+        index = selection[0]
+        if selection and self.index_temp != index:
+            self.secondary_m()
+            self.index_temp = index
+            print(index)
+            print(self.set_selected)
+        else:
+            self.inputs.selection_clear(0, "end")
+            self.settings.selection_clear(0, "end")
+            self.secondary_m_frame.destroy()
+            self.primary_frame.grid_columnconfigure(0, weight=15)
+            self.primary_frame.grid_columnconfigure(1, weight=0)
+            self.primary_frame.grid_columnconfigure(2, weight=85)
+            self.index_temp = None
 
     def secondary_r(self):
         self.secondary_r_frame = tk.Frame(
@@ -141,7 +162,7 @@ class Main_GUI(tk.Tk):
         self.info.grid_columnconfigure(0, weight=1)
 
         self.text_info = tk.Label(
-            self.info, text="In development")
+            self.info, text="CTE GUI - In development   © IPL")
         self.text_info.grid(row=0, column=0, sticky="sw")
 
 
