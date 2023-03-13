@@ -44,11 +44,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 0  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
+plot_detail = 3  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
-write_in_csv = True
+write_in_csv = False
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -244,7 +244,7 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        temperature = t.temperature_solv(mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
+        temperature = t.temperature_hotgas_solv(mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
         hotgas_temp_list.append(temperature)
         progressbar.update(1)
 
@@ -310,7 +310,7 @@ elif material == 2:
 fluid = "Methane"
 density_cool_init = 425  # Density of the CH4 (kg/m^3)
 Temp_cool_init = 110  # Initial temperature of the coolant (K)
-debit_volum_coolant = debit_mass_coolant / density_cool_init  # Total volumic flow rate of the coolant (m^3/s)
+debit_volumique_total_cool = debit_mass_coolant / density_cool_init  # Total volumic flow rate of the coolant (m^3/s)
 Pressure_cool_init = 7000000  # Pressure of the coolant at inlet (Pa)
 roughness = 15e-6  # Roughness (m)
 
@@ -324,8 +324,8 @@ thicknesses = (e_conv, e_col, e_tore)
 coeffs = (n1, n2, n3, n4, n5, n6)
 
 # Compute dimensions
-xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel \
-    = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volum_coolant, nbc, plot_detail,
+xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, y_coord_avec_canaux \
+    = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc, plot_detail,
              write_in_csv, figure_dpi)
 
 # Write the dimensions of the channels in a CSV file
@@ -358,6 +358,7 @@ larg_canal.reverse()
 area_channel.reverse()
 ht_canal.reverse()
 ycanaux.reverse()
+y_coord_avec_canaux.reverse()
 # We reverse the lists in order to calculate from the manifold to the injection
 
 # Save the data for exporting, before altering the original lists
@@ -389,7 +390,7 @@ data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O_list, 
 data_coolant = (Temp_cool_init, Pressure_cool_init, fluid, debit_mass_coolant)
 data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
                 wall_thickness, area_channel, nb_points_channel)
-data_chamber = (nbc, diam_throat, curv_radius_pre_throat, area_throat,
+data_chamber = (y_coord_avec_canaux, nbc, diam_throat, curv_radius_pre_throat, area_throat,
                 roughness, cross_section_area_list, mach_list, material_name)
 
 # Call the main solving loop
@@ -672,6 +673,7 @@ cpcoolant_list.reverse()
 pcoolant_list.reverse()
 PH2O_list.reverse()
 PCO2_list.reverse()
+y_coord_avec_canaux.reverse()
 
 # %% Preparation of the lists for CAD modelisation
 "Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"

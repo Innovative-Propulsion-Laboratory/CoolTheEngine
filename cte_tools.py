@@ -10,7 +10,7 @@ def mach_solv(area_1, area_2, mach_1, gamma):
         mach_2 = mach_1
         liste = []
         mach = []
-        # Search of the mach_2 for which part_1 is minimum (750 was ideal when tested)
+        # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
         for i in range(0, 750):
             mach_2 += 0.00001
             part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
@@ -20,39 +20,39 @@ def mach_solv(area_1, area_2, mach_1, gamma):
     return solution_mach
 
 
-def pressure_solv(M1, M2, P1, gamma):
+def pressure_solv(mach_1, mach_2, pressure_1, gamma):
     """
     Compute hot gas pressure at next point, given mach numbers and previous pressure
     """
 
-    part1 = (gamma / (gamma - 1)) * np.log(M1 * M1 + (2 / (gamma - 1)))
-    part2 = (gamma / (gamma - 1)) * np.log(M2 * M2 + (2 / (gamma - 1)))
-    part3 = np.log(P1)
+    part1 = (gamma / (gamma - 1)) * np.log(mach_1 * mach_1 + (2 / (gamma - 1)))
+    part2 = (gamma / (gamma - 1)) * np.log(mach_2 * mach_2 + (2 / (gamma - 1)))
+    part3 = np.log(pressure_1)
 
     return np.exp(part1 - part2 + part3)
 
 
-def temperature_solv(M1, M2, T1, gamma):
+def temperature_hotgas_solv(mach_1, mach_2, temperature_1, gamma):
     """
     Compute hot gas temperature at next point, given mach numbers and previous temperature
     """
 
-    part1 = -np.log(abs(((gamma - 1) * M1 * M1) + 2))
-    part2 = -np.log(abs(((gamma - 1) * M2 * M2) + 2))
-    part3 = np.log(T1)
+    part1 = np.log(abs(((gamma - 1) * mach_1 * mach_1) + 2))
+    part2 = np.log(abs(((gamma - 1) * mach_2 * mach_2) + 2))
+    part3 = np.log(temperature_1)
 
-    return np.exp(-part1 + part2 + part3)
+    return np.exp(part1 - part2 + part3)
 
 
-def tempcorrige(temp_original, gamma, mach_number):
+def tempcorrige(temp_original, gamma, mach):
     """
     Correct the hot gas temperature using a correlation from [INSERT SOURCE]
     """
 
     Pr = 4 * gamma / (9 * gamma - 5)
     temp_corrected = temp_original * (1 + (Pr ** 0.33) * (
-            (gamma - 1) / gamma) * mach_number ** 2) / (1 + (
-            (gamma - 1) / gamma) * mach_number ** 2)
+            (gamma - 1) / gamma) * mach ** 2) / (1 + (
+            (gamma - 1) / gamma) * mach ** 2)
 
     return temp_corrected
 
@@ -62,7 +62,7 @@ def conductivity(Twg: float, Twl: float, material_name: str):
     Compute the conductivity of the chamber wall, given temperature and material
     """
 
-    T_avg = (Twg + Twl) * 0.5
+    T_avg = (Twg + Twl) / 2
     if material_name == "pure copper":
         return -0.065665 * T_avg + 421.82
     if material_name == "cucrzr":
@@ -71,14 +71,14 @@ def conductivity(Twg: float, Twl: float, material_name: str):
         return 0.0138 * T_avg + 5.577
 
 
-def hotgas_properties(gas_temp, molar_mass_, gamma):
+def hotgas_properties(gas_temp, molar_mass, gamma):
     """
     Computes the properties of the hot gases according to [INSERT SOURCE].
     """
 
-    dyn_viscosity = 17.858 * (46.61 * 10 ** (-10)) * (molar_mass_ ** 0.5) * ((9 / 5) * gas_temp) ** 0.6
-    Cp = 8314 * gamma / ((gamma - 1) * molar_mass_)
-    Lamb = dyn_viscosity * (Cp + (8314.5 / (4 * molar_mass_)))
+    dyn_viscosity = 17.858 * (46.61 * 10 ** (-10)) * (molar_mass ** 0.5) * ((9 / 5) * gas_temp) ** 0.6
+    Cp = 8314 * gamma / ((gamma - 1) * molar_mass)
+    Lamb = dyn_viscosity * (Cp + (8314.5 / (4 * molar_mass)))
     Pr = 4 * gamma / (9 * gamma - 5)
 
     return dyn_viscosity, Cp, Lamb, Pr

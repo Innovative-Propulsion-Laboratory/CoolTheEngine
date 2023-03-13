@@ -18,7 +18,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     debit_mass_coolant = coolant_data
     xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, \
     area_channel, nb_points_channel = channel_data
-    nbc, diam_throat, curv_radius_pre_throat, area_throat, roughness, \
+    y_coord_avec_canaux, nbc, diam_throat, curv_radius_pre_throat, area_throat, roughness, \
     cross_section_area_list, mach_list, material_name = chamber_data
 
     # Lists containing the physical quantities at each point
@@ -47,7 +47,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     q_list_H2O = []
     q_list_CO2 = []
     qRad_list = []
-    index_throat = ycanaux.index(min(ycanaux))
+    index_throat = y_coord_avec_canaux.index(min(y_coord_avec_canaux))
 
     # This is to avoid oscillations near the inlet because of division by zero
     length_from_inlet = 0.03
@@ -83,7 +83,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                                                                                       gamma_list[i])
 
             # If last point in the list
-            if i == len(xcanaux) - 1:
+            if i == nb_points_channel - 1:
                 # Distance between current point and the previous (Pythagoras)
                 dl = ((xcanaux[i - 1] - xcanaux[i]) ** 2 + (ycanaux[i - 1] - ycanaux[i]) ** 2) ** 0.5
             else:
@@ -124,7 +124,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hl = Nu * roughness_correction * (coolant_cond_list[i] / Dhy)
 
                 # Fin dimensions
-                D = 2 * (ycanaux[i] - wall_thickness[i])  # Diameter inside the engine
+                D = 2 * y_coord_avec_canaux[i]  # Diameter inside the engine
                 fin_width = (np.pi * (D + ht_canal[i] + wall_thickness[i]) - nbc * larg_canal[
                     i]) / nbc  # Width of the fin
 
@@ -140,8 +140,8 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hl_cor2 = hl * (larg_canal[i] + 2 * nf * ht_canal[i]) / (larg_canal[i] + fin_width)
 
                 # Compute radiative heat transfer of H2O (W) and CO2 (C) (Luka Denies)
-                qW = 5.74 * ((PH2O[i] * ycanaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
-                qC = 4 * ((PCO2[i] * ycanaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                qW = 5.74 * ((PH2O[i] * y_coord_avec_canaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
+                qC = 4 * ((PCO2[i] * y_coord_avec_canaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
                 qRad = qW + qC
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
