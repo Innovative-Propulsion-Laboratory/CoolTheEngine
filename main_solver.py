@@ -4,7 +4,6 @@ from tqdm import tqdm
 import cte_tools as t
 
 
-
 def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
     """
     This is the main function used for solving the 1D case.
@@ -146,8 +145,8 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
                 flux = (hotgas_temp_list[i] - coolant_temp_list[i] + qRad / hg) / (
-                        1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond) 
-                new_hotwall_temp = hotgas_temp_list[i] - flux / hg
+                        1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
+                new_hotwall_temp = hotgas_temp_list[i] + (qRad - flux) / hg
                 new_coldwall_temp = coolant_temp_list[i] + flux / hl
 
                 # Compute new value of sigma (used in the Bartz equation)

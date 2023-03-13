@@ -44,7 +44,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 0  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
+plot_detail = 1  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
@@ -213,10 +213,10 @@ if plot_detail >= 2 and show_3d_plots:
 x_Molfrac = [x_coord_list[0], x_coord_list[i_throat], x_coord_list[-1]]  # Location associated to the molar mass
 
 # Value of the molar fraction of the H20 after interpolation
-Molfrac_H2O = np.interp(x_coord_list, x_Molfrac, [xH2O_c_input, xH2O_t_input, xH2O_e_input])  
+Molfrac_H2O = np.interp(x_coord_list, x_Molfrac, [xH2O_c_input, xH2O_t_input, xH2O_e_input])
 
 # Value of the molar fraction of the CO2 after interpolation
-Molfrac_CO2 = np.interp(x_coord_list, x_Molfrac, [xCO2_c_input, xCO2_t_input, xCO2_e_input])  
+Molfrac_CO2 = np.interp(x_coord_list, x_Molfrac, [xCO2_c_input, xCO2_t_input, xCO2_e_input])
 
 PH2O_list = [pressure_list[i] * Molfrac_H2O[i] for i in range(0, nb_points)]  # Partial pressure of the H2O
 PCO2_list = [pressure_list[i] * Molfrac_CO2[i] for i in range(0, nb_points)]  # Partial pressure of the CO2
@@ -229,7 +229,7 @@ if plot_detail >= 3:
     plt.title("Molar fraction of as a function of the engine axis")
     plt.legend(loc='center left')
     plt.show()
-    
+
     plt.figure(dpi=figure_dpi)
     plt.plot(x_coord_list, PH2O_list, color='blue', label='H20')
     plt.plot(x_coord_list, PCO2_list, color='orange', label='C02')
@@ -485,7 +485,7 @@ if plot_detail >= 2:
     plt.legend()
     plt.show()
 
-if plot_detail >=3:
+if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
     plt.plot(xcanaux, coolant_reynolds_list, color='blue')
     plt.title("Reynolds number of the coolant as a function of the engine axis")
@@ -755,7 +755,8 @@ if write_in_csv:
                                         hotwall_temp_list[i], flux_list[i], tempcoolant_list[i],
                                         coolant_reynolds_list[i], hlnormal_list[i], densitycoolant_list[i],
                                         visccoolant_list[i],
-                                        condcoolant_list[i], cpcoolant_list[i], velocitycoolant_list[i], pcoolant_list[i],
+                                        condcoolant_list[i], cpcoolant_list[i], velocitycoolant_list[i],
+                                        pcoolant_list[i],
                                         wallcond_list[i], newxhtre[i], newyhtre[i]))
         else:
             valuexport_writer.writerow(
