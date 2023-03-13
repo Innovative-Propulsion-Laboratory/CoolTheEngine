@@ -276,7 +276,6 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, larg_ailette, label='Rib width', color='chocolate')
         plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
-        plt.plot(xcanaux, ht_canal, label='Channel height', color='blue')
         plt.title('Width of channels and ribs')
         plt.legend(loc='upper left')
         plt.show()

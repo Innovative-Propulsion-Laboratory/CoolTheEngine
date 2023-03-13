@@ -44,11 +44,11 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 3  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
+plot_detail = 0  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
 show_2D_temperature = False
 do_final_3d_plot = False
-write_in_csv = False
+write_in_csv = True
 
 # %% Reading input data
 input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -332,10 +332,10 @@ xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_
 file_name = "output/channelvalue.csv"
 with open(file_name, "w", newline="") as file:
     writer = csv.writer(file)
-    writer.writerow(("Engine x", "Engine y", "Channel width", "Rib width",
+    writer.writerow(("Engine x", "Engine y", "y coolant wall", "Channel width", "Rib width",
                      "Channel height", "Chamber wall thickness", "Channel area"))
     for i in range(0, nb_points_channel):
-        writer.writerow((xcanaux[i], ycanaux[i], larg_canal[i], larg_ailette_list[i],
+        writer.writerow((xcanaux[i], y_coord_avec_canaux[i], ycanaux[i], larg_canal[i], larg_ailette_list[i],
                          ht_canal[i], wall_thickness[i], area_channel[i]))
 
 end_init_time = time.perf_counter()  # End of the initialisation timer
