@@ -5,7 +5,7 @@
 import tkinter as tk
 
 
-class inputs_win(tk.Tk):
+class Inputs_win(tk.Tk):
     def __init__(self):
         self.list_inputs_features = [
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
@@ -38,7 +38,7 @@ class inputs_win(tk.Tk):
 
 class Main_GUI(tk.Tk):
     def __init__(self):
-        self.inputs_class = inputs_win()
+        self.inputs_class = Inputs_win()
 
         tk.Tk.__init__(self)
         self.index_temp = None
@@ -150,27 +150,27 @@ class Main_GUI(tk.Tk):
             if self.set_selected == 0 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.engine_model(self.secondary_m_frame)
+                Inputs_win.engine_model(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.channel_global(self.secondary_m_frame)
+                Inputs_win.channel_global(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 2:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.channel_dimension(self.secondary_m_frame)
+                Inputs_win.channel_dimension(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 3:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.coolant_properties(self.secondary_m_frame)
+                Inputs_win.coolant_properties(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.fplot(self.secondary_m_frame)
+                Inputs_win.fplot(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                inputs_win.fother(self.secondary_m_frame)
+                Inputs_win.fother(self.secondary_m_frame)
             else:
                 destroy_secondary_m()
 
