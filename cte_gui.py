@@ -7,7 +7,7 @@ import sys
 import time
 
 
-class Inputs_win(tk.Tk):
+class InputsWin(tk.Tk):
     def __init__(self):
         self.list_inputs_features = [
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
@@ -38,7 +38,7 @@ class Inputs_win(tk.Tk):
                  "\n"+"n/a").grid(row=0, sticky="nw")
 
 
-class Out_redirection:
+class OutRedirection:
     def __init__(self, out_frame):
         self.out_frame = out_frame
 
@@ -51,7 +51,7 @@ class Out_redirection:
         pass
 
 
-class Main_GUI(tk.Tk):
+class MainGUI(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
@@ -74,12 +74,12 @@ class Main_GUI(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.inputs_class = Inputs_win()
+        self.inputs_class = InputsWin()
 
         self.primary()
         self.info_frame()
 
-        sys.stdout = Out_redirection(self.secondary_r1B_frame)
+        sys.stdout = OutRedirection(self.secondary_r1B_frame)
 
     def primary(self):
         self.primary_frame = tk.Frame(self)
@@ -168,27 +168,27 @@ class Main_GUI(tk.Tk):
             if self.set_selected == 0 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.engine_model(self.secondary_m_frame)
+                InputsWin.engine_model(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.channel_global(self.secondary_m_frame)
+                InputsWin.channel_global(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 2:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.channel_dimension(self.secondary_m_frame)
+                InputsWin.channel_dimension(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 3:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.coolant_properties(self.secondary_m_frame)
+                InputsWin.coolant_properties(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.fplot(self.secondary_m_frame)
+                InputsWin.fplot(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                Inputs_win.fother(self.secondary_m_frame)
+                InputsWin.fother(self.secondary_m_frame)
             else:
                 destroy_secondary_m()
 
@@ -215,6 +215,9 @@ class Main_GUI(tk.Tk):
             self.secondary_r_frame, bd=0, relief="flat", orient="vertical")
         self.secondary_r1_frame.grid(row=1, column=0, sticky="nesw")
 
+        self.secondary_r1_frame.grid_rowconfigure(0, weight=1)
+        self.secondary_r1_frame.grid_rowconfigure(1, weight=1)
+
         self.secondary_r1A()
         self.secondary_r1B()
 
@@ -230,7 +233,7 @@ class Main_GUI(tk.Tk):
         self.secondary_r1A_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1A_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1A_frame)
+        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=400)
 
         tk.Label(self.secondary_r1A_frame,
                  text="Results plot").grid(row=0, column=0)
@@ -243,7 +246,7 @@ class Main_GUI(tk.Tk):
         self.secondary_r1B_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1B_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1B_frame)
+        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=200)
 
         """
         tk.Label(self.secondary_r1B_frame,
@@ -254,7 +257,7 @@ class Main_GUI(tk.Tk):
         self.secondary_m_frame = tk.Frame(
             self.primary_frame, bd=2, relief="groove", width=200)
         self.secondary_m_frame.grid(
-            row=0, column=1, sticky="nesw", pady=(23, 0))
+            row=0, column=1, sticky="nesw", pady=(22, 0))
         self.secondary_m_frame.grid_propagate(False)
 
         self.primary_frame.grid_columnconfigure(0, weight=20)
@@ -270,14 +273,20 @@ class Main_GUI(tk.Tk):
 
         self.info.grid_rowconfigure(0, weight=1)
         self.info.grid_columnconfigure(0, weight=1)
+        self.info.grid_columnconfigure(1, weight=1)
 
-        self.text_info = tk.Label(
-            self.info, text="CTE GUI - In development   © IPL")
-        self.text_info.grid(row=0, column=0, sticky="sw")
+        tk.Label(self.info, text="CTE GUI - In development   © IPL").grid(row=0,
+                                                                          column=0, sticky="w")
+
+        tk.Button(self.info, text="Run", command=self.run_process).grid(
+            row=0, column=1, sticky="e")
+
+    def run_process(self):
+        print("test")
 
 
 if __name__ == "__main__":
-    gui = Main_GUI()
+    gui = MainGUI()
     gui.title("CTE")
 
     """for i in range(3):

@@ -28,7 +28,7 @@ from tqdm import tqdm  # For progress bars
 import tkinter as tk
 import cte_gui
 
-gui = cte_gui.Main_GUI()
+gui = cte_gui.MainGUI()
 gui.title("CTE")
 
 
