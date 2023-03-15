@@ -4,6 +4,7 @@
 
 import tkinter as tk
 import sys
+import time
 
 
 class Inputs_win(tk.Tk):
@@ -44,6 +45,10 @@ class Out_redirection:
     def write(self, str):
         self.out_frame.insert("end", str)
         self.out_frame.see("end")
+        self.out_frame.update()
+
+    def flush(self):
+        pass
 
 
 class Main_GUI(tk.Tk):
@@ -274,5 +279,15 @@ class Main_GUI(tk.Tk):
 if __name__ == "__main__":
     gui = Main_GUI()
     gui.title("CTE")
-    gui.mainloop()
-    exit()
+
+    """for i in range(3):
+        print("test")
+        time.sleep(2)"""
+
+    while True:
+        try:
+            gui.update()
+            gui.mainloop()
+            exit()
+        except tk.TclError:
+            break
