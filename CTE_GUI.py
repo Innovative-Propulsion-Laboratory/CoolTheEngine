@@ -3,6 +3,7 @@
 """
 
 import tkinter as tk
+import sys
 
 
 class Inputs_win(tk.Tk):
@@ -36,11 +37,19 @@ class Inputs_win(tk.Tk):
                  "\n"+"n/a").grid(row=0, sticky="nw")
 
 
+class Out_redirection:
+    def __init__(self, out_frame):
+        self.out_frame = out_frame
+
+    def write(self, str):
+        self.out_frame.insert("end", str)
+        self.out_frame.see("end")
+
+
 class Main_GUI(tk.Tk):
     def __init__(self):
-        self.inputs_class = Inputs_win()
-
         tk.Tk.__init__(self)
+
         self.index_temp = None
         self.set_selected = None
 
@@ -60,8 +69,12 @@ class Main_GUI(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        self.inputs_class = Inputs_win()
+
         self.primary()
         self.info_frame()
+
+        sys.stdout = Out_redirection(self.secondary_r1B_frame)
 
     def primary(self):
         self.primary_frame = tk.Frame(self)
@@ -218,7 +231,7 @@ class Main_GUI(tk.Tk):
                  text="Results plot").grid(row=0, column=0)
 
     def secondary_r1B(self):
-        self.secondary_r1B_frame = tk.Frame(
+        self.secondary_r1B_frame = tk.Text(
             self.secondary_r1_frame, bd=2, relief="groove", bg="white")
         # self.secondary_r1B_frame.grid(row=1, column=0, sticky="nesw")
 
@@ -227,8 +240,10 @@ class Main_GUI(tk.Tk):
 
         self.secondary_r1_frame.add(self.secondary_r1B_frame)
 
+        """
         tk.Label(self.secondary_r1B_frame,
                  text="Results text").grid(row=0, column=0)
+        """
 
     def secondary_m(self):
         self.secondary_m_frame = tk.Frame(
