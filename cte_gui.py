@@ -7,7 +7,7 @@ import sys
 import time
 
 
-class InputsWin(tk.Tk):
+class InputsWin():
     def __init__(self):
         self.list_inputs_features = [
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
@@ -51,10 +51,21 @@ class OutRedirection:
         pass
 
 
-class MainGUI(tk.Tk):
-    def __init__(self):
-        tk.Tk.__init__(self)
+class Run():
+    def __init__(self, process_class):
+        print("Run class loaded")
+        self.process_class = process_class()
+        print(self.process_class)
 
+    def run_process(self):
+        print("Ready to execute process")
+        self.process_class.process()
+        print("Running process")
+
+
+class MainGUI(tk.Tk):
+    def __init__(self, process_class):
+        tk.Tk.__init__(self)
         self.index_temp = None
         self.set_selected = None
 
@@ -75,6 +86,12 @@ class MainGUI(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         self.inputs_class = InputsWin()
+
+        try:
+            self.runprocess = Run(process_class)
+            print("Process class loaded in MainGui")
+        except:
+            print("Failed to load main process class in MainGUI")
 
         self.primary()
         self.info_frame()
@@ -278,15 +295,24 @@ class MainGUI(tk.Tk):
         tk.Label(self.info, text="CTE GUI - In development   © IPL").grid(row=0,
                                                                           column=0, sticky="w")
 
-        tk.Button(self.info, text="Run", command=self.run_process).grid(
+        tk.Button(self.info, text="Run", command=self.button_pressed).grid(
             row=0, column=1, sticky="e")
 
-    def run_process(self):
-        print("test")
+    def button_pressed(self):
+        try:
+            print("Transfert to Run class")
+            self.runprocess.run_process()
+            print("succeed to transfert in Run class")
+        except:
+            print("Failed to run process")
 
 
 if __name__ == "__main__":
-    gui = MainGUI()
+    try:
+        runprocess = Run(None)
+    except:
+        print("Failed to load process class in Run")
+    gui = MainGUI(None)
     gui.title("CTE")
 
     """for i in range(3):
