@@ -7,35 +7,54 @@ import sys
 import time
 
 
-class InputsWin():
+class InputsWin:
     def __init__(self):
         self.list_inputs_features = [
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
         self.list_settings_features = ["Plots", "Other"]
 
-    def engine_model(self):
-        tk.Label(self, text="Engine model :"+"\n" +
-                 "n/a").grid(row=0, sticky="nw")
+        self.entry_name_dict = {}
+        self.entry_dict = {}
 
-    def channel_global(self):
-        tk.Label(self, text="Channel global :"+"\n" +
-                 "n/a").grid(row=0, sticky="nw")
+    def get_entry(self):
+        for entry in self.entry_name_dict.items():
+            entry_params = entry[1].get()
+            self.entry_dict[entry[0]] = entry_params
+        print("Data saved")
 
-    def channel_dimension(self):
-        tk.Label(self, text="Channel dimension :" +
-                 "\n"+"n/a").grid(row=0, sticky="nw")
+    def engine_model(self, frame_name):
+        tk.Label(frame_name, text="Engine model :").pack(anchor="w")
+        tk.Label(frame_name, text="Entry test :").pack(anchor="w")
+        self.test_entry1 = tk.Entry(frame_name)
+        self.test_entry1.pack(anchor="w")
+        self.test_entry2 = tk.Entry(frame_name)
+        self.test_entry2.pack(anchor="w")
+        self.entry_name_dict = {
+            "Entry 1": self.test_entry1, "Entry 2": self.test_entry2}
 
-    def coolant_properties(self):
-        tk.Label(self, text="Coolant properties :" +
-                 "\n"+"n/a").grid(row=0, sticky="nw")
+    def channel_global(self, frame_name):
+        tk.Label(frame_name, text="Channel global :").pack(anchor="w")
+        tk.Label(frame_name, text="Entry test :").pack(anchor="w")
+        self.test_entry3 = tk.Entry(frame_name)
+        self.test_entry3.pack(anchor="w")
+        self.entry_name_dict = {
+            "Entry 3": self.test_entry3}
 
-    def fplot(self):
-        tk.Label(self, text="Plot settings :" +
-                 "\n"+"n/a").grid(row=0, sticky="nw")
+    def channel_dimension(self, frame_name):
+        tk.Label(frame_name, text="Channel dimension :" +
+                 "\n"+"n/a").pack(anchor="w")
 
-    def fother(self):
-        tk.Label(self, text="Other settings :" +
-                 "\n"+"n/a").grid(row=0, sticky="nw")
+    def coolant_properties(self, frame_name):
+        tk.Label(frame_name, text="Coolant properties :" +
+                 "\n"+"n/a").pack(anchor="w")
+
+    def fplot(self, frame_name):
+        tk.Label(frame_name, text="Plot settings :" +
+                 "\n"+"n/a").pack(anchor="w")
+
+    def fother(self, frame_name):
+        tk.Label(frame_name, text="Other settings :" +
+                 "\n"+"n/a").pack(anchor="w")
 
 
 class OutRedirection:
@@ -51,23 +70,22 @@ class OutRedirection:
         pass
 
 
-class Run():
+class Run:
     def __init__(self, process_class):
-        print("Run class loaded")
         self.process_class = process_class()
         print(self.process_class)
 
     def run_process(self):
-        print("Ready to execute process")
         self.process_class.process()
-        print("Running process")
 
 
 class MainGUI(tk.Tk):
     def __init__(self, process_class):
         tk.Tk.__init__(self)
+
         self.index_temp = None
         self.set_selected = None
+        self.entry_params = {}
 
         """
         w = self.winfo_screenwidth()
@@ -89,7 +107,6 @@ class MainGUI(tk.Tk):
 
         try:
             self.runprocess = Run(process_class)
-            print("Process class loaded in MainGui")
         except:
             print("Failed to load main process class in MainGUI")
 
@@ -178,6 +195,7 @@ class MainGUI(tk.Tk):
             self.primary_frame.grid_columnconfigure(2, weight=85)
 
         if selection and self.index_temp != index:
+            destroy_secondary_m()
             self.index_temp = index
             print(index)
             print(self.set_selected)
@@ -185,34 +203,34 @@ class MainGUI(tk.Tk):
             if self.set_selected == 0 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.engine_model(self.secondary_m_frame)
+                self.inputs_class.engine_model(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.channel_global(self.secondary_m_frame)
+                self.inputs_class.channel_global(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 2:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.channel_dimension(self.secondary_m_frame)
+                self.inputs_class.channel_dimension(self.secondary_m_frame)
             elif self.set_selected == 0 and index == 3:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.coolant_properties(self.secondary_m_frame)
+                self.inputs_class.coolant_properties(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 0:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.fplot(self.secondary_m_frame)
+                self.inputs_class.fplot(self.secondary_m_frame)
             elif self.set_selected == 1 and index == 1:
                 destroy_secondary_m()
                 self.secondary_m()
-                InputsWin.fother(self.secondary_m_frame)
+                self.inputs_class.fother(self.secondary_m_frame)
             else:
                 destroy_secondary_m()
 
         else:
+            destroy_secondary_m()
             self.inputs.selection_clear(0, "end")
             self.settings.selection_clear(0, "end")
-            destroy_secondary_m()
             self.index_temp = None
 
     def secondary_r(self):
@@ -250,7 +268,7 @@ class MainGUI(tk.Tk):
         self.secondary_r1A_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1A_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=400)
+        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=350)
 
         tk.Label(self.secondary_r1A_frame,
                  text="Results plot").grid(row=0, column=0)
@@ -263,7 +281,7 @@ class MainGUI(tk.Tk):
         self.secondary_r1B_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1B_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=200)
+        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=250)
 
         """
         tk.Label(self.secondary_r1B_frame,
@@ -284,6 +302,9 @@ class MainGUI(tk.Tk):
         self.secondary_m_frame.grid_rowconfigure(0, weight=1)
         self.secondary_m_frame.grid_columnconfigure(0, weight=1)
 
+        tk.Button(self.secondary_m_frame, text="Get data",
+                  command=self.inputs_class.get_entry).grid(row=1, sticky="sw")
+
     def info_frame(self):
         self.info = tk.Frame(self, borderwidth=2, relief="groove")
         self.info.grid(row=1, column=0, sticky="nesw")
@@ -295,16 +316,15 @@ class MainGUI(tk.Tk):
         tk.Label(self.info, text="CTE GUI - In development   © IPL").grid(row=0,
                                                                           column=0, sticky="w")
 
-        tk.Button(self.info, text="Run", command=self.button_pressed).grid(
+        tk.Button(self.info, text="Run", command=self.run_button_pressed).grid(
             row=0, column=1, sticky="e")
 
-    def button_pressed(self):
+    def run_button_pressed(self):
         try:
-            print("Transfert to Run class")
             self.runprocess.run_process()
-            print("succeed to transfert in Run class")
         except:
             print("Failed to run process")
+        print(self.inputs_class.entry_dict)
 
 
 if __name__ == "__main__":
