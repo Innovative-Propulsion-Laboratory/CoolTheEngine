@@ -14,6 +14,9 @@ class InputsWin:
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
         self.list_settings_features = ["Plots", "Other"]
 
+        self.inputs_function_list = [[self.engine_model, self.channel_global,
+                                      self.channel_dimension, self.coolant_properties], [self.fplot, self.fother]]
+
         self.entry_name_dict = {}
         self.entry_dict = {}
 
@@ -149,6 +152,8 @@ class MainGUI(tk.Tk):
 
         self.inputs_class = InputsWin()
 
+        self.inputs_function_list = self.inputs_class.inputs_function_list
+
         try:
             self.runprocess = Run(process_class, self.inputs_class)
         except:
@@ -227,55 +232,34 @@ class MainGUI(tk.Tk):
         selection = event.widget.curselection()
         index = selection[0]
 
-        def destroy_secondary_m():
-            try:
-                self.secondary_m_frame.destroy()
-                for objects in self.secondary_m_frame.winfo_children():
-                    objects.destroy()
-            except:
-                pass
-            self.primary_frame.grid_columnconfigure(0, weight=15)
-            self.primary_frame.grid_columnconfigure(1, weight=0)
-            self.primary_frame.grid_columnconfigure(2, weight=85)
-
         if selection and self.index_temp != index:
-            destroy_secondary_m()
+            self.destroy_secondary_m()
             self.index_temp = index
-            # print(index)
-            # print(self.set_selected)
 
-            if self.set_selected == 0 and index == 0:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.engine_model(self.secondary_m_frame)
-            elif self.set_selected == 0 and index == 1:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.channel_global(self.secondary_m_frame)
-            elif self.set_selected == 0 and index == 2:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.channel_dimension(self.secondary_m_frame)
-            elif self.set_selected == 0 and index == 3:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.coolant_properties(self.secondary_m_frame)
-            elif self.set_selected == 1 and index == 0:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.fplot(self.secondary_m_frame)
-            elif self.set_selected == 1 and index == 1:
-                destroy_secondary_m()
-                self.secondary_m()
-                self.inputs_class.fother(self.secondary_m_frame)
-            else:
-                destroy_secondary_m()
-
+            self.create_input_win(self.inputs_function_list,
+                                  self.set_selected, index)
         else:
-            destroy_secondary_m()
+            self.destroy_secondary_m()
             self.inputs.selection_clear(0, "end")
             self.settings.selection_clear(0, "end")
             self.index_temp = None
+
+    def destroy_secondary_m(self):
+        try:
+            self.secondary_m_frame.destroy()
+            for objects in self.secondary_m_frame.winfo_children():
+                objects.destroy()
+        except:
+            pass
+        self.primary_frame.grid_columnconfigure(0, weight=15)
+        self.primary_frame.grid_columnconfigure(1, weight=0)
+        self.primary_frame.grid_columnconfigure(2, weight=85)
+
+    def create_input_win(self, function_list, set_selected, index):
+        self.destroy_secondary_m()
+        self.secondary_m()
+        function = function_list[set_selected][index]
+        function(self.secondary_m_frame)
 
     def secondary_r(self):
         self.secondary_r_frame = tk.Frame(
@@ -327,11 +311,6 @@ class MainGUI(tk.Tk):
 
         self.secondary_r1_frame.add(self.secondary_r1B_frame, height=500)
 
-        """
-        tk.Label(self.secondary_r1B_frame,
-                 text="Results text").grid(row=0, column=0)
-        """
-
     def secondary_m(self):
         self.secondary_m_frame = tk.Frame(
             self.primary_frame, bd=2, relief="groove", width=200)
@@ -378,10 +357,6 @@ if __name__ == "__main__":
         print("Failed to load process class in Run")
     gui = MainGUI(None)
     gui.title("CTE")
-
-    """for i in range(3):
-        print("test")
-        time.sleep(2)"""
 
     while True:
         try:
