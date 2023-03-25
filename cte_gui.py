@@ -10,86 +10,83 @@ import time
 
 class InputsWin:
     def __init__(self):
+        # -----------------------------------------------------------------------------------------------------------------
+
         self.list_inputs_features = [
             "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
-        self.list_settings_features = ["Plots", "Other"]
+        inputs_features_function = [
+            self.engine_model, self.channel_global, self.channel_dimension, self.coolant_properties]
 
-        self.inputs_function_list = [[self.engine_model, self.channel_global,
-                                      self.channel_dimension, self.coolant_properties], [self.fplot, self.fother]]
+        self.list_settings_features = ["Plots", "Other"]
+        settings_features_function = [self.fplot, self.fother]
+
+        # -----------------------------------------------------------------------------------------------------------------
+
+        self.inputs_function_list = [
+            inputs_features_function, settings_features_function]
 
         self.entry_name_dict = {}
         self.entry_dict = {}
 
     def get_entry(self):
-        for entry in self.entry_name_dict.items():
-            entry_params = entry[1].get()
-            self.entry_dict[entry[0]] = entry_params
-        print("Data saved")
+        try:
+            for entry in self.entry_name_dict.items():
+                entry_params = entry[1].get()
+                self.entry_dict[entry[0]] = entry_params
+            print("Data saved")
+        except:
+            print("Impossible to get entry")
 
-    def persistent_entry(self, variable_name):
+    def init_features(self):
+        self.line = 0
+        self.entry_name_dict = {}
+
+    def create_label(self, frame_name, text):
+        tk.Label(frame_name, text=text).grid(
+            row=self.line, columnspan=2, sticky="nw")
+        self.line += 1
+
+    def create_entry(self, frame_name, text, var_name):
         var = tk.IntVar()
         try:
-            var.set(self.entry_dict[str(variable_name)])
+            var.set(self.entry_dict[var_name])
         except:
             var.set("")
-        return var
+        tk.Label(frame_name, text=text).grid(
+            row=self.line, column=0, sticky="nw")
+        var_entry = tk.Entry(frame_name, textvariable=var)
+        var_entry.grid(row=self.line, column=1, sticky="nw")
+        self.entry_name_dict[var_name] = var_entry
+        self.line += 1
+
+    def create_separator(self, frame_name):
+        ttk.Separator(frame_name, orient="horizontal").grid(
+            row=self.line, columnspan=2, padx=10, pady=10, sticky="nesw")
+        self.line += 1
 
     def engine_model(self, frame_name):
-        tk.Label(frame_name, text="Engine model :").pack(anchor="w")
-        tk.Label(frame_name, text="Entry test :").pack(anchor="w")
-
-        entry1 = self.persistent_entry("entry1")
-        self.test_entry1 = tk.Entry(
-            frame_name, textvariable=entry1)
-        self.test_entry1.pack(anchor="w")
-
-        entry2 = self.persistent_entry("entry2")
-        self.test_entry2 = tk.Entry(
-            frame_name, textvariable=entry2)
-        self.test_entry2.pack(anchor="w")
-
-        self.entry_name_dict = {
-            "entry1": self.test_entry1, "entry2": self.test_entry2}
+        self.init_features()
+        self.create_label(frame_name, "Test")
+        self.create_separator(frame_name)
+        self.create_entry(frame_name, text="entry test", var_name="test1")
+        self.create_entry(frame_name, text="entry test2", var_name="test2")
 
     def channel_global(self, frame_name):
-        tk.Label(frame_name, text="Channel global").pack(anchor="w")
-
-        ttk.Separator(frame_name, orient="horizontal").pack(
-            fill="x", padx=10, pady=10)
-
-        tk.Label(frame_name, text="Number of channels :").pack(anchor="w")
-
-        nbc = self.persistent_entry("nbc")
-        self.nbc = tk.Entry(frame_name, textvariable=nbc)
-        self.nbc.pack(anchor="w")
-
-        tk.Label(frame_name, text="Position of the manifold from the throat (in m) :").pack(
-            anchor="w")
-
-        manifold_pos = self.persistent_entry("manifold_pos")
-        self.manifold_pos = tk.Entry(frame_name, textvariable=manifold_pos)
-        self.manifold_pos.pack(anchor="w")
-
-        self.entry_name_dict = {
-            "nbc": self.nbc, "manifold_pos": self.manifold_pos}
+        self.init_features()
+        self.create_label(frame_name, text="Channel global")
+        self.create_separator(frame_name)
+        self.create_entry(
+            frame_name, text="Number of channels :", var_name="nbc")
+        self.create_entry(
+            frame_name, text="Position of the manifold", var_name="manifold_pos")
 
     def channel_dimension(self, frame_name):
-        tk.Label(frame_name, text="Channel dimension").pack(anchor="w")
-
-        ttk.Separator(frame_name, orient="horizontal").pack(
-            fill="x", padx=10, pady=10)
-
-        tk.Label(frame_name, text="Widths").pack(anchor="w")
-
-        tk.Label(frame_name, text="Injection plate").pack(
-            anchor="w")
-
-        lrg_inj = self.persistent_entry("lrg_inj")
-        self.lrg_inj = tk.Entry(frame_name, textvariable=lrg_inj)
-        self.lrg_inj.pack(anchor="w")
-
-        self.entry_name_dict = {
-            "lrg_inj": self.lrg_inj}
+        self.init_features()
+        self.create_label(frame_name, text="Channel dimension")
+        self.create_separator(frame_name)
+        self.create_label(frame_name, text="Widths")
+        self.create_entry(frame_name, text="Injection plate",
+                          var_name="lrg_inj")
 
     def coolant_properties(self, frame_name):
         tk.Label(frame_name, text="Coolant properties :" +
@@ -259,7 +256,7 @@ class MainGUI(tk.Tk):
         self.destroy_secondary_m()
         self.secondary_m()
         function = function_list[set_selected][index]
-        function(self.secondary_m_frame)
+        function(self.subframe_m)
 
     def secondary_r(self):
         self.secondary_r_frame = tk.Frame(
@@ -325,6 +322,9 @@ class MainGUI(tk.Tk):
 
         self.secondary_m_frame.grid_rowconfigure(0, weight=1)
         self.secondary_m_frame.grid_columnconfigure(0, weight=1)
+
+        self.subframe_m = tk.Frame(self.secondary_m_frame)
+        self.subframe_m.grid(row=0, column=0, sticky="nesw")
 
         tk.Button(self.secondary_m_frame, text="Save data",
                   command=self.inputs_class.get_entry).grid(row=1, sticky="sw")
