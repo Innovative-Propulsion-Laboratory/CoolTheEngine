@@ -28,42 +28,6 @@ class InputsWin:
         self.entry_name_dict = {}
         self.entry_dict = {}
 
-    def get_entry(self):
-        try:
-            for entry in self.entry_name_dict.items():
-                entry_params = entry[1].get()
-                self.entry_dict[entry[0]] = entry_params
-            print("Data saved")
-        except:
-            print("Impossible to get entry")
-
-    def init_features(self):
-        self.line = 0
-        self.entry_name_dict = {}
-
-    def create_label(self, frame_name, text):
-        tk.Label(frame_name, text=text).grid(
-            row=self.line, columnspan=2, sticky="nw")
-        self.line += 1
-
-    def create_entry(self, frame_name, text, var_name):
-        var = tk.IntVar()
-        try:
-            var.set(self.entry_dict[var_name])
-        except:
-            var.set("")
-        tk.Label(frame_name, text=text).grid(
-            row=self.line, column=0, sticky="nw")
-        var_entry = tk.Entry(frame_name, textvariable=var)
-        var_entry.grid(row=self.line, column=1, sticky="nw")
-        self.entry_name_dict[var_name] = var_entry
-        self.line += 1
-
-    def create_separator(self, frame_name):
-        ttk.Separator(frame_name, orient="horizontal").grid(
-            row=self.line, columnspan=2, padx=10, pady=10, sticky="nesw")
-        self.line += 1
-
     def engine_model(self, frame_name):
         self.init_features()
         self.create_label(frame_name, "Test")
@@ -99,6 +63,42 @@ class InputsWin:
     def fother(self, frame_name):
         tk.Label(frame_name, text="Other settings :" +
                  "\n"+"n/a").pack(anchor="w")
+
+    def get_entry(self):
+        try:
+            for entry in self.entry_name_dict.items():
+                entry_params = entry[1].get()
+                self.entry_dict[entry[0]] = entry_params
+            print("Data saved")
+        except:
+            print("Impossible to get entry")
+
+    def init_features(self):
+        self.line = 0
+        self.entry_name_dict = {}
+
+    def create_label(self, frame_name, text):
+        tk.Label(frame_name, text=text).grid(
+            row=self.line, columnspan=2, sticky="nw")
+        self.line += 1
+
+    def create_entry(self, frame_name, text, var_name):
+        var = tk.IntVar()
+        try:
+            var.set(self.entry_dict[var_name])
+        except:
+            var.set("")
+        tk.Label(frame_name, text=text).grid(
+            row=self.line, column=0, sticky="nw")
+        var_entry = tk.Entry(frame_name, textvariable=var)
+        var_entry.grid(row=self.line, column=1, sticky="nw")
+        self.entry_name_dict[var_name] = var_entry
+        self.line += 1
+
+    def create_separator(self, frame_name):
+        ttk.Separator(frame_name, orient="horizontal").grid(
+            row=self.line, columnspan=2, padx=10, pady=10, sticky="nesw")
+        self.line += 1
 
 
 class OutRedirection:
