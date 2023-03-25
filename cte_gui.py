@@ -3,6 +3,7 @@
 """
 
 import tkinter as tk
+from tkinter import ttk
 import sys
 import time
 
@@ -22,27 +23,70 @@ class InputsWin:
             self.entry_dict[entry[0]] = entry_params
         print("Data saved")
 
+    def persistent_entry(self, variable_name):
+        var = tk.IntVar()
+        try:
+            var.set(self.entry_dict[str(variable_name)])
+        except:
+            var.set("")
+        return var
+
     def engine_model(self, frame_name):
         tk.Label(frame_name, text="Engine model :").pack(anchor="w")
         tk.Label(frame_name, text="Entry test :").pack(anchor="w")
-        self.test_entry1 = tk.Entry(frame_name)
+
+        entry1 = self.persistent_entry("entry1")
+        self.test_entry1 = tk.Entry(
+            frame_name, textvariable=entry1)
         self.test_entry1.pack(anchor="w")
-        self.test_entry2 = tk.Entry(frame_name)
+
+        entry2 = self.persistent_entry("entry2")
+        self.test_entry2 = tk.Entry(
+            frame_name, textvariable=entry2)
         self.test_entry2.pack(anchor="w")
+
         self.entry_name_dict = {
-            "Entry 1": self.test_entry1, "Entry 2": self.test_entry2}
+            "entry1": self.test_entry1, "entry2": self.test_entry2}
 
     def channel_global(self, frame_name):
-        tk.Label(frame_name, text="Channel global :").pack(anchor="w")
-        tk.Label(frame_name, text="Entry test :").pack(anchor="w")
-        self.test_entry3 = tk.Entry(frame_name)
-        self.test_entry3.pack(anchor="w")
+        tk.Label(frame_name, text="Channel global").pack(anchor="w")
+
+        ttk.Separator(frame_name, orient="horizontal").pack(
+            fill="x", padx=10, pady=10)
+
+        tk.Label(frame_name, text="Number of channels :").pack(anchor="w")
+
+        nbc = self.persistent_entry("nbc")
+        self.nbc = tk.Entry(frame_name, textvariable=nbc)
+        self.nbc.pack(anchor="w")
+
+        tk.Label(frame_name, text="Position of the manifold from the throat (in m) :").pack(
+            anchor="w")
+
+        manifold_pos = self.persistent_entry("manifold_pos")
+        self.manifold_pos = tk.Entry(frame_name, textvariable=manifold_pos)
+        self.manifold_pos.pack(anchor="w")
+
         self.entry_name_dict = {
-            "Entry 3": self.test_entry3}
+            "nbc": self.nbc, "manifold_pos": self.manifold_pos}
 
     def channel_dimension(self, frame_name):
-        tk.Label(frame_name, text="Channel dimension :" +
-                 "\n"+"n/a").pack(anchor="w")
+        tk.Label(frame_name, text="Channel dimension").pack(anchor="w")
+
+        ttk.Separator(frame_name, orient="horizontal").pack(
+            fill="x", padx=10, pady=10)
+
+        tk.Label(frame_name, text="Widths").pack(anchor="w")
+
+        tk.Label(frame_name, text="Injection plate").pack(
+            anchor="w")
+
+        lrg_inj = self.persistent_entry("lrg_inj")
+        self.lrg_inj = tk.Entry(frame_name, textvariable=lrg_inj)
+        self.lrg_inj.pack(anchor="w")
+
+        self.entry_name_dict = {
+            "lrg_inj": self.lrg_inj}
 
     def coolant_properties(self, frame_name):
         tk.Label(frame_name, text="Coolant properties :" +
@@ -71,12 +115,12 @@ class OutRedirection:
 
 
 class Run:
-    def __init__(self, process_class):
+    def __init__(self, process_class, inputs_class):
         self.process_class = process_class()
-        print(self.process_class)
+        self.entry_dict = inputs_class.entry_dict
 
     def run_process(self):
-        self.process_class.process()
+        self.process_class.process(self.entry_dict)
 
 
 class MainGUI(tk.Tk):
@@ -106,7 +150,7 @@ class MainGUI(tk.Tk):
         self.inputs_class = InputsWin()
 
         try:
-            self.runprocess = Run(process_class)
+            self.runprocess = Run(process_class, self.inputs_class)
         except:
             print("Failed to load main process class in MainGUI")
 
@@ -197,8 +241,8 @@ class MainGUI(tk.Tk):
         if selection and self.index_temp != index:
             destroy_secondary_m()
             self.index_temp = index
-            print(index)
-            print(self.set_selected)
+            # print(index)
+            # print(self.set_selected)
 
             if self.set_selected == 0 and index == 0:
                 destroy_secondary_m()
@@ -268,7 +312,7 @@ class MainGUI(tk.Tk):
         self.secondary_r1A_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1A_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=350)
+        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=100)
 
         tk.Label(self.secondary_r1A_frame,
                  text="Results plot").grid(row=0, column=0)
@@ -281,7 +325,7 @@ class MainGUI(tk.Tk):
         self.secondary_r1B_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1B_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=250)
+        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=500)
 
         """
         tk.Label(self.secondary_r1B_frame,
@@ -294,6 +338,7 @@ class MainGUI(tk.Tk):
         self.secondary_m_frame.grid(
             row=0, column=1, sticky="nesw", pady=(22, 0))
         self.secondary_m_frame.grid_propagate(False)
+        self.secondary_m_frame.pack_propagate(False)
 
         self.primary_frame.grid_columnconfigure(0, weight=20)
         self.primary_frame.grid_columnconfigure(1, weight=20)
@@ -302,7 +347,7 @@ class MainGUI(tk.Tk):
         self.secondary_m_frame.grid_rowconfigure(0, weight=1)
         self.secondary_m_frame.grid_columnconfigure(0, weight=1)
 
-        tk.Button(self.secondary_m_frame, text="Get data",
+        tk.Button(self.secondary_m_frame, text="Save data",
                   command=self.inputs_class.get_entry).grid(row=1, sticky="sw")
 
     def info_frame(self):
@@ -324,7 +369,6 @@ class MainGUI(tk.Tk):
             self.runprocess.run_process()
         except:
             print("Failed to run process")
-        print(self.inputs_class.entry_dict)
 
 
 if __name__ == "__main__":

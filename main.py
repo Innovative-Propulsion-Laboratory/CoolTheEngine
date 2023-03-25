@@ -30,10 +30,13 @@ import cte_gui
 
 
 class MainProcess:
+
     def __init__(self):
         pass
 
-    def process(self):
+    def process(self, entry_dict):
+        print(entry_dict)
+
         print(
             "██████████████████████████████████ START ███████████████████████████████████")
         print(
@@ -950,7 +953,13 @@ class MainProcess:
 gui = cte_gui.MainGUI(MainProcess)
 gui.title("CTE")
 
-runprocess = cte_gui.Run(MainProcess)
+
+"""input_class = cte_gui.InputsWin()
+entry_dict = input_class.entry_dict"""
+
+
+# runprocess = cte_gui.Run(MainProcess)
+
 
 print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
 print("█                                                                          █")
