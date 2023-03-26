@@ -4,6 +4,8 @@
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import simpledialog
+from tkinter import filedialog
 import sys
 import time
 
@@ -13,12 +15,24 @@ class InputsWin:
         # -----------------------------------------------------------------------------------------------------------------
 
         self.list_inputs_features = [
-            "Engine model", "Channel global", "Channel dimensions", "Coolant properties"]
+            "Engine model", "Channel global", "Channel dimensions", "Coolant properties", "Advanced"]
         inputs_features_function = [
-            self.engine_model, self.channel_global, self.channel_dimension, self.coolant_properties]
+            self.engine_model, self.channel_global, self.channel_dimension, self.coolant_properties, self.advanced]
 
         self.list_settings_features = ["Plots", "Other"]
         settings_features_function = [self.fplot, self.fother]
+
+        self.material_list = ["pure copper", "cucrzr", "inconel"]
+
+        self.coolant_list = ["Methane"]
+
+        self.plot_detail_list = [0, 1, 2, 3]
+
+        self.mesh_size_list = [0.25, 0.5, 1]
+
+        self.cea_list = ["Viserion_2023.txt"]
+
+        self.boolean = [False, True]
 
         # -----------------------------------------------------------------------------------------------------------------
 
@@ -29,53 +43,177 @@ class InputsWin:
         self.entry_dict = {}
 
     def engine_model(self, frame_name):
-        self.init_features()
-        self.create_label(frame_name, "Test")
+        self.init_feature()
+        self.create_label(frame_name, text="Channel global")
+
         self.create_separator(frame_name)
-        self.create_entry(frame_name, text="entry test", var_name="test1")
-        self.create_entry(frame_name, text="entry test2", var_name="test2")
+
+        self.create_combobox(frame_name, text="Mesh size",
+                             var_name="mesh_size", var_list=self.mesh_size_list)
+
+        self.create_combobox(frame_name, text="CEA parameters",
+                             var_name="input_CEA_data", var_list=self.cea_list)
 
     def channel_global(self, frame_name):
-        self.init_features()
+        self.init_feature()
         self.create_label(frame_name, text="Channel global")
+
         self.create_separator(frame_name)
+
         self.create_entry(
-            frame_name, text="Number of channels :", var_name="nbc")
+            frame_name, text="Number", var_name="nbc")
         self.create_entry(
             frame_name, text="Position of the manifold", var_name="manifold_pos")
 
+        self.create_entry(frame_name, text="Roughness", var_name="roughness")
+
+        self.create_combobox(frame_name, text="Material",
+                             var_name="material_name", var_list=self.material_list)
+
     def channel_dimension(self, frame_name):
-        self.init_features()
+        self.init_feature()
         self.create_label(frame_name, text="Channel dimension")
+
         self.create_separator(frame_name)
-        self.create_label(frame_name, text="Widths")
-        self.create_entry(frame_name, text="Injection plate",
+
+        self.create_label(frame_name, text="At the injection plate :")
+        self.create_entry(frame_name, text="Width",
                           var_name="lrg_inj")
+        self.create_entry(frame_name, text="Height",
+                          var_name="ht_inj")
+
+        self.create_separator(frame_name)
+
+        self.create_label(frame_name, text="At the end of the chamber :")
+        self.create_entry(frame_name, text="Width",
+                          var_name="lrg_conv")
+        self.create_entry(frame_name, text="Height",
+                          var_name="ht_conv")
+        self.create_entry(frame_name, text="Thickness",
+                          var_name="e_conv")
+
+        self.create_separator(frame_name)
+
+        self.create_label(frame_name, text="In the throat :")
+        self.create_entry(frame_name, text="Width",
+                          var_name="lrg_col")
+        self.create_entry(frame_name, text="Height",
+                          var_name="ht_col")
+        self.create_entry(frame_name, text="Thickness",
+                          var_name="e_col")
+
+        self.create_separator(frame_name)
+
+        self.create_label(frame_name, text="At the manifold :")
+        self.create_entry(frame_name, text="Width",
+                          var_name="lrg_tore")
+        self.create_entry(frame_name, text="Height",
+                          var_name="ht_tore")
+        self.create_entry(frame_name, text="Thickness",
+                          var_name="e_tore")
 
     def coolant_properties(self, frame_name):
-        tk.Label(frame_name, text="Coolant properties :" +
-                 "\n"+"n/a").pack(anchor="w")
+        self.init_feature()
+        self.create_label(frame_name, text="Coolant properties")
+
+        self.create_separator(frame_name)
+
+        self.create_combobox(frame_name, text="Fluid",
+                             var_name="fluid", var_list=self.coolant_list)
+        self.create_entry(frame_name, text="Density",
+                          var_name="density_cool_init")
+
+        self.create_separator(frame_name)
+
+        self.create_entry(frame_name, text="Initial temperature",
+                          var_name="Temp_cool_init")
+        self.create_entry(frame_name, "Initial pressure", "Pressure_cool_init")
+
+    def advanced(self, frame_name):
+        self.init_feature()
+        self.create_label(frame_name, text="Geometry coefficients")
+
+        self.create_separator(frame_name)
+
+        self.create_entry(frame_name, text="Width convergent", var_name="n1")
+        self.create_entry(frame_name, text="Width divergent", var_name="n2")
+
+        self.create_separator(frame_name)
+
+        self.create_entry(frame_name, text="Height convergent", var_name="n3")
+        self.create_entry(frame_name, text="Height divergent", var_name="n4")
+
+        self.create_separator(frame_name)
+
+        self.create_entry(
+            frame_name, text="Thickness convergent", var_name="n5")
+        self.create_entry(
+            frame_name, text="Thickness divergent", var_name="n6")
 
     def fplot(self, frame_name):
-        tk.Label(frame_name, text="Plot settings :" +
-                 "\n"+"n/a").pack(anchor="w")
+        self.init_feature()
+        self.create_label(frame_name, text="Plot settings")
+
+        self.create_separator(frame_name)
+
+        self.create_combobox(frame_name, text="Plot detail",
+                             var_name="plot_detail", var_list=self.plot_detail_list)
+
+        self.create_combobox(frame_name, text="3D plots",
+                             var_name="show_3d_plots", var_list=self.boolean)
+
+        self.create_combobox(frame_name, text="2D temperature",
+                             var_name="show_2D_temperature", var_list=self.boolean)
+
+        self.create_combobox(frame_name, text="Final 3D plot",
+                             var_name="do_final_3d_plot", var_list=self.boolean)
 
     def fother(self, frame_name):
-        tk.Label(frame_name, text="Other settings :" +
-                 "\n"+"n/a").pack(anchor="w")
+        self.init_feature()
+        self.create_label(frame_name, text="Other settings")
+
+        self.create_separator(frame_name)
+
+        self.create_combobox(frame_name, text="Write in CSV",
+                             var_name="write_in_csv", var_list=self.boolean)
 
     def get_entry(self):
         try:
             for entry in self.entry_name_dict.items():
                 entry_params = entry[1].get()
+                if entry_params == "False":
+                    entry_params = False
                 self.entry_dict[entry[0]] = entry_params
             print("Data saved")
         except:
             print("Impossible to get entry")
+        # print(self.entry_dict)
 
-    def init_features(self):
+    def init_feature(self):
         self.line = 0
         self.entry_name_dict = {}
+
+    def save_params(self):
+        save_name = simpledialog.askstring(
+            "Input", "Save name :")
+        if save_name != None and save_name != "":
+            file = open("save/"+str(save_name)+".csv", "w")
+            for key, value in self.entry_dict.items():
+                file.write(str(key)+";"+str(value)+"\n")
+            file.close()
+            print("Settings has been saved")
+
+    def open_params(self):
+        filename = filedialog.askopenfilename(
+            initialdir="save", title="Select File", filetypes=(("csv files", "*.csv"), ("all files", "*.*")))
+        file = open(str(filename), "r")
+        for line in file.readlines():
+            line = line.split(";")
+            self.entry_dict[line[0]] = line[1][:-1]
+            if self.entry_dict[line[0]] == "False":
+                self.entry_dict[line[0]] = False
+        file.close()
+        print("Data has been imported")
 
     def create_label(self, frame_name, text):
         tk.Label(frame_name, text=text).grid(
@@ -93,6 +231,35 @@ class InputsWin:
         var_entry = tk.Entry(frame_name, textvariable=var)
         var_entry.grid(row=self.line, column=1, sticky="nw")
         self.entry_name_dict[var_name] = var_entry
+        self.line += 1
+
+    def create_large_entry(self, frame_name, var_name):
+        var = tk.IntVar()
+        try:
+            var.set(self.entry_dict[var_name])
+        except:
+            var.set("")
+        var_entry = tk.Entry(frame_name, textvariable=var)
+        var_entry.grid(row=self.line, columnspan=2, sticky="nw")
+        self.entry_name_dict[var_name] = var_entry
+        self.line += 1
+
+    def create_combobox(self, frame_name, text, var_name, var_list):
+        tk.Label(frame_name, text=text).grid(
+            row=self.line, column=0, sticky="nw")
+
+        """def selected(event):
+            select = combo_list.get()
+            self.entry_dict[var_name] = select"""
+        var_combo = ttk.Combobox(
+            frame_name, values=var_list, state="readonly")
+        try:
+            index = var_list.index(self.entry_dict[var_name])
+        except:
+            index = 0
+        var_combo.current(index)
+        var_combo.grid(row=self.line, column=1, sticky="nw")
+        self.entry_name_dict[var_name] = var_combo
         self.line += 1
 
     def create_separator(self, frame_name):
@@ -138,18 +305,14 @@ class MainGUI(tk.Tk):
         """
         self.geometry("1200x600")
 
-        main_menu = tk.Menu(self, tearoff=0)
-        menu_file = tk.Menu(main_menu, tearoff=0)
-        main_menu.add_cascade(label="File", menu=menu_file)
-        menu_file.add_command(label="Quit", command=self.quit)
-        self.config(menu=main_menu)
-
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         self.inputs_class = InputsWin()
 
         self.inputs_function_list = self.inputs_class.inputs_function_list
+
+        self.menu_bar()
 
         try:
             self.runprocess = Run(process_class, self.inputs_class)
@@ -160,6 +323,18 @@ class MainGUI(tk.Tk):
         self.info_frame()
 
         sys.stdout = OutRedirection(self.secondary_r1B_frame)
+
+    def menu_bar(self):
+        main_menu = tk.Menu(self, tearoff=0)
+        menu_file = tk.Menu(main_menu, tearoff=0)
+        main_menu.add_cascade(label="File", menu=menu_file)
+        menu_file.add_command(label="Quit", command=self.quit)
+        menu_file.add_separator()
+        menu_file.add_command(
+            label="Save", command=self.inputs_class.save_params)
+        menu_file.add_command(
+            label="Open", command=self.inputs_class.open_params)
+        self.config(menu=main_menu)
 
     def primary(self):
         self.primary_frame = tk.Frame(self)
@@ -348,6 +523,7 @@ class MainGUI(tk.Tk):
             self.runprocess.run_process()
         except:
             print("Failed to run process")
+        # self.runprocess.run_process()
 
 
 if __name__ == "__main__":

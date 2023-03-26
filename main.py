@@ -35,7 +35,8 @@ class MainProcess:
         pass
 
     def process(self, entry_dict):
-        print(entry_dict)
+
+        # print(entry_dict)
 
         print(
             "██████████████████████████████████ START ███████████████████████████████████")
@@ -49,23 +50,25 @@ class MainProcess:
         start_time = time.perf_counter()  # Beginning of the timer
         # %% Initial definitions
 
-        mesh_size = 0.25  # Distance between two points of calculation
+        # Distance between two points of calculation
+        mesh_size = float(entry_dict["mesh_size"])
         # X coordinates of the Viserion
         x_coords_filename = f"input/{mesh_size}/x.txt"
         # Y coordinates of the Viserion
         y_coords_filename = f"input/{mesh_size}/y.txt"
         # Viserion's parameters (found with CEA)
-        input_CEA_data = "input/Viserion_2023.txt"
+        input_CEA_data = "input/"+entry_dict["input_CEA_data"]
 
         # Constant input_data_list
         size2 = 16  # Used for the height of the display in 3D view
         limitation = 0.05  # used to build the scales in 3D view
         figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-        plot_detail = 0  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
-        show_3d_plots = False
-        show_2D_temperature = False
-        do_final_3d_plot = False
-        write_in_csv = False
+        # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
+        plot_detail = int(entry_dict["plot_detail"])
+        show_3d_plots = bool(entry_dict["show_3d_plots"])
+        show_2D_temperature = bool(entry_dict["show_2D_temperature"])
+        do_final_3d_plot = bool(entry_dict["do_final_3d_plot"])
+        write_in_csv = bool(entry_dict["write_in_csv"])
 
         # %% Reading input data
         input_data_reader = csv.reader(open(input_CEA_data, "r"))
@@ -340,53 +343,59 @@ class MainProcess:
         print(
             "█                                                                          █")
 
-        nbc = 40  # Number of channels
-        manifold_pos = 0.104  # Position of the manifold from the throat (in m)
+        nbc = int(entry_dict["nbc"])  # Number of channels
+        # Position of the manifold from the throat (in m)
+        manifold_pos = float(entry_dict["manifold_pos"])
 
         # Widths
         # Width of the channel in at the injection plate (in m)
-        lrg_inj = 0.0045
+        lrg_inj = float(entry_dict["lrg_inj"])
         # Width of the channel at the end of the cylindrical chamber (in m)
-        lrg_conv = 0.0025
-        lrg_col = 0.0015  # Width of the channel in the throat (in m)
-        lrg_tore = 0.002  # Width of the channel at the manifold (in m)
+        lrg_conv = float(entry_dict["lrg_conv"])
+        # Width of the channel in the throat (in m)
+        lrg_col = float(entry_dict["lrg_col"])
+        # Width of the channel at the manifold (in m)
+        lrg_tore = float(entry_dict["lrg_tore"])
 
         # Heights
-        ht_inj = 0.002  # Height of the channel at the injection plate (in m)
+        # Height of the channel at the injection plate (in m)
+        ht_inj = float(entry_dict["ht_inj"])
         # Height of the channel at the end of the cylindrical chamber (in m)
-        ht_conv = 0.002
-        ht_col = 0.0015  # Height of the channel in the throat (in m)
-        ht_tore = 0.002  # Height of the channel at the manifold (in m)
+        ht_conv = float(entry_dict["ht_conv"])
+        # Height of the channel in the throat (in m)
+        ht_col = float(entry_dict["ht_col"])
+        # Height of the channel at the manifold (in m)
+        ht_tore = float(entry_dict["ht_tore"])
 
         # Thickness
-        e_conv = 0.001  # Thickness of the wall at the chamber (in m)
-        e_col = 0.001  # Thickness of the wall at the throat (in m)
-        e_tore = 0.001  # Thickness of the wall at the manifold (in m)
+        # Thickness of the wall at the chamber (in m)
+        e_conv = float(entry_dict["e_conv"])
+        # Thickness of the wall at the throat (in m)
+        e_col = float(entry_dict["e_col"])
+        # Thickness of the wall at the manifold (in m)
+        e_tore = float(entry_dict["e_tore"])
 
-        n1 = 1  # Width convergent
-        n2 = 1  # Width divergent
-        n3 = 1  # Height convergent
-        n4 = 1  # Height divergent
-        n5 = 1  # Thickness convergent
-        n6 = 1  # Thickness divergent
+        n1 = float(entry_dict["n1"])  # Width convergent
+        n2 = float(entry_dict["n2"])  # Width divergent
+        n3 = float(entry_dict["n3"])  # Height convergent
+        n4 = float(entry_dict["n4"])  # Height divergent
+        n5 = float(entry_dict["n5"])  # Thickness convergent
+        n6 = float(entry_dict["n6"])  # Thickness divergent
 
         # %% Material selection
-        material = 1
-        if material == 0:
-            material_name = "pure copper"
-        elif material == 1:
-            material_name = "cucrzr"
-        elif material == 2:
-            material_name = "inconel"
+        material_name = entry_dict["material_name"]
 
         # %% Properties of the coolant
-        fluid = "Methane"
-        density_cool_init = 425  # Density of the CH4 (kg/m^3)
-        Temp_cool_init = 110  # Initial temperature of the coolant (K)
+        fluid = entry_dict["fluid"]
+        # Density of the CH4 (kg/m^3)
+        density_cool_init = float(entry_dict["density_cool_init"])
+        # Initial temperature of the coolant (K)
+        Temp_cool_init = float(entry_dict["Temp_cool_init"])
         # Total volumic flow rate of the coolant (m^3/s)
         debit_volumique_total_cool = debit_mass_coolant / density_cool_init
-        Pressure_cool_init = 7000000  # Pressure of the coolant at inlet (Pa)
-        roughness = 15e-6  # Roughness (m)
+        # Pressure of the coolant at inlet (Pa)
+        Pressure_cool_init = float(entry_dict["Pressure_cool_init"])
+        roughness = float(entry_dict["roughness"])  # Roughness (m)
 
         # %% Computation of channel geometry
 
