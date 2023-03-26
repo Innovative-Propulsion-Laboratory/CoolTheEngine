@@ -197,18 +197,18 @@ class InputsWin:
         save_name = simpledialog.askstring(
             "Input", "Save name :")
         if save_name != None and save_name != "":
-            file = open("save/"+str(save_name)+".csv", "w")
+            file = open("save/"+str(save_name)+".scte", "w")
             for key, value in self.entry_dict.items():
-                file.write(str(key)+";"+str(value)+"\n")
+                file.write(str(key)+"$$"+str(value)+"\n")
             file.close()
             print("Settings has been saved")
 
     def open_params(self):
         filename = filedialog.askopenfilename(
-            initialdir="save", title="Select File", filetypes=(("csv files", "*.csv"), ("all files", "*.*")))
+            initialdir="save", title="Select File", filetypes=(("scte files", "*.scte"), ("all files", "*.*")))
         file = open(str(filename), "r")
         for line in file.readlines():
-            line = line.split(";")
+            line = line.split("$$")
             self.entry_dict[line[0]] = line[1][:-1]
             if self.entry_dict[line[0]] == "False":
                 self.entry_dict[line[0]] = False
