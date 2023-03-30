@@ -7,7 +7,7 @@ Created on Sat Dec 19 21:46:19 2020
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
-
+from scipy.interpolate import PchipInterpolator
 
 # x_coords_filename,y_coords_filename
 # def canauxangl(plagex, plagey, nbc, lrg_col, ht, ht_c, ht_div, tore, debit_total, epaisseur_chemise, e_col, e_div, e_c):
@@ -118,7 +118,6 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
 
     xcanaux = []  # List of x where there are channels (before the manifold) (in m)
     y_coord_avec_canaux = []  # List of y where there are channels (before the manifold) (in m)
-    # WARNING ! ycanaux will later in this function become y on the coolant side (in m)
     i = 0
     while i < len(x_value) and x_value[i] <= tore_pos:
         xcanaux.append(x_value[i])
@@ -240,6 +239,146 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         z2=zz+0.5*zz*sin(x*1000/4)
         larg_canal[larg_canal.index(zz)]=z2 
     """
+    area_channel = []  # Area of a channel as a function of the engine axis (m²)
+    vitesse_coolant = []  # Velocity of coolant in a channel as a function of the engine axis (m/s)
+    for i in range(0, longc):
+        aire = larg_canal[i] * ht_canal[i]
+        area_channel.append(aire)
+        v = debit_volumique_canal / aire
+        vitesse_coolant.append(v)
+
+    if write_in_csv:
+        "Writing the results of the study in a CSV file"
+        file_name = "output/channel_macro_catia.csv"
+        file = open(file_name, "w", newline="")
+        writer = csv.writer(file)
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["StartCurve"])
+        for i in range(0, longc, 3):
+            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
+        writer.writerow(["EndCurve"])
+        writer.writerow(["End"])
+        file.close()
+
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, larg_ailette, label='Rib width', color='chocolate')
+        plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
+        plt.title('Width of channels and ribs')
+        plt.legend(loc='upper left')
+        plt.show()
+
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, wall_thickness, color='chocolate')
+        plt.title('Thickness of chamber wall as a function of the engine axis')
+        plt.show()
+
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, ht_canal, color='chocolate')
+        plt.title('Channel height as a function of the engine axis')
+        plt.show()
+
+    if plot_detail >= 1:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, area_channel, color='chocolate')
+        plt.title('Channel cross-sectionnal area as a function of the engine axis')
+        plt.show()
+
+    return xcanaux, ycanaux, larg_canal, larg_ailette, ht_canal, wall_thickness, area_channel, longc, y_coord_avec_canaux
+
+def canaux_library(profile_data, width_data, height_data, thickness_data, coefficients,
+           tore_pos, debit_volumique_total_cool, nbc, plot_detail, write_in_csv, figure_dpi):
+    """
+    This function computes the caracteristics of channels on each point
+    by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
+    throat (col) and extremity of the nozzle (div) using library from python (scipy.interpolate)
+    """
+
+    x_value, y_value = profile_data
+    lrg_inj, lrg_conv, lrg_col, lrg_tore = width_data
+    ht_inj, ht_conv, ht_col, ht_tore = height_data
+    e_conv, e_col, e_tore = thickness_data
+
+    xcanaux = []  # List of x where there are channels (before the manifold) (in m)
+    y_coord_avec_canaux = []  # List of y where there are channels (before the manifold) (in m)
+    # WARNING ! ycanaux will later in this function become y on the coolant side (in m)
+    i = 0
+    while i < len(x_value) and x_value[i] <= tore_pos:
+        xcanaux.append(x_value[i])
+        y_coord_avec_canaux.append(y_value[i])
+        i += 1
+
+    pos_conv = 0  # Index of the end of cylindrical chamber
+    while y_coord_avec_canaux[pos_conv] == y_coord_avec_canaux[pos_conv + 1]:
+        pos_conv += 1
+    pos_col = y_coord_avec_canaux.index(min(y_coord_avec_canaux))  # Index of the throat
+    
+    longc = len(xcanaux)  # Number of points for channels (end at the manifold)
+
+    x_interpolate = [xcanaux[0], xcanaux[pos_conv], xcanaux[pos_col], xcanaux[longc-1]]
+
+    y_e = [e_conv, e_conv, e_col, e_tore]
+    wall_thickness = [x for x in PchipInterpolator(x_interpolate, y_e)(xcanaux)]  # Thickness of the chamber wall as a function of the engine axis (in m)
+
+    angulaire = [0]
+    ycanaux = [y_coord_avec_canaux[0] + wall_thickness[0]]  # y of wall on coolant side (matched with engine geometry)
+    for i in range(1, longc):
+        vect = (xcanaux[i] - xcanaux[i - 1]) / ((((y_coord_avec_canaux[i] - y_coord_avec_canaux[i - 1]) ** 2) +
+                                                  ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
+        angulaire.append(np.rad2deg(np.arccos(vect)))
+        """
+        newep = ycanaux[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
+        ycanaux.append(newep)
+        """
+        ycanaux.append(y_coord_avec_canaux[i] + wall_thickness[i] / vect)
+
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, y_coord_avec_canaux, color='chocolate', label='y on hot gas side')
+        plt.plot(xcanaux, ycanaux, color='blue', label='y on coolant side')
+        plt.title('y coordinate of wall as a function of the engine axis')
+        plt.legend(loc='lower left')
+        plt.show()
+
+    veritas = []
+    for i in range(0, longc):
+        verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
+                np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
+        veritas.append(verifepe)
+
+    if plot_detail >= 3:
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, veritas)
+        plt.title('Channel thickness verification')
+        plt.show()
+        
+        plt.figure(dpi=figure_dpi)
+        plt.plot(xcanaux, ycanaux, color='chocolate')
+        plt.title('Channel travel as a function of the engine axis (y of the cold wall)')
+        plt.show()
+
+    debit_volumique_canal = debit_volumique_total_cool / nbc  # Volumic flow rate in a channel
+
+
+    y_l = [lrg_inj, lrg_conv, lrg_col, lrg_tore]
+    larg_canal = [x for x in PchipInterpolator(x_interpolate, y_l)(xcanaux)]  # Width of a channel as a function of the engine axis (in m)
+    larg_ailette = [(ycanaux[i] * 2 * np.pi / nbc) - larg_canal[i] for i in range(0, longc)]  # Width of a rib as a function of the engine axis (in m)
+
+
+    y_h = [ht_inj, ht_conv, ht_col, ht_tore]
+    ht_canal = [x for x in PchipInterpolator(x_interpolate, y_h)(xcanaux)]  # Height of a channel as a function of the engine axis (in m)
+
     area_channel = []  # Area of a channel as a function of the engine axis (m²)
     vitesse_coolant = []  # Velocity of coolant in a channel as a function of the engine axis (m/s)
     for i in range(0, longc):

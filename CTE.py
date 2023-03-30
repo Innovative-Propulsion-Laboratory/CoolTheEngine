@@ -15,7 +15,7 @@ import cte_tools as t
 from main_solver import mainsolver
 
 # Data
-from Canaux import canaux
+from Canaux import canaux_library
 
 # Graphics
 from heatequationsolve import carto2D
@@ -124,12 +124,14 @@ while y1 == y2:  # Read y values two per two in order to detect the beginning of
     y1 = y_coord_list[i_conv]
     i_conv += 1
     y2 = y_coord_list[i_conv]
+i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
 
+"""
 # Gamma in the cylindrical chamber
 gamma_list = [gamma_c_input for i in range(0, i_conv)]  # Gamma is constant before the beginning of the convergent
 
 # Gamma in the convergent
-i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
+
 gamma_convergent = gamma_c_input
 for m in range(-1, i_throat - i_conv - 1):
     # Linear interpolation between beginning and end of convergent:
@@ -144,6 +146,10 @@ for q in range(-1, nb_points - i_throat - 1):  # Linear interpolation between be
     gamma_divergent += ((gamma_e_input - gamma_t_input) / (x_coord_list[-1] - x_coord_list[i_throat])) * abs(
         x_coord_list[i_throat + 1 + q] - x_coord_list[i_throat + q])
     gamma_list.append(gamma_divergent)
+"""
+x_given = [x_coord_list[0], x_coord_list[i_conv], x_coord_list[i_throat], x_coord_list[-1]]
+gamma_given = [gamma_c_input, gamma_c_input, gamma_t_input, gamma_e_input]
+gamma_list = [x for x in np.interp(x_coord_list, x_given, gamma_given)]
 
 # Plot of the gamma linearisation
 if plot_detail >= 3:
@@ -325,7 +331,7 @@ coeffs = (n1, n2, n3, n4, n5, n6)
 
 # Compute dimensions
 xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, y_coord_avec_canaux \
-    = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc, plot_detail,
+    = canaux_library(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc, plot_detail,
              write_in_csv, figure_dpi)
 
 # Write the dimensions of the channels in a CSV file
