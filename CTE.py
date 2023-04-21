@@ -44,7 +44,7 @@ input_CEA_data = "input/Viserion_2023.txt"  # Viserion's parameters (found with 
 size2 = 16  # Used for the height of the display in 3D view
 limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 1  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
+plot_detail = 3  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
 show_2D_temperature = True
 do_final_3d_plot = False
@@ -319,8 +319,7 @@ coeffs = (n1, n2, n3, n4, n5, n6)
 xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, \
 y_coord_avec_canaux \
     = canaux_library(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc,
-                     plot_detail,
-                     write_in_csv, figure_dpi)
+                     plot_detail, write_in_csv, figure_dpi)
 
 # Write the dimensions of the channels in a CSV file
 file_name = "output/channelvalue.csv"
@@ -729,7 +728,7 @@ if write_in_csv:
     geometry2_writer = csv.writer(geometry2)
     valuexport_writer.writerow(
         ("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma",
-         "Mach number", "Gas pressure", "Total pressure", "Gas static temperature",
+         "Mach number", "Gas pressure", "Gas recovery temperature",
          "Channels x axis", "Engine + chamber wall diameter", "Channels width",
          "Channels height", "Channels area", "Gas viscosity", "Cp gas",
          "Gas conductivity", "Prandtl gaz", "Coeff Hg", "Sigma", " Twg ", " Twl ",

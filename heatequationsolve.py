@@ -26,7 +26,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
     coord = []  # Coordinate of each point related to listing
     lenl = 0  # Length of the list "listing" that will be incremented in parallel with it
 
-    # Computation of the static_temperature at the surface of the hot wall
+    # Computation of the temperature at the surface of the hot wall
     listing.append([2, 3, 1, [-1, -1, npx_wall, 1]])
     lenl += 1
     coord.append([0, 0])
@@ -194,9 +194,9 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         tg_avg = f"{moyT_hotwall}" if len(f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
         tl_avg = f"{moyT_coolant}" if len(f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
         t_max = f"{maxT}" if len(f'{maxT}') == 4 else f" {maxT}"
-        print(f"█ Mean wall static_temperature at hot gaz side = {tg_avg} K                           █")
-        print(f"█ Mean wall static_temperature at coolant side = {tl_avg} K                           █")
-        print(f"█ Maximum static_temperature in the wall       = {t_max} K                           █")
+        print(f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
+        print(f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
+        print(f"█ Maximum temperature in the wall       = {t_max} K                           █")
         print("█                                                                          █")
 
         if legend_type == 1:
@@ -214,7 +214,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             a5 = 0.001
             a6 = -0.0005
 
-        title = "2D static_temperature distribution (in K)" + location
+        title = "2D temperature distribution (in K)" + location
         plt.figure(dpi=200)
         p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size,
                         cmap='rainbow')  # rainbow#prism#flag
