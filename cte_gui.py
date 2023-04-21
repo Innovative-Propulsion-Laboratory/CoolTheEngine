@@ -197,9 +197,9 @@ class InputsWin:
         save_name = simpledialog.askstring(
             "Input", "Save name :")
         if save_name != None and save_name != "":
-            file = open("save/"+str(save_name)+".scte", "w")
+            file = open("save/" + str(save_name) + ".scte", "w")
             for key, value in self.entry_dict.items():
-                file.write(str(key)+"$$"+str(value)+"\n")
+                file.write(str(key) + "$$" + str(value) + "\n")
             file.close()
             print("Settings has been saved")
 

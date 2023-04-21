@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type, location, return_temp):
+def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type,
+            location, return_temp):
     """
     This function compute temperature of each point of one wall and the rib next to it.
     It uses the finite difference method to solve that.
@@ -14,10 +15,10 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         - symetry : 0 if no symetry, 1 if left symetry, 2 if right symetry
         - [n, o, s, e] the position of neighboring points, if -1 : no point here
     """
-    npx_wall = round(larg_wall / (2 * dx) + 1)  # Number of point in the x axis at the wall
-    npy_wall = round(ep_wall / dx + 1)  # Number of point in the y axis at the wall
-    npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)  # Number of points in the x axis at the rib
-    npy_rib = round(ep_rib / dx)  # Number of point in the y axis at the rib
+    npx_wall = round(larg_wall / (2 * dx) + 1)  # Number of point in the x-axis at the wall
+    npy_wall = round(ep_wall / dx + 1)  # Number of point in the y-axis at the wall
+    npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)  # Number of points in the x-axis at the rib
+    npy_rib = round(ep_rib / dx)  # Number of point in the y-axis at the rib
     nb_point = npx_wall * npy_wall + npx_rib * npy_rib  # Number of point to compute
 
     # Definition of configuration type, orientation, symetry and index of surrounded points
@@ -25,7 +26,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
     coord = []  # Coordinate of each point related to listing
     lenl = 0  # Length of the list "listing" that will be incremented in parallel with it
 
-    # Computation of the temperature at the surface of the hot wall
+    # Computation of the static_temperature at the surface of the hot wall
     listing.append([2, 3, 1, [-1, -1, npx_wall, 1]])
     lenl += 1
     coord.append([0, 0])
@@ -56,9 +57,9 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         listing.append([3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_wall, -1]])
         lenl += 1
         coord.append([(npx_wall - 1) * dx, h * dx])
-    
+
     begin_coolant = lenl - 1
-    
+
     # Last raw of the wall
     listing.append([2, 1, 1, [lenl - npx_wall, -1, -1, lenl + 1]])
     lenl += 1
@@ -142,7 +143,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             a, b, c, d, x, plus = ct.cas3(h, dx, lamb, Tf, inv)
         elif listing[k][0] == 4:
             a, b, c, d, x, plus = ct.cas4(h, dx, lamb, Tf, inv)
-        else: # == 5
+        else:  # == 5
             a, b, c, d, x, plus = ct.cas5(h, dx, lamb, Tf, inv)
 
         # Orientation resolution
@@ -153,7 +154,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             coef = [b, c, d, a]
         elif listing[k][1] == 2:
             coef = [c, d, a, b]
-        else: # == 3
+        else:  # == 3
             coef = [d, a, b, c]
 
         # Symetry resolution
@@ -186,15 +187,16 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
 
     if display:
         moyT_hotwall = round(sum(temperature[:npx_wall]) / npx_wall)
-        moyT_coolant = round(sum(temperature[begin_coolant-1:begin_coolant-1+int(npx_wall-npx_rib)]) / (npx_wall-npx_rib))
+        moyT_coolant = round(
+            sum(temperature[begin_coolant - 1:begin_coolant - 1 + int(npx_wall - npx_rib)]) / (npx_wall - npx_rib))
         maxT = round(max(temperature))
 
         tg_avg = f"{moyT_hotwall}" if len(f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
         tl_avg = f"{moyT_coolant}" if len(f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
         t_max = f"{maxT}" if len(f'{maxT}') == 4 else f" {maxT}"
-        print(f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
-        print(f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
-        print(f"█ Maximum temperature in the wall       = {t_max} K                           █")
+        print(f"█ Mean wall static_temperature at hot gaz side = {tg_avg} K                           █")
+        print(f"█ Mean wall static_temperature at coolant side = {tl_avg} K                           █")
+        print(f"█ Maximum static_temperature in the wall       = {t_max} K                           █")
         print("█                                                                          █")
 
         if legend_type == 1:
@@ -212,9 +214,10 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             a5 = 0.001
             a6 = -0.0005
 
-        title = "2D temperature distribution (in K)" + location
+        title = "2D static_temperature distribution (in K)" + location
         plt.figure(dpi=200)
-        p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size, cmap='rainbow')  # rainbow#prism#flag
+        p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size,
+                        cmap='rainbow')  # rainbow#prism#flag
         plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
         plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
         plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')

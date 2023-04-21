@@ -59,6 +59,7 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     ax.set_ylim(may + limitation, -may - limitation)
     ax.set_zlim(mas, mis)
     ax.view_init(15, 150)
+    ax.set_axis_off()
     plt.title(title, fontsize=25)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
 

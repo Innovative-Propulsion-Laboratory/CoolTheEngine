@@ -44,17 +44,16 @@ def temperature_hotgas_solv(mach_1, mach_2, temperature_1, gamma):
     return np.exp(part1 - part2 + part3)
 
 
-def tempcorrige(temp_original, gamma, mach):
+def tempcorrige_pempie(temp_original, gamma, mach):
     """
-    Correct the hot gas temperature using a correlation from [INSERT SOURCE]
+    Compute the recovery temperature (adiabatic wall temperature) [P. Pempie]
     """
 
     Pr = 4 * gamma / (9 * gamma - 5)
-    temp_corrected = temp_original * (1 + (Pr ** 0.33) * (
-            (gamma - 1) / gamma) * mach ** 2) / (1 + (
-            (gamma - 1) / gamma) * mach ** 2)
+    recovery_temp = temp_original * (
+            (1 + (Pr ** 0.33) * ((gamma - 1) / 2) * mach ** 2) / (1 + ((gamma - 1) / 2) * mach ** 2))
 
-    return temp_corrected
+    return recovery_temp
 
 
 def conductivity(Twg: float, Twl: float, material_name: str):

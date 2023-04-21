@@ -57,7 +57,7 @@ class MainProcess:
         # Y coordinates of the Viserion
         y_coords_filename = f"input/{mesh_size}/y.txt"
         # Viserion's parameters (found with CEA)
-        input_CEA_data = "input/"+entry_dict["input_CEA_data"]
+        input_CEA_data = "input/" + entry_dict["input_CEA_data"]
 
         # Constant input_data_list
         size2 = 16  # Used for the height of the display in 3D view
@@ -171,7 +171,8 @@ class MainProcess:
         for m in range(-1, i_throat - i_conv - 1):
             # Linear interpolation between beginning and end of convergent:
             # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
-            gamma_convergent += ((gamma_t_input - gamma_c_input) / (x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
+            gamma_convergent += ((gamma_t_input - gamma_c_input) / (
+                    x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
                 x_coord_list[i_conv + 1 + m] - x_coord_list[i_conv + m])
             gamma_list.append(gamma_convergent)
 
@@ -200,15 +201,16 @@ class MainProcess:
         mach_list = [mach_init_gas]
 
         # Mach number computations along the engine
-        """with tqdm(total=nb_points - 1,
-                desc="█ Computing mach number        ",
-                unit="|   █", bar_format="{l_bar}{bar}{unit}",
-                ncols=76) as progressbar:
-            for i in range(0, nb_points - 1):
-                mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                                    mach_gas, gamma_list[i])
-                mach_list.append(mach_gas)
-                progressbar.update(1)"""
+
+        # with tqdm(total=nb_points - 1,
+        #           desc="█ Computing mach number        ",
+        #           unit="|   █", bar_format="{l_bar}{bar}{unit}",
+        #           ncols=76) as progressbar:
+        #     for i in range(0, nb_points - 1):
+        #         mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
+        #                                mach_gas, gamma_list[i])
+        #         mach_list.append(mach_gas)
+        #         progressbar.update(1)
         print(
             "█ Computing mach number                                                    █")
         for i in range(0, nb_points - 1):
@@ -234,15 +236,15 @@ class MainProcess:
         # %% Static pressure computation
         pressure_list = [Pc]  # (in Pa)
 
-        """with tqdm(total=nb_points - 1,
-                desc="█ Computing static pressure    ",
-                unit="|   █", bar_format="{l_bar}{bar}{unit}",
-                ncols=76) as progressbar:
-            for i in range(0, nb_points - 1):
-                pressure = t.pressure_solv(
-                    mach_list[i], mach_list[i + 1], pressure_list[i], gamma_list[i])
-                pressure_list.append(pressure)
-                progressbar.update(1)"""
+        # with tqdm(total=nb_points - 1,
+        #           desc="█ Computing static pressure    ",
+        #           unit="|   █", bar_format="{l_bar}{bar}{unit}",
+        #           ncols=76) as progressbar:
+        #     for i in range(0, nb_points - 1):
+        #         pressure = t.pressure_solv(
+        #             mach_list[i], mach_list[i + 1], pressure_list[i], gamma_list[i])
+        #         pressure_list.append(pressure)
+        #         progressbar.update(1)
         print(
             "█ Computing static pressure                                                █")
         for i in range(0, nb_points - 1):
@@ -272,11 +274,11 @@ class MainProcess:
 
         # Value of the molar fraction of the H20 after interpolation
         Molfrac_H2O = np.interp(x_coord_list, x_Molfrac, [
-                                xH2O_c_input, xH2O_t_input, xH2O_e_input])
+            xH2O_c_input, xH2O_t_input, xH2O_e_input])
 
         # Value of the molar fraction of the CO2 after interpolation
         Molfrac_CO2 = np.interp(x_coord_list, x_Molfrac, [
-                                xCO2_c_input, xCO2_t_input, xCO2_e_input])
+            xCO2_c_input, xCO2_t_input, xCO2_e_input])
 
         PH2O_list = [pressure_list[i] * Molfrac_H2O[i]
                      for i in range(0, nb_points)]  # Partial pressure of the H2O
@@ -302,24 +304,24 @@ class MainProcess:
 
         # %% Hot gas temperature computation
         hotgas_temp_list = [Tc]
-        """with tqdm(total=nb_points - 1,
-                desc="█ Computing gas temperature    ",
-                unit="|   █", bar_format="{l_bar}{bar}{unit}",
-                ncols=76) as progressbar:
-            for i in range(0, nb_points - 1):
-                temperature = t.temperature_hotgas_solv(
-                    mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
-                hotgas_temp_list.append(temperature)
-                progressbar.update(1)"""
+        # with tqdm(total=nb_points - 1,
+        #           desc="█ Computing gas static_temperature    ",
+        #           unit="|   █", bar_format="{l_bar}{bar}{unit}",
+        #           ncols=76) as progressbar:
+        #     for i in range(0, nb_points - 1):
+        #         static_temperature = t.temperature_hotgas_solv(
+        #             mach_list[i], mach_list[i + 1], hotgas_recovery_temp_list[i], gamma_list[i])
+        #         hotgas_recovery_temp_list.append(static_temperature)
+        #         progressbar.update(1)
         print(
-            "█ Computing gas temperature                                                █")
+            "█ Computing gas static_temperature                                                █")
         for i in range(0, nb_points - 1):
             temperature = t.temperature_hotgas_solv(
                 mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
             hotgas_temp_list.append(temperature)
 
         # List of corrected gas temperatures (max diff with original is about 75 K)
-        hotgas_temp_list = [t.tempcorrige(hotgas_temp_list[i], gamma_list[i], mach_list[i]) for i in
+        hotgas_temp_list = [t.tempcorrige_pempie(hotgas_temp_list[i], gamma_list[i], mach_list[i]) for i in
                             range(0, nb_points)]
 
         # Plots of the temperature in the engine (2D/3D)
@@ -334,7 +336,8 @@ class MainProcess:
             inv = 1, 1, 1  # 1 means should be reversed
             print(
                 "█ Plotting 3D graph                                                        █")
-            view3d(inv, x_coord_list, y_coord_list, hotgas_temp_list, colormap, 'Temperature of the gases (in K)', size2,
+            view3d(inv, x_coord_list, y_coord_list, hotgas_temp_list, colormap, 'Temperature of the gases (in K)',
+                   size2,
                    limitation)
 
         # %% Dimensions
@@ -407,19 +410,20 @@ class MainProcess:
         coeffs = (n1, n2, n3, n4, n5, n6)
 
         # Compute dimensions
-        xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, y_coord_avec_canaux \
-            = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc, plot_detail,
-                     write_in_csv, figure_dpi)
+        xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, \
+        y_coord_avec_canaux \
+            = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc,
+                     plot_detail, write_in_csv, figure_dpi)
 
         # Write the dimensions of the channels in a CSV file
         file_name = "output/channelvalue.csv"
         with open(file_name, "w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(("Engine x", "Engine y", "y coolant wall", "Channel width", "Rib width",
-                            "Channel height", "Chamber wall thickness", "Channel area"))
+                             "Channel height", "Chamber wall thickness", "Channel area"))
             for i in range(0, nb_points_channel):
                 writer.writerow((xcanaux[i], y_coord_avec_canaux[i], ycanaux[i], larg_canal[i], larg_ailette_list[i],
-                                ht_canal[i], wall_thickness[i], area_channel[i]))
+                                 ht_canal[i], wall_thickness[i], area_channel[i]))
 
         end_init_time = time.perf_counter()  # End of the initialisation timer
         # Initialisation elapsed time (in s)
@@ -481,11 +485,11 @@ class MainProcess:
 
         # Call the main solving loop
         hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
-            hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
-            sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
-            condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
-            pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
-            qRad_list, q_list_CO2, q_list_H2O \
+        hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
+        sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
+        condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
+        pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
+        qRad_list, q_list_CO2, q_list_H2O \
             = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
         end_m = time.perf_counter()  # End of the main solution timer
@@ -649,8 +653,8 @@ class MainProcess:
         if plot_detail >= 2 and show_3d_plots:
             colormap = plt.cm.magma
             inv = 0, 0, 0  # 1 means should be reversed
-            view3d(inv, xcanaux, ycanaux, coldwall_temp_list, colormap, "Wall temperature on the gas side (in K)", size2,
-                   limitation)
+            view3d(inv, xcanaux, ycanaux, coldwall_temp_list, colormap,
+                   "Wall temperature on the gas side (in K)", size2, limitation)
 
         if plot_detail >= 1:
             end_d1 = time.perf_counter()  # End of the display of 1D timer
@@ -677,7 +681,8 @@ class MainProcess:
             dx = 0.00004  # *3.5
             location = " at the beginning of the chamber"
             carto2D(larg_ailette_list[-1] + larg_canal[-1], larg_canal[-1], e_conv, ht_canal[-1], dx, hg_list[-1],
-                    wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1, location, False)
+                    wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1, location,
+                    False)
 
             # At the throat
             print(
@@ -694,7 +699,8 @@ class MainProcess:
             dx = 0.00004
             location = " at the manifold"
             carto2D(larg_ailette_list[0] + larg_canal[0], larg_canal[0], e_tore, ht_canal[0], dx, hg_list[0],
-                    wallcond_list[0], hotgas_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location, False)
+                    wallcond_list[0], hotgas_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location,
+                    False)
 
             end_d2 = time.perf_counter()  # End of the display of 2D timer
             # 2D display elapsed time (in s)
@@ -723,7 +729,8 @@ class MainProcess:
                     ncols=76) as progressbar:
                 for i in range(0, nb_points_channel):
                     temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i], larg_canal[i], wall_thickness[i],
-                                                ht_canal[i], dx, hg_list[i], wallcond_list[i], hotgas_temp_list[i],
+                                                ht_canal[i], dx, hg_list[i], wallcond_list[i], 
+                                                hotgas_recovery_temp_list[i],
                                                 hlnormal_list[i], tempcoolant_list[i], 3, False, 1, "", True)
                     temperature_slice_list.append(temperature_slice)
                     progressbar.update(1)"""
@@ -849,7 +856,7 @@ class MainProcess:
             geometry2_writer = csv.writer(geometry2)
             valuexport_writer.writerow(
                 ("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma",
-                 "Mach number", "Gas pressure", "Total pressure", "Gas temperature",
+                 "Mach number", "Gas pressure", "Total pressure", "Gas static temperature",
                  "Channels x axis", "Engine + chamber wall diameter", "Channels width",
                  "Channels height", "Channels area", "Gas viscosity", "Cp gas",
                  "Gas conductivity", "Prandtl gaz", "Coeff Hg", "Sigma", " Twg ", " Twl ",
@@ -962,10 +969,8 @@ class MainProcess:
 gui = cte_gui.MainGUI(MainProcess)
 gui.title("CTE")
 
-
 """input_class = cte_gui.InputsWin()
 entry_dict = input_class.entry_dict"""
-
 
 # runprocess = cte_gui.Run(MainProcess)
 
@@ -974,7 +979,6 @@ print("████████████████████████�
 print("█                                                                          █")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█__________________________________________________________________________█")
-
 
 while True:
     try:

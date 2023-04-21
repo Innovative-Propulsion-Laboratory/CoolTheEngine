@@ -46,7 +46,7 @@ limitation = 0.05  # used to build the scales in 3D view
 figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
 plot_detail = 1  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
 show_3d_plots = False
-show_2D_temperature = False
+show_2D_temperature = True
 do_final_3d_plot = False
 write_in_csv = True
 
@@ -126,27 +126,6 @@ while y1 == y2:  # Read y values two per two in order to detect the beginning of
     y2 = y_coord_list[i_conv]
 i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
 
-"""
-# Gamma in the cylindrical chamber
-gamma_list = [gamma_c_input for i in range(0, i_conv)]  # Gamma is constant before the beginning of the convergent
-
-# Gamma in the convergent
-
-gamma_convergent = gamma_c_input
-for m in range(-1, i_throat - i_conv - 1):
-    # Linear interpolation between beginning and end of convergent:
-    # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
-    gamma_convergent += ((gamma_t_input - gamma_c_input) / (x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
-        x_coord_list[i_conv + 1 + m] - x_coord_list[i_conv + m])
-    gamma_list.append(gamma_convergent)
-
-# Gamma in the divergent nozzle
-gamma_divergent = gamma_t_input
-for q in range(-1, nb_points - i_throat - 1):  # Linear interpolation between beginning and end of divergent
-    gamma_divergent += ((gamma_e_input - gamma_t_input) / (x_coord_list[-1] - x_coord_list[i_throat])) * abs(
-        x_coord_list[i_throat + 1 + q] - x_coord_list[i_throat + q])
-    gamma_list.append(gamma_divergent)
-"""
 x_given = [x_coord_list[0], x_coord_list[i_conv], x_coord_list[i_throat], x_coord_list[-1]]
 gamma_given = [gamma_c_input, gamma_c_input, gamma_t_input, gamma_e_input]
 gamma_list = [x for x in np.interp(x_coord_list, x_given, gamma_given)]
@@ -244,51 +223,58 @@ if plot_detail >= 3:
     plt.show()
 
 # %% Hot gas temperature computation
-hotgas_temp_list = [Tc]
+hotgas_static_temp_list = [Tc]
 with tqdm(total=nb_points - 1,
-          desc="█ Computing gas temperature    ",
+          desc="█ Computing gas static_temperature    ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        temperature = t.temperature_hotgas_solv(mach_list[i], mach_list[i + 1], hotgas_temp_list[i], gamma_list[i])
-        hotgas_temp_list.append(temperature)
+        static_temperature = t.temperature_hotgas_solv(mach_list[i], mach_list[i + 1],
+                                                       hotgas_static_temp_list[i], gamma_list[i])
+        hotgas_static_temp_list.append(static_temperature)
         progressbar.update(1)
 
-# List of corrected gas temperatures (max diff with original is about 75 K)
-hotgas_temp_list = [t.tempcorrige(hotgas_temp_list[i], gamma_list[i], mach_list[i]) for i in
-                    range(0, nb_points)]
+    # We assume that the total temperature is constant
+    hotgas_total_temp_list = [Tc for i in range(nb_points)]
 
-# Plots of the temperature in the engine (2D/3D)
+# List of corrected gas temperatures (max diff with original is about 75 K)
+hotgas_recovery_temp_list = [t.tempcorrige_pempie(hotgas_total_temp_list[i], gamma_list[i], mach_list[i]) for i in
+                             range(0, nb_points)]
+
+# Plots of the temperatures in the engine (2D/3D)
 if plot_detail >= 2:
     plt.figure(dpi=figure_dpi)
-    plt.plot(x_coord_list, hotgas_temp_list, color='gold')
+    plt.plot(x_coord_list, hotgas_static_temp_list, label="Static temperature")
+    plt.plot(x_coord_list, hotgas_total_temp_list, label="Total temperature")
+    plt.plot(x_coord_list, hotgas_recovery_temp_list, label="Static temperature")
     plt.title("Gas temperature (in K) as a function of the engine axis")
+    plt.legend()
     plt.show()
 
 if plot_detail >= 2 and show_3d_plots:
     colormap = plt.cm.coolwarm
     inv = 1, 1, 1  # 1 means should be reversed
     print("█ Plotting 3D graph                                                        █")
-    view3d(inv, x_coord_list, y_coord_list, hotgas_temp_list, colormap, 'Temperature of the gases (in K)', size2,
-           limitation)
+    view3d(inv, x_coord_list, y_coord_list, hotgas_recovery_temp_list, colormap,
+           'Temperature of the gases (in K)', size2, limitation)
 
 # %% Dimensions
 print("█ Computing channel geometric                                              █")
 print("█                                                                          █")
 
-nbc = 40  # Number of channels
+nbc = 72  # Number of channels
 manifold_pos = 0.104  # Position of the manifold from the throat (in m)
 
 # Widths
-lrg_inj = 0.0045  # Width of the channel in at the injection plate (in m)
-lrg_conv = 0.0025  # Width of the channel at the end of the cylindrical chamber (in m)
-lrg_col = 0.0015  # Width of the channel in the throat (in m)
+lrg_inj = 0.0022  # Width of the channel in at the injection plate (in m)
+lrg_conv = 0.002  # Width of the channel at the end of the cylindrical chamber (in m)
+lrg_col = 0.0014  # Width of the channel in the throat (in m)
 lrg_tore = 0.002  # Width of the channel at the manifold (in m)
 
 # Heights
 ht_inj = 0.002  # Height of the channel at the injection plate (in m)
 ht_conv = 0.002  # Height of the channel at the end of the cylindrical chamber (in m)
-ht_col = 0.0015  # Height of the channel in the throat (in m)
+ht_col = 0.0018  # Height of the channel in the throat (in m)
 ht_tore = 0.002  # Height of the channel at the manifold (in m)
 
 # Thickness
@@ -330,9 +316,11 @@ thicknesses = (e_conv, e_col, e_tore)
 coeffs = (n1, n2, n3, n4, n5, n6)
 
 # Compute dimensions
-xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, y_coord_avec_canaux \
-    = canaux_library(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc, plot_detail,
-             write_in_csv, figure_dpi)
+xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, \
+y_coord_avec_canaux \
+    = canaux_library(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc,
+                     plot_detail,
+                     write_in_csv, figure_dpi)
 
 # Write the dimensions of the channels in a CSV file
 file_name = "output/channelvalue.csv"
@@ -368,7 +356,7 @@ y_coord_avec_canaux.reverse()
 # We reverse the lists in order to calculate from the manifold to the injection
 
 # Save the data for exporting, before altering the original lists
-hotgas_temperature_saved = hotgas_temp_list[:]
+hotgas_temperature_saved = hotgas_recovery_temp_list[:]
 aire_saved = cross_section_area_list[:]
 mach_list_saved = mach_list[:]
 gamma_saved = gamma_list[:]
@@ -376,7 +364,7 @@ PH2O_list_saved = PH2O_list[:]
 PCO2_list_saved = PCO2_list[:]
 
 # Remove the data points before the manifold
-hotgas_temp_list = hotgas_temp_list[:nb_points_channel]
+hotgas_recovery_temp_list = hotgas_recovery_temp_list[:nb_points_channel]
 cross_section_area_list = cross_section_area_list[:nb_points_channel]
 mach_list = mach_list[:nb_points_channel]
 gamma_list = gamma_list[:nb_points_channel]
@@ -386,13 +374,13 @@ PCO2_list = PCO2_list[:nb_points_channel]
 gamma_list.reverse()
 mach_list.reverse()
 cross_section_area_list.reverse()
-hotgas_temp_list.reverse()
+hotgas_recovery_temp_list.reverse()
 PH2O_list.reverse()
 PCO2_list.reverse()
 
 # %% Main computation
 
-data_hotgas = (hotgas_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O_list, PCO2_list)
+data_hotgas = (hotgas_recovery_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O_list, PCO2_list)
 data_coolant = (Temp_cool_init, Pressure_cool_init, fluid, debit_mass_coolant)
 data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
                 wall_thickness, area_channel, nb_points_channel)
@@ -583,7 +571,9 @@ if show_2D_temperature:
     dx = 0.00004  # *3.5
     location = " at the beginning of the chamber"
     carto2D(larg_ailette_list[-1] + larg_canal[-1], larg_canal[-1], e_conv, ht_canal[-1], dx, hg_list[-1],
-            wallcond_list[-1], hotgas_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1, location, False)
+            wallcond_list[-1], hotgas_recovery_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1,
+            location,
+            False)
 
     # At the throat
     print("█ Results at the throat :                                                  █")
@@ -591,14 +581,15 @@ if show_2D_temperature:
     dx = 0.000025  # *3.5
     location = " at the throat"
     carto2D(larg_ailette_list[pos_col] + larg_canal[pos_col], larg_canal[pos_col], e_col, ht_canal[pos_col],
-            dx, hg_list[pos_col], wallcond_list[pos_col], hotgas_temp_list[pos_col], hlcor_list[pos_col],
+            dx, hg_list[pos_col], wallcond_list[pos_col], hotgas_recovery_temp_list[pos_col], hlcor_list[pos_col],
             tempcoolant_list[pos_col], 15, True, 2, location, False)
     # At the end of the divergent
     print("█ Results at the manifold :                                                █")
     dx = 0.00004
     location = " at the manifold"
     carto2D(larg_ailette_list[0] + larg_canal[0], larg_canal[0], e_tore, ht_canal[0], dx, hg_list[0],
-            wallcond_list[0], hotgas_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location, False)
+            wallcond_list[0], hotgas_recovery_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location,
+            False)
 
     end_d2 = time.perf_counter()  # End of the display of 2D timer
     time_elapsed = f"{round(end_d2 - start_d2, 2)}"  # 2D display elapsed time (in s)
@@ -626,7 +617,7 @@ if do_final_3d_plot:
               ncols=76) as progressbar:
         for i in range(0, nb_points_channel):
             temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i], larg_canal[i], wall_thickness[i],
-                                        ht_canal[i], dx, hg_list[i], wallcond_list[i], hotgas_temp_list[i],
+                                        ht_canal[i], dx, hg_list[i], wallcond_list[i], hotgas_recovery_temp_list[i],
                                         hlnormal_list[i], tempcoolant_list[i], 3, False, 1, "", True)
             temperature_slice_list.append(temperature_slice)
             progressbar.update(1)
@@ -653,7 +644,7 @@ start_e = time.perf_counter()  # Start of the end timer
 cross_section_area_list.reverse()
 gamma_list.reverse()
 mach_list.reverse()
-hotgas_temp_list.reverse()
+hotgas_recovery_temp_list.reverse()
 xcanaux.reverse()
 ycanaux.reverse()
 larg_canal.reverse()
@@ -738,7 +729,7 @@ if write_in_csv:
     geometry2_writer = csv.writer(geometry2)
     valuexport_writer.writerow(
         ("Engine x axix", "Engine diameter", "Area of gas engine", "Gas gamma",
-         "Mach number", "Gas pressure", "Total pressure", "Gas temperature",
+         "Mach number", "Gas pressure", "Total pressure", "Gas static temperature",
          "Channels x axis", "Engine + chamber wall diameter", "Channels width",
          "Channels height", "Channels area", "Gas viscosity", "Cp gas",
          "Gas conductivity", "Prandtl gaz", "Coeff Hg", "Sigma", " Twg ", " Twl ",
