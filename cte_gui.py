@@ -648,8 +648,8 @@ class MainGUI(tk.Tk):
         self.info.grid_columnconfigure(0, weight=1)
         self.info.grid_columnconfigure(1, weight=1)
 
-        tk.Label(self.info, text="CTE GUI - In development   © IPL").grid(row=0,
-                                                                          column=0, sticky="w")
+        tk.Label(self.info, text="CTE - V2.0.0   © IPL").grid(row=0,
+                                                              column=0, sticky="w")
 
         tk.Button(self.info, text="Run", command=self.run_button_pressed).grid(
             row=0, column=1, sticky="e")
