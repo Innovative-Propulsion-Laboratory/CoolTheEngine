@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type,
-            location, return_temp):
+            location, return_temp, plot_save=None):
     """
     This function compute temperature of each point of one wall and the rib next to it.
     It uses the finite difference method to solve that.
@@ -15,9 +15,12 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         - symetry : 0 if no symetry, 1 if left symetry, 2 if right symetry
         - [n, o, s, e] the position of neighboring points, if -1 : no point here
     """
-    npx_wall = round(larg_wall / (2 * dx) + 1)  # Number of point in the x-axis at the wall
-    npy_wall = round(ep_wall / dx + 1)  # Number of point in the y-axis at the wall
-    npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)  # Number of points in the x-axis at the rib
+    npx_wall = round(larg_wall / (2 * dx) +
+                     1)  # Number of point in the x-axis at the wall
+    # Number of point in the y-axis at the wall
+    npy_wall = round(ep_wall / dx + 1)
+    # Number of points in the x-axis at the rib
+    npx_rib = round(((larg_wall - larg_channel) / (2 * dx)) + 1)
     npy_rib = round(ep_rib / dx)  # Number of point in the y-axis at the rib
     nb_point = npx_wall * npy_wall + npx_rib * npy_rib  # Number of point to compute
 
@@ -43,7 +46,8 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
 
     # Computation of raws in the wall
     for h in range(1, npy_wall - 1):
-        listing.append([3, 0, 1, [lenl - npx_wall, -1, lenl + npx_wall, lenl + 1]])
+        listing.append(
+            [3, 0, 1, [lenl - npx_wall, -1, lenl + npx_wall, lenl + 1]])
         lenl += 1
         coord.append([0, h * dx])
         for i in range(1, npx_wall - 1):
@@ -54,7 +58,8 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             listing.append([3, 0, 0, [n, o, s, e]])
             lenl += 1
             coord.append([i * dx, h * dx])
-        listing.append([3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_wall, -1]])
+        listing.append(
+            [3, 0, 2, [lenl - npx_wall, lenl - 1, lenl + npx_wall, -1]])
         lenl += 1
         coord.append([(npx_wall - 1) * dx, h * dx])
 
@@ -92,7 +97,8 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
 
     # Computation of raws in the rib
     for h in range(1, npy_rib):
-        listing.append([2, 2, 0, [lenl - npx_rib, -1, lenl + npx_rib, lenl + 1]])
+        listing.append(
+            [2, 2, 0, [lenl - npx_rib, -1, lenl + npx_rib, lenl + 1]])
         lenl += 1
         coord.append([(npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
         for i in range(1, npx_rib - 1):
@@ -102,10 +108,13 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             e = lenl + 1
             listing.append([3, 0, 0, [n, o, s, e]])
             lenl += 1
-            coord.append([(i + npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
-        listing.append([3, 0, 2, [lenl - npx_rib, lenl - 1, lenl + npx_rib, -1]])
+            coord.append([(i + npx_wall - npx_rib) *
+                         dx, (h + npy_wall - 1) * dx])
+        listing.append(
+            [3, 0, 2, [lenl - npx_rib, lenl - 1, lenl + npx_rib, -1]])
         lenl += 1
-        coord.append([(npx_rib - 1 + npx_wall - npx_rib) * dx, (h + npy_wall - 1) * dx])
+        coord.append([(npx_rib - 1 + npx_wall - npx_rib)
+                     * dx, (h + npy_wall - 1) * dx])
 
     # Last raw of the rib
     listing.append([4, 0, 0, [lenl - npx_rib, -1, -1, lenl + 1]])
@@ -117,10 +126,12 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         e = lenl + 1
         listing.append([5, 0, 0, [n, o, -1, e]])
         lenl += 1
-        coord.append([(i + npx_wall - npx_rib) * dx, (npy_rib + npy_wall - 1) * dx])
+        coord.append([(i + npx_wall - npx_rib) * dx,
+                     (npy_rib + npy_wall - 1) * dx])
     listing.append([5, 0, 2, [lenl - npx_rib, lenl - 1, -1, -1]])
     lenl += 1
-    coord.append([(npx_rib - 1 + npx_wall - npx_rib) * dx, (npy_rib + npy_wall - 1) * dx])
+    coord.append([(npx_rib - 1 + npx_wall - npx_rib)
+                 * dx, (npy_rib + npy_wall - 1) * dx])
 
     # Invertible matrix solving
     reso = np.zeros(shape=(nb_point, nb_point))
@@ -191,13 +202,19 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             sum(temperature[begin_coolant - 1:begin_coolant - 1 + int(npx_wall - npx_rib)]) / (npx_wall - npx_rib))
         maxT = round(max(temperature))
 
-        tg_avg = f"{moyT_hotwall}" if len(f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
-        tl_avg = f"{moyT_coolant}" if len(f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
+        tg_avg = f"{moyT_hotwall}" if len(
+            f'{moyT_hotwall}') == 4 else f" {moyT_hotwall}"
+        tl_avg = f"{moyT_coolant}" if len(
+            f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
         t_max = f"{maxT}" if len(f'{maxT}') == 4 else f" {maxT}"
-        print(f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
-        print(f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
-        print(f"█ Maximum temperature in the wall       = {t_max} K                           █")
-        print("█                                                                          █")
+        print(
+            f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
+        print(
+            f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
+        print(
+            f"█ Maximum temperature in the wall       = {t_max} K                           █")
+        print(
+            "█                                                                          █")
 
         if legend_type == 1:
             a1 = 0.003
@@ -218,13 +235,20 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         plt.figure(dpi=200)
         p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size,
                         cmap='rainbow')  # rainbow#prism#flag
-        plt.text(a1, a2, 'Rib', horizontalalignment='center', verticalalignment='center')
-        plt.text(a3, a4, 'Coolant', horizontalalignment='center', verticalalignment='center')
-        plt.text(a5, a6, 'Wall', horizontalalignment='center', verticalalignment='center')
+        plt.text(a1, a2, 'Rib', horizontalalignment='center',
+                 verticalalignment='center')
+        plt.text(a3, a4, 'Coolant', horizontalalignment='center',
+                 verticalalignment='center')
+        plt.text(a5, a6, 'Wall', horizontalalignment='center',
+                 verticalalignment='center')
         plt.title(title, fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=0.4, aspect=15)
-        plt.show()
+        if plot_save is not None:
+            plt.savefig(f"{plot_save}/2D temperature/{location}")
+            plt.close()
+        else:
+            plt.show()
 
     if return_temp:
         return [t for t in temperature[:npx_wall]]

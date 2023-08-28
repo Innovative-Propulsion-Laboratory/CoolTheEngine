@@ -8,9 +8,16 @@ Created on Tue Apr 13 17:37:58 2021
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import os
 
 
-def carto3d(inv, x, y, mesure, col, title, number, limitation):
+def carto3d(inv, x, y, mesure, col, title, number, limitation, plot_dir=None):
+
+    if plot_dir is not None:
+        plot_dir = os.path.join(plot_dir, "3D plot")
+        if not os.path.exists(plot_dir) and not os.path.isdir(plot_dir):
+            os.mkdir(plot_dir)
+
     if inv[0] == 1:
         x.reverse()
     if inv[1] == 1:
@@ -32,7 +39,8 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
             for k in range(0, number):
                 theta = [k * (2 * np.pi / number)]
                 for j in range(0, len(mesure[i]) - 1):
-                    the = theta[j] + (2 * np.pi / (number * len(mesure[i] * 2)))
+                    the = theta[j] + \
+                        (2 * np.pi / (number * len(mesure[i] * 2)))
                     theta.append(the)
 
                 eh = 0
@@ -64,7 +72,11 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
 
     print("█ Showing real 3D plot                                                     █")
-    plt.show()
+    if plot_dir is not None:
+        plt.savefig(f"{plot_dir}/{title}.png")
+        plt.close()
+    else:
+        plt.show()
 
     # # Removed because it seems useless
     # if inv[0] == 1:
@@ -75,7 +87,12 @@ def carto3d(inv, x, y, mesure, col, title, number, limitation):
     #     mesure.reverse()
 
 
-def view3d(inv, x, y, mesure, col, title, size2, limitation):
+def view3d(inv, x, y, mesure, col, title, size2, limitation, plot_dir=None):
+
+    if plot_dir is not None:
+        plot_dir = os.path.join(plot_dir, "3D plot")
+        if not os.path.exists(plot_dir) and not os.path.isdir(plot_dir):
+            os.mkdir(plot_dir)
     if inv[0] == 1:
         x.reverse()
     if inv[1] == 1:
@@ -83,15 +100,18 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
     if inv[2] == 1:
         mesure.reverse()
 
-    fig = plt.figure(figsize=(10, size2), dpi=200)  # figsize=(float, float) : width, height in inches
+    # figsize=(float, float) : width, height in inches
+    fig = plt.figure(figsize=(10, size2), dpi=200)
     ax = fig.add_subplot(111, projection='3d')
     xu = []  # List of x position of points (vertical)
     yu = []  # List of y position of points
     zu = []  # List of z position of points
     cu = []  # List of mesure on each point
-    theta = np.linspace(0, 2 * np.pi, 100)  # List of angles in order to make a whole circle
+    # List of angles in order to make a whole circle
+    theta = np.linspace(0, 2 * np.pi, 100)
 
-    for i in range(0, len(x), 3):  # step=3 to reduce computation time (this doesn't reduce quality much)
+    # step=3 to reduce computation time (this doesn't reduce quality much)
+    for i in range(0, len(x), 3):
         for j in range(0, len(theta)):
             yu.append(y[i] * np.cos(theta[j]))
             zu.append(y[i] * np.sin(theta[j]))
@@ -109,7 +129,11 @@ def view3d(inv, x, y, mesure, col, title, size2, limitation):
     ax.view_init(15, 150)
     fig.colorbar(p, ax=ax, shrink=0.4, aspect=15)
     plt.title(title, fontsize=25)
-    plt.show()
+    if plot_dir is not None:
+        plt.savefig(f"{plot_dir}/{title}.png")
+        plt.close()
+    else:
+        plt.show()
 
     if inv[0] == 1:
         x.reverse()

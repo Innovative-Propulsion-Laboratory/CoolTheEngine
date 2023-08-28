@@ -6,6 +6,7 @@ Created on Sat Dec 19 21:46:19 2020
 """
 import numpy as np
 import csv
+import os
 import matplotlib.pyplot as plt
 from scipy.interpolate import PchipInterpolator
 
@@ -103,12 +104,16 @@ from scipy.interpolate import PchipInterpolator
 
 
 def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
-           tore_pos, debit_volumique_total_cool, nbc, plot_detail, write_in_csv, figure_dpi):
+           tore_pos, debit_volumique_total_cool, nbc, plot_detail, write_in_csv, figure_dpi, plot_dir=None):
     """
     This function computes the caracteristics of channels on each point
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
     throat (col) and extremity of the nozzle (div).
     """
+    if plot_detail >= 1 and plot_dir is not None:
+        plot_dir = os.path.join(plot_dir, "Channels")
+        if not os.path.exists(plot_dir) and not os.path.isdir(plot_dir):
+            os.mkdir(plot_dir)
 
     x_value, y_value = profile_data
     lrg_inj, lrg_conv, lrg_col, lrg_tore = width_data
@@ -116,8 +121,10 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     e_conv, e_col, e_tore = thickness_data
     n1, n2, n3, n4, n5, n6 = coefficients
 
-    xcanaux = []  # List of x where there are channels (before the manifold) (in m)
-    y_coord_avec_canaux = []  # List of y where there are channels (before the manifold) (in m)
+    # List of x where there are channels (before the manifold) (in m)
+    xcanaux = []
+    # List of y where there are channels (before the manifold) (in m)
+    y_coord_avec_canaux = []
     i = 0
     while i < len(x_value) and x_value[i] <= tore_pos:
         xcanaux.append(x_value[i])
@@ -127,13 +134,18 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
     pos_conv = 0  # Index of the end of cylindrical chamber
     while y_coord_avec_canaux[pos_conv] == y_coord_avec_canaux[pos_conv + 1]:
         pos_conv += 1
-    pos_col = y_coord_avec_canaux.index(min(y_coord_avec_canaux))  # Index of the throat
-    y_coord_col = y_coord_avec_canaux[pos_col]  # y coordonate of the hot wall at the throat
-    y_coord_inj = y_coord_avec_canaux[0]  # y coordonate of the hot wall at the injection plate
-    y_coord_tore = y_coord_avec_canaux[-1]  # y coordonate of the hot wall at the manifold
+    pos_col = y_coord_avec_canaux.index(
+        min(y_coord_avec_canaux))  # Index of the throat
+    # y coordonate of the hot wall at the throat
+    y_coord_col = y_coord_avec_canaux[pos_col]
+    # y coordonate of the hot wall at the injection plate
+    y_coord_inj = y_coord_avec_canaux[0]
+    # y coordonate of the hot wall at the manifold
+    y_coord_tore = y_coord_avec_canaux[-1]
     longc = len(xcanaux)  # Index of the end of the channels (at the manifold)
 
-    wall_thickness = []  # Thickness of the chamber wall as a function of the engine axis (in m)
+    # Thickness of the chamber wall as a function of the engine axis (in m)
+    wall_thickness = []
     acc = (e_conv - e_col) / (y_coord_inj - y_coord_col)
     for i in range(0, pos_col + 1):  # Chamber + convergent computation
         r = y_coord_avec_canaux[i]
@@ -148,10 +160,11 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         wall_thickness.append(epp_x)
 
     angulaire = [0]
-    ycanaux = [y_coord_inj + wall_thickness[0]]  # y of wall on coolant side (matched with engine geometry)
+    # y of wall on coolant side (matched with engine geometry)
+    ycanaux = [y_coord_inj + wall_thickness[0]]
     for i in range(1, longc):
         vect = (xcanaux[i] - xcanaux[i - 1]) / ((((y_coord_avec_canaux[i] - y_coord_avec_canaux[i - 1]) ** 2) +
-                                                  ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
+                                                 ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
         angulaire.append(np.rad2deg(np.arccos(vect)))
         """
         newep = ycanaux[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
@@ -161,36 +174,52 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
-        plt.plot(xcanaux, y_coord_avec_canaux, color='chocolate', label='y on hot gas side')
+        plt.plot(xcanaux, y_coord_avec_canaux,
+                 color='chocolate', label='y on hot gas side')
         plt.plot(xcanaux, ycanaux, color='blue', label='y on coolant side')
         plt.title('y coordinate of wall as a function of the engine axis')
         plt.legend(loc='lower left')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Wall y.png")
+            plt.close()
+        else:
+            plt.show()
 
     veritas = []
     for i in range(0, longc):
         verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
-                np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
+            np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
         veritas.append(verifepe)
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, veritas)
         plt.title('Channel thickness verification')
-        plt.show()
-        
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel thickness verif.png")
+            plt.close()
+        else:
+            plt.show()
+
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, ycanaux, color='chocolate')
-        plt.title('Channel travel as a function of the engine axis (y of the cold wall)')
-        plt.show()
+        plt.title(
+            'Channel travel as a function of the engine axis (y of the cold wall)')
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel travel.png")
+            plt.close()
+        else:
+            plt.show()
 
-    debit_volumique_canal = debit_volumique_total_cool / nbc  # Volumic flow rate in a channel
+    debit_volumique_canal = debit_volumique_total_cool / \
+        nbc  # Volumic flow rate in a channel
     y_col = ycanaux[pos_col]  # y coordonate of the cold wall at the throat
     y_inj = ycanaux[0]  # y coordonate of the cold wall at the injection plate
     y_tore = ycanaux[-1]  # y coordonate of the cold wall at the manifold
-    
+
     larg_ailette = []  # Width of a rib as a function of the engine axis (in m)
-    larg_canal = []  # Width of a channel as a function of the engine axis (in m)
+    # Width of a channel as a function of the engine axis (in m)
+    larg_canal = []
     pente = (lrg_conv - lrg_inj) / (xcanaux[pos_conv] - xcanaux[0])
     for i in range(0, pos_conv + 1):  # Chamber computation
         r = ycanaux[i]
@@ -215,7 +244,8 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         larg_ailette.append(lrg_aill)
         larg_canal.append(lrg_x)
 
-    ht_canal = []  # Height of a channel as a function of the engine axis (in m)
+    # Height of a channel as a function of the engine axis (in m)
+    ht_canal = []
     pente = (ht_conv - ht_inj) / (xcanaux[pos_conv] - xcanaux[0])
     for i in range(0, pos_conv + 1):  # Chamber computation
         htr_x = pente * (xcanaux[i] - xcanaux[0]) + ht_inj
@@ -239,8 +269,10 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         z2=zz+0.5*zz*sin(x*1000/4)
         larg_canal[larg_canal.index(zz)]=z2 
     """
-    area_channel = []  # Area of a channel as a function of the engine axis (m²)
-    vitesse_coolant = []  # Velocity of coolant in a channel as a function of the engine axis (m/s)
+    area_channel = [
+    ]  # Area of a channel as a function of the engine axis (m²)
+    # Velocity of coolant in a channel as a function of the engine axis (m/s)
+    vitesse_coolant = []
     for i in range(0, longc):
         aire = larg_canal[i] * ht_canal[i]
         area_channel.append(aire)
@@ -254,19 +286,23 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         writer = csv.writer(file)
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["End"])
         file.close()
@@ -277,28 +313,45 @@ def canaux(profile_data, width_data, height_data, thickness_data, coefficients,
         plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
         plt.title('Width of channels and ribs')
         plt.legend(loc='upper left')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Width of channels and ribs.png")
+            plt.close()
+        else:
+            plt.show()
 
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, wall_thickness, color='chocolate')
         plt.title('Thickness of chamber wall as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Thickness of chamber wall.png")
+            plt.close()
+        else:
+            plt.show()
 
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, ht_canal, color='chocolate')
         plt.title('Channel height as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel height.png")
+            plt.close()
+        else:
+            plt.show()
 
     if plot_detail >= 1:
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, area_channel, color='chocolate')
         plt.title('Channel cross-sectionnal area as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel area.png")
+            plt.close()
+        else:
+            plt.show()
 
     return xcanaux, ycanaux, larg_canal, larg_ailette, ht_canal, wall_thickness, area_channel, longc, y_coord_avec_canaux
 
+
 def canaux_library(profile_data, width_data, height_data, thickness_data, coefficients,
-           tore_pos, debit_volumique_total_cool, nbc, plot_detail, write_in_csv, figure_dpi):
+                   tore_pos, debit_volumique_total_cool, nbc, plot_detail, write_in_csv, figure_dpi, plot_dir=None):
     """
     This function computes the caracteristics of channels on each point
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
@@ -310,8 +363,10 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
     ht_inj, ht_conv, ht_col, ht_tore = height_data
     e_conv, e_col, e_tore = thickness_data
 
-    xcanaux = []  # List of x where there are channels (before the manifold) (in m)
-    y_coord_avec_canaux = []  # List of y where there are channels (before the manifold) (in m)
+    # List of x where there are channels (before the manifold) (in m)
+    xcanaux = []
+    # List of y where there are channels (before the manifold) (in m)
+    y_coord_avec_canaux = []
     # WARNING ! ycanaux will later in this function become y on the coolant side (in m)
     i = 0
     while i < len(x_value) and x_value[i] <= tore_pos:
@@ -322,20 +377,25 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
     pos_conv = 0  # Index of the end of cylindrical chamber
     while y_coord_avec_canaux[pos_conv] == y_coord_avec_canaux[pos_conv + 1]:
         pos_conv += 1
-    pos_col = y_coord_avec_canaux.index(min(y_coord_avec_canaux))  # Index of the throat
-    
+    pos_col = y_coord_avec_canaux.index(
+        min(y_coord_avec_canaux))  # Index of the throat
+
     longc = len(xcanaux)  # Number of points for channels (end at the manifold)
 
-    x_interpolate = [xcanaux[0], xcanaux[pos_conv], xcanaux[pos_col], xcanaux[longc-1]]
+    x_interpolate = [xcanaux[0], xcanaux[pos_conv],
+                     xcanaux[pos_col], xcanaux[longc-1]]
 
     y_e = [e_conv, e_conv, e_col, e_tore]
-    wall_thickness = [x for x in PchipInterpolator(x_interpolate, y_e)(xcanaux)]  # Thickness of the chamber wall as a function of the engine axis (in m)
+    # Thickness of the chamber wall as a function of the engine axis (in m)
+    wall_thickness = [x for x in PchipInterpolator(
+        x_interpolate, y_e)(xcanaux)]
 
     angulaire = [0]
-    ycanaux = [y_coord_avec_canaux[0] + wall_thickness[0]]  # y of wall on coolant side (matched with engine geometry)
+    # y of wall on coolant side (matched with engine geometry)
+    ycanaux = [y_coord_avec_canaux[0] + wall_thickness[0]]
     for i in range(1, longc):
         vect = (xcanaux[i] - xcanaux[i - 1]) / ((((y_coord_avec_canaux[i] - y_coord_avec_canaux[i - 1]) ** 2) +
-                                                  ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
+                                                 ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
         angulaire.append(np.rad2deg(np.arccos(vect)))
         """
         newep = ycanaux[i] + epaiss_chemise[i] / np.cos(np.deg2rad(angulaire[i]))
@@ -345,42 +405,61 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
-        plt.plot(xcanaux, y_coord_avec_canaux, color='chocolate', label='y on hot gas side')
+        plt.plot(xcanaux, y_coord_avec_canaux,
+                 color='chocolate', label='y on hot gas side')
         plt.plot(xcanaux, ycanaux, color='blue', label='y on coolant side')
         plt.title('y coordinate of wall as a function of the engine axis')
         plt.legend(loc='lower left')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Wall y.png")
+            plt.close()
+        else:
+            plt.show()
 
     veritas = []
     for i in range(0, longc):
         verifepe = (((ycanaux[i] - y_value[i]) ** 2) - (
-                np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
+            np.sin(np.deg2rad(angulaire[i])) * (ycanaux[i] - y_value[i])) ** 2) ** 0.5
         veritas.append(verifepe)
 
     if plot_detail >= 3:
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, veritas)
         plt.title('Channel thickness verification')
-        plt.show()
-        
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel thickness verif.png")
+            plt.close()
+        else:
+            plt.show()
+
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, ycanaux, color='chocolate')
-        plt.title('Channel travel as a function of the engine axis (y of the cold wall)')
-        plt.show()
+        plt.title(
+            'Channel travel as a function of the engine axis (y of the cold wall)')
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel travel.png")
+            plt.close()
+        else:
+            plt.show()
 
-    debit_volumique_canal = debit_volumique_total_cool / nbc  # Volumic flow rate in a channel
-
+    debit_volumique_canal = debit_volumique_total_cool / \
+        nbc  # Volumic flow rate in a channel
 
     y_l = [lrg_inj, lrg_conv, lrg_col, lrg_tore]
-    larg_canal = [x for x in PchipInterpolator(x_interpolate, y_l)(xcanaux)]  # Width of a channel as a function of the engine axis (in m)
-    larg_ailette = [(ycanaux[i] * 2 * np.pi / nbc) - larg_canal[i] for i in range(0, longc)]  # Width of a rib as a function of the engine axis (in m)
-
+    # Width of a channel as a function of the engine axis (in m)
+    larg_canal = [x for x in PchipInterpolator(x_interpolate, y_l)(xcanaux)]
+    # Width of a rib as a function of the engine axis (in m)
+    larg_ailette = [(ycanaux[i] * 2 * np.pi / nbc) - larg_canal[i]
+                    for i in range(0, longc)]
 
     y_h = [ht_inj, ht_conv, ht_col, ht_tore]
-    ht_canal = [x for x in PchipInterpolator(x_interpolate, y_h)(xcanaux)]  # Height of a channel as a function of the engine axis (in m)
+    # Height of a channel as a function of the engine axis (in m)
+    ht_canal = [x for x in PchipInterpolator(x_interpolate, y_h)(xcanaux)]
 
-    area_channel = []  # Area of a channel as a function of the engine axis (m²)
-    vitesse_coolant = []  # Velocity of coolant in a channel as a function of the engine axis (m/s)
+    # Area of a channel as a function of the engine axis (m²)
+    area_channel = []
+    # Velocity of coolant in a channel as a function of the engine axis (m/s)
+    vitesse_coolant = []
     for i in range(0, longc):
         aire = larg_canal[i] * ht_canal[i]
         area_channel.append(aire)
@@ -394,19 +473,23 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
         writer = csv.writer(file)
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["StartCurve"])
         for i in range(0, longc, 3):
-            writer.writerow((1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
+            writer.writerow(
+                (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
         writer.writerow(["End"])
         file.close()
@@ -417,22 +500,38 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
         plt.plot(xcanaux, larg_canal, label='Channel width', color='green')
         plt.title('Width of channels and ribs')
         plt.legend(loc='upper left')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Width of channels and ribs.png")
+            plt.close()
+        else:
+            plt.show()
 
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, wall_thickness, color='chocolate')
         plt.title('Thickness of chamber wall as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Thickness of chamber wall.png")
+            plt.close()
+        else:
+            plt.show()
 
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, ht_canal, color='chocolate')
         plt.title('Channel height as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel height.png")
+            plt.close()
+        else:
+            plt.show()
 
     if plot_detail >= 1:
         plt.figure(dpi=figure_dpi)
         plt.plot(xcanaux, area_channel, color='chocolate')
         plt.title('Channel cross-sectionnal area as a function of the engine axis')
-        plt.show()
+        if plot_dir is not None:
+            plt.savefig(f"{plot_dir}/Channel area.png")
+            plt.close()
+        else:
+            plt.show()
 
     return xcanaux, ycanaux, larg_canal, larg_ailette, ht_canal, wall_thickness, area_channel, longc, y_coord_avec_canaux

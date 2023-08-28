@@ -6,8 +6,13 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
 from tkinter import filedialog
+
+from PIL import Image, ImageTk
+
+
 import sys
 import time
+import os
 
 
 class InputsWin:
@@ -26,13 +31,13 @@ class InputsWin:
 
         self.coolant_list = ["Methane"]
 
-        self.plot_detail_list = [0, 1, 2, 3]
+        self.plot_detail_list = ["0", "1", "2", "3"]
 
-        self.mesh_size_list = [0.25, 0.5, 1]
+        self.mesh_size_list = ["0.25", "0.5", "1"]
 
         self.cea_list = ["Viserion_2023.txt"]
 
-        self.boolean = [False, True]
+        self.boolean = ["False", "True"]
 
         # -----------------------------------------------------------------------------------------------------------------
 
@@ -63,7 +68,7 @@ class InputsWin:
         self.create_entry(
             frame_name, text="Number", var_name="nbc")
         self.create_entry(
-            frame_name, text="Position of the manifold", var_name="manifold_pos")
+            frame_name, text="Manifold position", var_name="manifold_pos")
 
         self.create_entry(frame_name, text="Roughness", var_name="roughness")
 
@@ -184,7 +189,8 @@ class InputsWin:
                 if entry_params == "False":
                     entry_params = False
                 self.entry_dict[entry[0]] = entry_params
-            print("Data saved")
+            print(
+                "█ Changes have been saved                                                  █")
         except:
             print("Impossible to get entry")
         # print(self.entry_dict)
@@ -201,7 +207,8 @@ class InputsWin:
             for key, value in self.entry_dict.items():
                 file.write(str(key) + "$$" + str(value) + "\n")
             file.close()
-            print("Settings has been saved")
+            print(
+                "█ Settings have been saved                                                  █")
 
     def open_params(self):
         filename = filedialog.askopenfilename(
@@ -213,7 +220,8 @@ class InputsWin:
             if self.entry_dict[line[0]] == "False":
                 self.entry_dict[line[0]] = False
         file.close()
-        print("Data has been imported")
+        print(
+            "█ Data has been imported                                                   █")
 
     def create_label(self, frame_name, text):
         tk.Label(frame_name, text=text).grid(
@@ -228,7 +236,7 @@ class InputsWin:
             var.set("")
         tk.Label(frame_name, text=text).grid(
             row=self.line, column=0, sticky="nw")
-        var_entry = tk.Entry(frame_name, textvariable=var)
+        var_entry = tk.Entry(frame_name, textvariable=var, width=10)
         var_entry.grid(row=self.line, column=1, sticky="nw")
         self.entry_name_dict[var_name] = var_entry
         self.line += 1
@@ -252,7 +260,7 @@ class InputsWin:
             select = combo_list.get()
             self.entry_dict[var_name] = select"""
         var_combo = ttk.Combobox(
-            frame_name, values=var_list, state="readonly")
+            frame_name, values=var_list, state="readonly", width=10)
         try:
             index = var_list.index(self.entry_dict[var_name])
         except:
@@ -266,6 +274,87 @@ class InputsWin:
         ttk.Separator(frame_name, orient="horizontal").grid(
             row=self.line, columnspan=2, padx=10, pady=10, sticky="nesw")
         self.line += 1
+
+
+class Output:
+    def __init__(self, plot_dir="plot_cache"):
+        self.plot_dir = plot_dir
+
+        self.list_output_features = os.listdir(self.plot_dir)
+
+    def list_plot(self, frame_name, index, display_frame, display_label):
+        self.display_frame = display_frame
+        self.display_label = display_label
+        self.listbox = tk.Listbox(frame_name)
+        self.listbox.grid(row=0, column=0, sticky="nesw")
+
+        self.target_dir = os.path.join(
+            self.plot_dir, self.list_output_features[index])
+
+        self.list_plot_file = os.listdir(self.target_dir)
+        self.list_plot_name = [name[:-4] for name in self.list_plot_file]
+
+        for i in range(len(self.list_plot_name)):
+            self.listbox.insert(i, self.list_plot_name[i])
+
+        self.listbox.bind("<<ListboxSelect>>", self.selection)
+
+    def selection(self, event):
+        selected = event.widget.curselection()
+
+        if selected:
+            index = selected[0]
+            file_path = os.path.join(
+                self.target_dir, self.list_plot_file[index])
+            self.display_plot(file_path, self.display_frame,
+                              self.display_label)
+
+    def display_plot(self, file_path, display_frame, display_label):
+        def resize(event):
+            width = event.width
+            height = event.height
+
+            aspect_ratio = plot.width / plot.height
+
+            new_width = width
+            new_height = int(new_width / aspect_ratio)
+
+            if new_height > height:
+                new_height = height
+                new_width = int(new_height * aspect_ratio)
+
+            resized_plot = plot.resize(
+                (new_width, new_height))
+            resized_plot_tk = ImageTk.PhotoImage(resized_plot)
+
+            display_label.config(image=resized_plot_tk)
+            display_label.image = resized_plot_tk
+
+        def initial_resize():
+            width = display_frame.winfo_width()
+            height = display_frame.winfo_height()
+
+            aspect_ratio = plot.width / plot.height
+
+            new_width = width
+            new_height = int(new_width / aspect_ratio)
+
+            if new_height > height:
+                new_height = height
+                new_width = int(new_height * aspect_ratio)
+
+            resized_plot = plot.resize(
+                (new_width, new_height))
+            resized_plot_tk = ImageTk.PhotoImage(resized_plot)
+
+            display_label.config(image=resized_plot_tk)
+            display_label.image = resized_plot_tk
+
+        plot = Image.open(file_path)
+
+        initial_resize()
+
+        display_frame.bind("<Configure>", resize)
 
 
 class OutRedirection:
@@ -309,6 +398,7 @@ class MainGUI(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
 
         self.inputs_class = InputsWin()
+        self.output_class = Output()
 
         self.inputs_function_list = self.inputs_class.inputs_function_list
 
@@ -342,6 +432,7 @@ class MainGUI(tk.Tk):
 
         self.primary_frame.grid_rowconfigure(0, weight=1)
         self.primary_frame.grid_columnconfigure(0, weight=15)
+        self.primary_frame.grid_columnconfigure(1, weight=0)
         self.primary_frame.grid_columnconfigure(2, weight=85)
 
         self.secondary_l()
@@ -388,6 +479,12 @@ class MainGUI(tk.Tk):
         self.outputs = tk.Listbox(self.secondary_l_frame)
         self.outputs.grid(row=5, sticky="nesw")
 
+        list_output_features = self.output_class.list_output_features
+        for i in range(len(list_output_features)):
+            self.outputs.insert(i, list_output_features[i])
+
+        self.outputs.bind("<<ListboxSelect>>", self.l3_selected)
+
     def l1_selected(self, event):
         selected = event.widget.curselection()
         if selected:
@@ -399,6 +496,12 @@ class MainGUI(tk.Tk):
         if selected:
             self.set_selected = 1
             self.listbox_selection(event)
+
+    def l3_selected(self, event):
+        selected = event.widget.curselection()
+        if selected:
+            self.set_selected = 2
+            self.output_selection(event)
 
     def listbox_selection(self, event):
         selection = event.widget.curselection()
@@ -416,11 +519,27 @@ class MainGUI(tk.Tk):
             self.settings.selection_clear(0, "end")
             self.index_temp = None
 
+    def output_selection(self, event):
+        selection = event.widget.curselection()
+        index = selection[0]
+
+        if selection and self.index_temp != index:
+            self.destroy_secondary_m()
+            self.index_temp = index
+
+            self.create_output_win(index=index)
+        else:
+            self.destroy_secondary_m()
+            self.inputs.selection_clear(0, "end")
+            self.settings.selection_clear(0, "end")
+            self.index_temp = None
+
     def destroy_secondary_m(self):
         try:
-            self.secondary_m_frame.destroy()
             for objects in self.secondary_m_frame.winfo_children():
                 objects.destroy()
+            self.secondary_m_frame.destroy()
+
         except:
             pass
         self.primary_frame.grid_columnconfigure(0, weight=15)
@@ -432,6 +551,13 @@ class MainGUI(tk.Tk):
         self.secondary_m()
         function = function_list[set_selected][index]
         function(self.subframe_m)
+
+    def create_output_win(self, index):
+        self.destroy_secondary_m()
+        self.secondary_m(button=False)
+
+        self.output_class.list_plot(
+            self.secondary_m_frame, index=index, display_frame=self.secondary_r1A_frame, display_label=self.display_label)
 
     def secondary_r(self):
         self.secondary_r_frame = tk.Frame(
@@ -463,15 +589,19 @@ class MainGUI(tk.Tk):
     def secondary_r1A(self):
         self.secondary_r1A_frame = tk.Frame(
             self.secondary_r1_frame, bd=2, relief="groove")
-        # self.secondary_r1A_frame.grid(row=0, column=0, sticky="nesw")
+        self.secondary_r1A_frame.grid(row=0, column=0, sticky="nesw")
 
         self.secondary_r1A_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1A_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=100)
+        self.secondary_r1_frame.add(self.secondary_r1A_frame, height=400)
 
-        tk.Label(self.secondary_r1A_frame,
-                 text="Results plot").grid(row=0, column=0)
+        self.display_label = tk.Label(
+            self.secondary_r1A_frame, background="white")
+        self.display_label.grid(row=0, column=0, sticky="nesw")
+
+        self.output_class.display_plot(
+            "logo_ipl.png", self.secondary_r1A_frame, self.display_label)
 
     def secondary_r1B(self):
         self.secondary_r1B_frame = tk.Text(
@@ -481,13 +611,18 @@ class MainGUI(tk.Tk):
         self.secondary_r1B_frame.grid_rowconfigure(0, weight=1)
         self.secondary_r1B_frame.grid_columnconfigure(0, weight=1)
 
-        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=500)
+        self.secondary_r1_frame.add(self.secondary_r1B_frame, height=100)
 
-    def secondary_m(self):
-        self.secondary_m_frame = tk.Frame(
-            self.primary_frame, bd=2, relief="groove", width=200)
+    def secondary_m(self, button=True):
+        if button:
+            self.secondary_m_frame = tk.Frame(
+                self.primary_frame, bd=2, relief="groove", width=200)
+        else:
+            self.secondary_m_frame = tk.Frame(
+                self.primary_frame, bd=2, relief="flat", width=200)
         self.secondary_m_frame.grid(
             row=0, column=1, sticky="nesw", pady=(22, 0))
+
         self.secondary_m_frame.grid_propagate(False)
         self.secondary_m_frame.pack_propagate(False)
 
@@ -501,8 +636,9 @@ class MainGUI(tk.Tk):
         self.subframe_m = tk.Frame(self.secondary_m_frame)
         self.subframe_m.grid(row=0, column=0, sticky="nesw")
 
-        tk.Button(self.secondary_m_frame, text="Save data",
-                  command=self.inputs_class.get_entry).grid(row=1, sticky="sw")
+        if button:
+            tk.Button(self.secondary_m_frame, text="Save changes",
+                      command=self.inputs_class.get_entry).grid(row=1, sticky="sw")
 
     def info_frame(self):
         self.info = tk.Frame(self, borderwidth=2, relief="groove")
@@ -521,8 +657,12 @@ class MainGUI(tk.Tk):
     def run_button_pressed(self):
         try:
             self.runprocess.run_process()
+            self.output_class = Output()
+            self.tertiary_l3()
+
         except:
             print("Failed to run process")
+            self.output_class = Output()
         # self.runprocess.run_process()
 
 
