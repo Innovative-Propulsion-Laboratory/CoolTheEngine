@@ -190,7 +190,8 @@ class InputsWin:
                     entry_params = False
                 self.entry_dict[entry[0]] = entry_params
             print(
-                "█ Changes have been saved                                                  █")
+                "█ Changes has been saved                                                   █")
+
         except:
             print("Impossible to get entry")
         # print(self.entry_dict)
@@ -208,7 +209,7 @@ class InputsWin:
                 file.write(str(key) + "$$" + str(value) + "\n")
             file.close()
             print(
-                "█ Settings have been saved                                                  █")
+                "█ Settings has been saved                                                  █")
 
     def open_params(self):
         filename = filedialog.askopenfilename(
