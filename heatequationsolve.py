@@ -1,10 +1,11 @@
 import casthermo as ct
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type,
-            location, return_temp, plot_save=None):
+            location, return_temp, plot_dir=None):
     """
     This function compute temperature of each point of one wall and the rib next to it.
     It uses the finite difference method to solve that.
@@ -244,8 +245,12 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         plt.title(title, fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=0.4, aspect=15)
-        if plot_save is not None:
-            plt.savefig(f"{plot_save}/2D temperature/{location}")
+
+        if plot_dir is not None:
+            plot_dir = os.path.join(plot_dir, "2D temperature")
+            if not os.path.exists(plot_dir) and not os.path.isdir(plot_dir):
+                os.mkdir(plot_dir)
+            plt.savefig(f"{plot_dir}\{location[1:]}.png")
             plt.close()
         else:
             plt.show()
