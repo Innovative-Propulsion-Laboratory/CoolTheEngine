@@ -13,6 +13,7 @@ from PIL import Image, ImageTk
 import sys
 import time
 import os
+import traceback
 
 
 class InputsWin:
@@ -29,7 +30,7 @@ class InputsWin:
 
         self.material_list = ["pure copper", "cucrzr", "inconel"]
 
-        self.coolant_list = ["Methane"]
+        self.coolant_list = ["Methane", "Water"]
 
         self.plot_detail_list = ["0", "1", "2", "3"]
 
@@ -661,8 +662,11 @@ class MainGUI(tk.Tk):
             self.output_class = Output()
             self.tertiary_l3()
 
-        except:
-            print("Failed to run process")
+        except Exception as e:
+            print("Failed to run process : ")
+            print(e)
+            """error = traceback.format_exc()
+            print("##################\n\n", error, "\n\n##################")"""
             self.output_class = Output()
         # self.runprocess.run_process()
 
