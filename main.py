@@ -57,13 +57,15 @@ class MainProcess:
         start_time = time.perf_counter()  # Beginning of the timer
         # %% Initial definitions
 
+        # Name of the engine
+        engine_name = str(entry_dict["engine_name"])
         # Distance between two points of calculation
-        mesh_size = float(entry_dict["mesh_size"])
-        # X coordinates of the Viserion
-        x_coords_filename = f"input/{mesh_size}/x.txt"
-        # Y coordinates of the Viserion
-        y_coords_filename = f"input/{mesh_size}/y.txt"
-        # Viserion's parameters (found with CEA)
+        mesh_size = str(entry_dict["mesh_size"])
+        # X coordinates of an engine
+        x_coords_filename = f"C:/Users/green/OneDrive/Bureau/pythonProject/CoolTheEngine/input/{mesh_size}/{engine_name}/x.txt"
+        # Y coordinates of an engine
+        y_coords_filename = f"C:/Users/green/OneDrive/Bureau/pythonProject/CoolTheEngine/input/{mesh_size}/{engine_name}/y.txt"
+        # Engine's parameters (found with CEA)
         input_CEA_data = "input/" + entry_dict["input_CEA_data"]
 
         # Constant input_data_list
@@ -950,6 +952,77 @@ class MainProcess:
             geometry1.close()
             geometry2.close()
 
+            longc = len(xcanaux)
+            if write_in_csv:
+                "Writing the results of the study in a CSV file"
+                file_name = "output/channel_macro_catia.csv"
+                file = open(file_name, "w", newline="")
+                writer = csv.writer(file)
+                writer.writerow(["StartCurve"])
+                for i in range(0, longc, 3):
+                    writer.writerow(
+                        (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (larg_canal[i] / 2)))
+                writer.writerow(["EndCurve"])
+                writer.writerow(["StartCurve"])
+                for i in range(0, longc, 3):
+                    writer.writerow(
+                        (1000 * xcanaux[i], 1000 * (ycanaux[i]), 1000 * (-larg_canal[i] / 2)))
+                writer.writerow(["EndCurve"])
+                writer.writerow(["StartCurve"])
+                for i in range(0, longc, 3):
+                    writer.writerow(
+                        (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (larg_canal[i] / 2)))
+                writer.writerow(["EndCurve"])
+                writer.writerow(["StartCurve"])
+                for i in range(0, longc, 3):
+                    writer.writerow(
+                        (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
+                writer.writerow(["EndCurve"])
+
+                # connection between two adjacent edges (exit)
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], 500 * larg_canal[0]))
+                writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], -500 * larg_canal[0]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], 500 * larg_canal[0]))
+                writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), 500 * larg_canal[0]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), 500 * larg_canal[0]))
+                writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), -500 * larg_canal[0]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), -500 * larg_canal[0]))
+                writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], -500 * larg_canal[0]))
+                writer.writerow(["EndCurve"])
+
+                # connection between two adjacent edges (injection)
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], 500 * larg_canal[-1]))
+                writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], -500 * larg_canal[-1]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], 500 * larg_canal[-1]))
+                writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), 500 * larg_canal[-1]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), 500 * larg_canal[-1]))
+                writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), -500 * larg_canal[-1]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["StartCurve"])
+                writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), -500 * larg_canal[-1]))
+                writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], -500 * larg_canal[-1]))
+                writer.writerow(["EndCurve"])
+
+                writer.writerow(["End"])
+                file.close()
         # %% Execution time display
 
         end_t = time.perf_counter()  # End of the total timer

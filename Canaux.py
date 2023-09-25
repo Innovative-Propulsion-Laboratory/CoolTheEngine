@@ -491,6 +491,49 @@ def canaux_library(profile_data, width_data, height_data, thickness_data, coeffi
             writer.writerow(
                 (1000 * xcanaux[i], 1000 * (ycanaux[i] + ht_canal[i]), 1000 * (- larg_canal[i] / 2)))
         writer.writerow(["EndCurve"])
+
+        # connection between two adjacent edges (exit)
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], 500 * larg_canal[0]))
+        writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], -500 * larg_canal[0]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], 500 * larg_canal[0]))
+        writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), 500 * larg_canal[0]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), 500 * larg_canal[0]))
+        writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), -500 * larg_canal[0]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[0], 1000 * (ycanaux[0] + ht_canal[0]), -500 * larg_canal[0]))
+        writer.writerow((1000 * xcanaux[0], 1000 * ycanaux[0], -500 * larg_canal[0]))
+        writer.writerow(["EndCurve"])
+
+        # connection between two adjacent edges (injection)
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], 500 * larg_canal[-1]))
+        writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], -500 * larg_canal[-1]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], 500 * larg_canal[-1]))
+        writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), 500 * larg_canal[-1]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), 500 * larg_canal[-1]))
+        writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), -500 * larg_canal[-1]))
+        writer.writerow(["EndCurve"])
+
+        writer.writerow(["StartCurve"])
+        writer.writerow((1000 * xcanaux[-1], 1000 * (ycanaux[-1] + ht_canal[-1]), -500 * larg_canal[-1]))
+        writer.writerow((1000 * xcanaux[-1], 1000 * ycanaux[-1], -500 * larg_canal[-1]))
+        writer.writerow(["EndCurve"])
+
         writer.writerow(["End"])
         file.close()
 

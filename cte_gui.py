@@ -34,9 +34,11 @@ class InputsWin:
 
         self.plot_detail_list = ["0", "1", "2", "3"]
 
+        self.engine_name_list = ["Arrax","Viserion"]
+
         self.mesh_size_list = ["0.25", "0.5", "1"]
 
-        self.cea_list = ["Viserion_2023.txt"]
+        self.cea_list = ["Viserion_2023.txt","Arrax_2023.txt"]
 
         self.boolean = ["False", "True"]
 
@@ -53,6 +55,9 @@ class InputsWin:
         self.create_label(frame_name, text="Channel global")
 
         self.create_separator(frame_name)
+
+        self.create_combobox(frame_name, text="Engine",
+                             var_name="engine_name", var_list=self.engine_name_list)
 
         self.create_combobox(frame_name, text="Mesh size",
                              var_name="mesh_size", var_list=self.mesh_size_list)
