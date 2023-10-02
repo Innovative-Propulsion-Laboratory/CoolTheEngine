@@ -134,6 +134,37 @@ class MainProcess:
         area_throat = float(input_data_list[14])  # Area at the throat
         diam_throat = float(input_data_list[15])  # Throat diameter
 
+        # Detailed gamma
+        gamma_1_input = float(input_data_list[22])
+        gamma_2_input = float(input_data_list[23])
+        gamma_3_input = float(input_data_list[24])
+        gamma_4_input = float(input_data_list[25])
+        gamma_5_input = float(input_data_list[26])
+        gamma_6_input = float(input_data_list[27])
+        gamma_7_input = float(input_data_list[28])
+        gamma_8_input = float(input_data_list[29])
+        gamma_9_input = float(input_data_list[30])
+        gamma_10_input = float(input_data_list[31])
+        gamma_11_input = float(input_data_list[32])
+        gamma_12_input = float(input_data_list[33])
+        gamma_13_input = float(input_data_list[34])
+        gamma_14_input = float(input_data_list[35])
+
+        x_1_input = float(input_data_list[36])
+        x_2_input = float(input_data_list[37])
+        x_3_input = float(input_data_list[38])
+        x_4_input = float(input_data_list[39])
+        x_5_input = float(input_data_list[40])
+        x_6_input = float(input_data_list[41])
+        x_7_input = float(input_data_list[42])
+        x_8_input = float(input_data_list[43])
+        x_9_input = float(input_data_list[44])
+        x_10_input = float(input_data_list[45])
+        x_11_input = float(input_data_list[46])
+        x_12_input = float(input_data_list[47])
+        x_13_input = float(input_data_list[48])
+        x_14_input = float(input_data_list[49])
+
         # %% Import of the (X,Y) coordinates of the Viserion
         x_coords_reader = csv.reader(open(x_coords_filename, "r"))
         y_coords_reader = csv.reader(open(y_coords_filename, "r"))
@@ -186,29 +217,47 @@ class MainProcess:
             y1 = y_coord_list[i_conv]
             i_conv += 1
             y2 = y_coord_list[i_conv]
+        i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
 
         # Gamma in the cylindrical chamber
         # Gamma is constant before the beginning of the convergent
-        gamma_list = [gamma_c_input for i in range(0, i_conv)]
-
-        # Gamma in the convergent
-        i_throat = y_coord_list.index(min(y_coord_list))  # Throat index
-        gamma_convergent = gamma_c_input
-        for m in range(-1, i_throat - i_conv - 1):
-            # Linear interpolation between beginning and end of convergent:
-            # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
-            gamma_convergent += ((gamma_t_input - gamma_c_input) / (
-                    x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
-                x_coord_list[i_conv + 1 + m] - x_coord_list[i_conv + m])
-            gamma_list.append(gamma_convergent)
-
-        # Gamma in the divergent nozzle
-        gamma_divergent = gamma_t_input
-        # Linear interpolation between beginning and end of divergent
-        for q in range(-1, nb_points - i_throat - 1):
-            gamma_divergent += ((gamma_e_input - gamma_t_input) / (x_coord_list[-1] - x_coord_list[i_throat])) * abs(
-                x_coord_list[i_throat + 1 + q] - x_coord_list[i_throat + q])
-            gamma_list.append(gamma_divergent)
+        x_given = [x_coord_list[0],
+                   x_coord_list[i_conv],
+                   x_1_input,
+                   x_coord_list[i_throat],
+                   x_2_input,
+                   x_3_input,
+                   x_4_input,
+                   x_5_input,
+                   x_6_input,
+                   x_7_input,
+                   x_8_input,
+                   x_9_input,
+                   x_10_input,
+                   x_11_input,
+                   x_12_input,
+                   x_13_input,
+                   x_14_input,
+                   x_coord_list[-1]]
+        gamma_given = [gamma_c_input,
+                       gamma_c_input,
+                       gamma_1_input,
+                       gamma_t_input,
+                       gamma_2_input,
+                       gamma_3_input,
+                       gamma_4_input,
+                       gamma_5_input,
+                       gamma_6_input,
+                       gamma_7_input,
+                       gamma_8_input,
+                       gamma_9_input,
+                       gamma_10_input,
+                       gamma_11_input,
+                       gamma_12_input,
+                       gamma_13_input,
+                       gamma_14_input,
+                       gamma_e_input]
+        gamma_list = [x for x in np.interp(x_coord_list, x_given, gamma_given)]
 
         # Plot of the gamma linearisation
         if plot_detail >= 3:
@@ -241,8 +290,9 @@ class MainProcess:
         print(
             "█ Computing mach number                                                    █")
         for i in range(0, nb_points - 1):
-            mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                                   mach_gas, gamma_list[i])
+            subsonic = True if i < i_throat else False
+            mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i_throat],
+                                   gamma_list[i], subsonic=subsonic)
             mach_list.append(mach_gas)
 
         # Plots of the Mach number in the engine (2D/3D)

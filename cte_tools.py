@@ -1,23 +1,32 @@
 import numpy as np
+from skaero.gasdynamics import isentropic
 
 
-def mach_solv(area_1, area_2, mach_1, gamma):
-    if area_1 == area_2:
-        solution_mach = mach_1
+def mach_solv(area_i, area_throat, gamma, subsonic):
+    # if area_1 == area_2:
+    #     solution_mach = mach_1
+    # else:
+    #     ome = (gamma + 1) / (2 * (gamma - 1))
+    #     part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
+    #     mach_2 = mach_1
+    #     liste = []
+    #     mach = []
+    #     # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
+    #     for i in range(0, 10000):
+    #         mach_2 += 0.00001
+    #         part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
+    #         liste.append(abs(part_1 - part_2))
+    #         mach.append(mach_2)
+    #     solution_mach = mach[liste.index(min(liste))]
+    # return solution_mach
+    fl = isentropic.IsentropicFlow(gamma=gamma)
+    area_ratio = area_i / area_throat
+    solution_subsonic, solution_supersonic = isentropic.mach_from_area_ratio(fl, area_ratio)
+    print(solution_subsonic, solution_supersonic)
+    if subsonic:
+        return solution_subsonic
     else:
-        ome = (gamma + 1) / (2 * (gamma - 1))
-        part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
-        mach_2 = mach_1
-        liste = []
-        mach = []
-        # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
-        for i in range(0, 10000):
-            mach_2 += 0.00001
-            part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
-            liste.append(abs(part_1 - part_2))
-            mach.append(mach_2)
-        solution_mach = mach[liste.index(min(liste))]
-    return solution_mach
+        return solution_supersonic
 
 
 def pressure_solv(mach_1, mach_2, pressure_1, gamma):

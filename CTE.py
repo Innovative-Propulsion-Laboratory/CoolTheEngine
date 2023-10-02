@@ -30,7 +30,7 @@ print("█                                                                      
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
-print("█ Initialisation                                                           █")
+print("█ Initialisation  AAA                                                      █")
 print("█                                                                          █")
 
 # %% Initial definitions
@@ -207,8 +207,7 @@ if plot_detail >= 3:
 
 v_init_gas = (debit_LOX + debit_mass_coolant) / (rho_init * cross_section_area_list[0])  # Initial velocity of the gases
 mach_init_gas = v_init_gas / sound_speed_init  # Initial mach number
-mach_gas = mach_init_gas
-mach_list = [mach_init_gas]
+mach_list = [0.07]
 
 # Mach number computations along the engine
 with tqdm(total=nb_points - 1,
@@ -216,8 +215,9 @@ with tqdm(total=nb_points - 1,
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i + 1],
-                               mach_gas, gamma_list[i])
+        subsonic = True if i < i_throat else False
+        mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i_throat],
+                               gamma_list[i], subsonic)
         mach_list.append(mach_gas)
         progressbar.update(1)
 
