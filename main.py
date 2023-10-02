@@ -62,9 +62,9 @@ class MainProcess:
         # Distance between two points of calculation
         mesh_size = str(entry_dict["mesh_size"])
         # X coordinates of an engine
-        x_coords_filename = f"C:/Users/green/OneDrive/Bureau/pythonProject/CoolTheEngine/input/{mesh_size}/{engine_name}/x.txt"
+        x_coords_filename = f"CoolTheEngine/input/{mesh_size}/{engine_name}/x.txt"
         # Y coordinates of an engine
-        y_coords_filename = f"C:/Users/green/OneDrive/Bureau/pythonProject/CoolTheEngine/input/{mesh_size}/{engine_name}/y.txt"
+        y_coords_filename = f"CoolTheEngine/input/{mesh_size}/{engine_name}/y.txt"
         # Engine's parameters (found with CEA)
         input_CEA_data = "input/" + entry_dict["input_CEA_data"]
 
@@ -953,6 +953,8 @@ class MainProcess:
             geometry2.close()
 
             longc = len(xcanaux)
+
+            #write in a csv for CATIA macro (work in progress)
             if write_in_csv:
                 "Writing the results of the study in a CSV file"
                 file_name = "output/channel_macro_catia.csv"
@@ -1023,6 +1025,7 @@ class MainProcess:
 
                 writer.writerow(["End"])
                 file.close()
+
         # %% Execution time display
 
         end_t = time.perf_counter()  # End of the total timer
