@@ -62,9 +62,9 @@ class MainProcess:
         # Distance between two points of calculation
         mesh_size = str(entry_dict["mesh_size"])
         # X coordinates of an engine
-        x_coords_filename = f"CoolTheEngine/input/{mesh_size}/{engine_name}/x.txt"
+        x_coords_filename = f"input/{mesh_size}/{engine_name}/x.txt"
         # Y coordinates of an engine
-        y_coords_filename = f"CoolTheEngine/input/{mesh_size}/{engine_name}/y.txt"
+        y_coords_filename = f"input/{mesh_size}/{engine_name}/y.txt"
         # Engine's parameters (found with CEA)
         input_CEA_data = "input/" + entry_dict["input_CEA_data"]
 
@@ -198,7 +198,7 @@ class MainProcess:
             # Linear interpolation between beginning and end of convergent:
             # (yi+1)=((y2-y1)/(x2-x1))*abs((xi+1)-(xi))
             gamma_convergent += ((gamma_t_input - gamma_c_input) / (
-                x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
+                    x_coord_list[i_throat] - x_coord_list[i_conv])) * abs(
                 x_coord_list[i_conv + 1 + m] - x_coord_list[i_conv + m])
             gamma_list.append(gamma_convergent)
 
@@ -443,7 +443,7 @@ class MainProcess:
 
         # Compute dimensions
         xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, \
-            y_coord_avec_canaux \
+        y_coord_avec_canaux \
             = canaux(profile, widths, heights, thicknesses, coeffs, manifold_pos, debit_volumique_total_cool, nbc,
                      plot_detail, write_in_csv, figure_dpi, plot_dir)
 
@@ -517,11 +517,11 @@ class MainProcess:
 
         # Call the main solving loop
         hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
-            hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
-            sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
-            condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
-            pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
-            qRad_list, q_list_CO2, q_list_H2O \
+        hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
+        sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
+        condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
+        pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
+        qRad_list, q_list_CO2, q_list_H2O \
             = mainsolver(data_hotgas, data_coolant, data_channel, data_chamber)
 
         end_m = time.perf_counter()  # End of the main solution timer
@@ -954,7 +954,7 @@ class MainProcess:
 
             longc = len(xcanaux)
 
-            #write in a csv for CATIA macro (work in progress)
+            # write in a csv for CATIA macro (work in progress)
             if write_in_csv:
                 "Writing the results of the study in a CSV file"
                 file_name = "output/channel_macro_catia.csv"

@@ -11,7 +11,7 @@ def mach_solv(area_1, area_2, mach_1, gamma):
         liste = []
         mach = []
         # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
-        for i in range(0, 750):
+        for i in range(0, 10000):
             mach_2 += 0.00001
             part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
             liste.append(abs(part_1 - part_2))
