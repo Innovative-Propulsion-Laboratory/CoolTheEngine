@@ -106,7 +106,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hotwall_temp = new_hotwall_temp
 
                 # Gas-side convective heat transfer coefficient (Bartz equation)
-                hg = (0.0195 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
+                hg = (0.026 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
                         (Pc / c_star) ** 0.8) * ((diam_throat / curv_radius_pre_throat) ** 0.1) * (
                               (area_throat / cross_section_area_list[i]) ** 0.9)) * sigma
 
