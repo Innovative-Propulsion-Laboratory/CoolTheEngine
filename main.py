@@ -172,17 +172,22 @@ class MainProcess:
         # Storing the X,Y coordinates in lists
         x_coord_list = [float(row[0]) / 1000 for row in x_coords_reader]
         y_coord_list = [float(row[0]) / 1000 for row in y_coords_reader]
+        x_coords_reader = [x * 1000 for x in x_coord_list]
+        y_coords_reader = [y * 1000 for y in y_coord_list]
+
         # Number of points (or the index of the end of the divergent)
         nb_points = len(x_coord_list)
 
         # Plot of the profile of the engine
         if plot_detail >= 3:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, y_coord_list, color='black')
-            plt.title(
-                'Profile of the Viserion (left : chamber and right : divergent)', color='black')
-            plt.savefig(f"{plot_dir3}/profile.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=y_coords_reader,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Radius of the chamber [mm]',
+                             title="Engine profile", show=False,
+                             equal_axes=True, ymin=0, ymax=50,
+                             xmin=-190, xmax=35)
+            fig.savefig(f"{plot_dir3}/profile.png")
+            plt.close(fig)
 
         # Computation and plot of the mesh density of the engine
         if plot_detail >= 3 and show_3d_plots:
@@ -199,12 +204,14 @@ class MainProcess:
 
         # Plots of the cross-sectionnal areas
         if plot_detail >= 3:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, cross_section_area_list, color='black')
-            plt.title(
-                "Cross section area of engine (in m²) as a function of engine axis")
-            plt.savefig(f"{plot_dir3}/Cross section area.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=cross_section_area_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Area [m²]',
+                             title="Cross-sectional area", show=False,
+                             xmin=-190, xmax=35,
+                             sci_notation=True, ymin=0)
+            fig.savefig(f"{plot_dir3}/Cross section area.png")
+            plt.close(fig)
 
         # %% Adiabatic constant (gamma) parametrization
         print(
@@ -261,20 +268,18 @@ class MainProcess:
 
         # Plot of the gamma linearisation
         if plot_detail >= 3:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, gamma_list, color='gold')
-            plt.title("Gamma of hot gases as a function of engine axis")
-            plt.savefig(f"{plot_dir3}/Gamma of hot gases.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=gamma_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Gamma [-]',
+                             title="Gamma of hot gases as a function of engine axis",
+                             show=False, xmin=-190, xmax=35)
+            fig.savefig(f"{plot_dir3}/Gamma of hot gases.png")
+            plt.close(fig)
 
         # %% Mach number computation
         "Computation of gases mach number of the hot gases (and their initial velocity)"
 
-        v_init_gas = (debit_LOX + debit_mass_coolant) / (rho_init *
-                                                         cross_section_area_list[0])  # Initial velocity of the gases
-        mach_init_gas = v_init_gas / sound_speed_init  # Initial mach number
-        mach_gas = mach_init_gas
-        mach_list = [mach_init_gas]
+        mach_list = [0.07]
 
         # Mach number computations along the engine
 
@@ -297,11 +302,13 @@ class MainProcess:
 
         # Plots of the Mach number in the engine (2D/3D)
         if plot_detail >= 1:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, mach_list, color='gold')
-            plt.title("Mach number as a function of the engine axis")
-            plt.savefig(f"{plot_dir1}/Mach number.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=mach_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Mach [-]',
+                             title="Mach number as a function of the engine axis",
+                             show=False, xmin=-190, xmax=35)
+            fig.savefig(f"{plot_dir3}/Mach number.png")
+            plt.close(fig)
 
         if plot_detail >= 1 and show_3d_plots:
             colormap = plt.cm.Spectral
@@ -332,12 +339,14 @@ class MainProcess:
 
         # Plot of the static pressure (2D/3D)
         if plot_detail >= 2:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, pressure_list, color='gold')
-            plt.title(
-                "Global static pressure (in Pa) as a function of the engine axis")
-            plt.savefig(f"{plot_dir2}/Global static pressure.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=pressure_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Pressure [Pa]',
+                             title="Global static pressure",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, ymin=0)
+            fig.savefig(f"{plot_dir2}/Global static pressure.png")
+            plt.close(fig)
 
         if plot_detail >= 2 and show_3d_plots:
             colormap = plt.cm.gist_rainbow_r
@@ -366,22 +375,25 @@ class MainProcess:
 
         # Plots of molar fraction and partial pressure
         if plot_detail >= 3:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, Molfrac_H2O, color='blue', label='H20')
-            plt.plot(x_coord_list, Molfrac_CO2, color='orange', label='C02')
-            plt.title("Molar fraction of as a function of the engine axis")
-            plt.legend(loc='center left')
-            plt.savefig(f"{plot_dir3}/Molar fraction.png")
-            plt.close()
+            fig = t.n_plots(x=x_coords_reader, y_list=[Molfrac_H2O, Molfrac_CO2],
+                            xlabel=r'Position x along the engine [mm]',
+                            ylabel=r'Molar fraction [-]',
+                            y_label_list=["H2O", "CO2"],
+                            colors_list=["blue", "orange"],
+                            title="Molar fractions of H2O and CO2",
+                            show=False, xmin=-190, xmax=35, ymin=0, ymax=1)
+            fig.savefig(f"{plot_dir3}/Molar fraction.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, PH2O_list, color='blue', label='H20')
-            plt.plot(x_coord_list, PCO2_list, color='orange', label='C02')
-            plt.title(
-                "Partial static pressure (in Pa) of as a function of the engine axis")
-            plt.legend(loc='center left')
-            plt.savefig(f"{plot_dir3}/Partial static pressure.png")
-            plt.close()
+            fig = t.n_plots(x=x_coords_reader, y_list=[PH2O_list, PCO2_list],
+                            xlabel=r'Position x along the engine [mm]',
+                            ylabel=r'Pressure [Pa]',
+                            y_label_list=["H2O", "CO2"],
+                            colors_list=["blue", "orange"],
+                            title="Partial static pressure of H2O and CO2",
+                            show=False, xmin=-190, xmax=35, sci_notation=True)
+            fig.savefig(f"{plot_dir3}/Partial static pressure.png")
+            plt.close(fig)
 
         # %% Hot gas temperature computation
         hotgas_temp_list = [Tc]
@@ -407,11 +419,13 @@ class MainProcess:
 
         # Plots of the temperature in the engine (2D/3D)
         if plot_detail >= 2:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(x_coord_list, hotgas_temp_list, color='gold')
-            plt.title("Gas temperature (in K) as a function of the engine axis")
-            plt.savefig(f"{plot_dir2}/Gas temperature.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hotgas_temp_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Temperature [K]',
+                             title="Gas static temperature",
+                             show=False, xmin=-190, xmax=35)
+            fig.savefig(f"{plot_dir2}/Gas temperature.png")
+            plt.close(fig)
 
         if plot_detail >= 2 and show_3d_plots:
             colormap = plt.cm.coolwarm
@@ -424,7 +438,7 @@ class MainProcess:
 
         # %% Dimensions
         print(
-            "█ Computing channel geometric                                              █")
+            "█ Computing channel geometry                                               █")
         print(
             "█                                                                          █")
 
@@ -593,153 +607,199 @@ class MainProcess:
         if plot_detail >= 1:
             start_d1 = time.perf_counter()  # Start of the display of 1D timer
             print(
-                "█ Display of results                                                       █")
+                "█ Displaying results                                                       █")
             print(
                 "█                                                                          █")
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hlcor_list_2, color='blue',
-                     label='Hl corrected (Luka Denies)')
-            plt.plot(xcanaux, hlcor_list, color='green',
-                     label='Hl corrected (Julien)')
-            plt.plot(xcanaux, hlnormal_list, color='cyan', label='Hl')
-            plt.title("Convection coeff as a function of the engine axis")
-            plt.legend(loc='upper left')
-            plt.savefig(f"{plot_dir1}/Convection coeff.png")
-            plt.close()
+            fig = t.n_plots(x=x_coords_reader,
+                            y_list=[hlcor_list_2, hlcor_list, hlnormal_list],
+                            xlabel=r'Position x along the engine [mm]',
+                            ylabel=r'Convection coeff [W/m² K]',
+                            y_label_list=["Hl corrected (Luka Denies)",
+                                          "Hl corrected (Julien)",
+                                          "Hl normal"],
+                            colors_list=["blue", "green", "cyan"],
+                            title="Cold-side convection coefficient",
+                            show=False, xmin=-190, xmax=35, reverse=True,
+                            ymin=0)
+            fig.savefig(f"{plot_dir1}/Convection coeff.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, coldwall_temp_list, color='blue', label='Twl')
-            plt.plot(xcanaux, hotwall_temp_list, color='red', label='Twg')
-            plt.title('Wall temperature (in K) as a function of engine axis')
-            plt.legend(loc='lower left')
-            plt.savefig(f"{plot_dir1}/Wall temperature.png")
-            plt.close()
+            fig = t.n_plots(x=x_coords_reader,
+                            y_list=[coldwall_temp_list, hotwall_temp_list],
+                            xlabel=r'Position x along the engine [mm]',
+                            ylabel=r'Temperature [K]',
+                            y_label_list=["Twl", "Twg"],
+                            colors_list=["blue", "red"],
+                            title="Wall temperatures",
+                            show=False, xmin=-190, xmax=35,
+                            reverse=True, ymin=273)
+            fig.savefig(f"{plot_dir1}/Wall temperature.png")
+            plt.close(fig)
 
             tempcoolant_list.pop()
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, tempcoolant_list, color='blue')
-            plt.title('Coolant temperature (in K) as a function of engine axis')
-            plt.savefig(f"{plot_dir1}/Coolant temperature.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=tempcoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Temperature [K]',
+                             title="Coolant temperature",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir1}/Coolant temperature.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, flux_list, color='red')
-            plt.title('Heat flux (in W) as a function of engine axis')
-            plt.savefig(f"{plot_dir1}/Heat flux.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=flux_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Total heat flux density [W/m²]',
+                             title="Heat flux density",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True, ymin=0)
+            fig.savefig(f"{plot_dir1}/Heat flux.png")
+            plt.close(fig)
 
-            mach_03 = [x * 0.3 for x in sound_speed_coolant_list]
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, velocitycoolant_list,
-                     color='blue', label='Coolant')
-            plt.plot(xcanaux, mach_03, color='orange', label='Mach 0.3 limit')
-            plt.title(
-                'Velocity (in m/s) of the coolant as a function of engine axis')
-            plt.legend(loc='upper left')
-            plt.savefig(f"{plot_dir1}/Velocity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=velocitycoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Velocity [m/s]',
+                             title="Coolant velocity",
+                             show=False, xmin=-190, xmax=35,
+                             reverse=True)
+            fig.savefig(f"{plot_dir1}/Velocity.png")
+            plt.close(fig)
 
             pcoolant_list.pop()
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, pcoolant_list, color='orange')
-            plt.title('Pressure drop in the cooling channels')
-            plt.savefig(f"{plot_dir1}/Pressure drop.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=pcoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Pressure [Pa]',
+                             title="Pressure drop in the cooling channels",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True, ymin=0)
+            fig.savefig(f"{plot_dir1}/Pressure drop.png")
+            plt.close(fig)
 
         if plot_detail >= 2:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, wallcond_list, color='orangered')
-            plt.title('Conductivity of the wall as a function of engine axis')
-            plt.savefig(f"{plot_dir2}/Wall conductivity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=wallcond_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Conductivity [W/m K]',
+                             title="Conductivity of the wall",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir2}/Wall conductivity.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hg_list, color='orangered')
-            plt.title('Convection coefficient Hg as a function of engine axis')
-            plt.savefig(f"{plot_dir2}/Convection coefficient.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hg_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Convection coefficient [W/m² K]',
+                             title="Gas-side convection coefficient",
+                             show=False, xmin=-190, xmax=35, reverse=True,
+                             ymin=0)
+            fig.savefig(f"{plot_dir2}/Convection coefficient.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
             densitycoolant_list.pop()
-            plt.plot(xcanaux, densitycoolant_list, color='blue')
-            plt.title('Volumic mass of the coolant as a function of engine axis')
-            plt.savefig(f"{plot_dir2}/Coolant Volumic mass.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=densitycoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Density [$\frac{kg}{m^3}$]',
+                             title="Coolant density",
+                             show=False, xmin=-190, xmax=35,
+                             reverse=True)
+            fig.savefig(f"{plot_dir2}/Coolant Volumic mass.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, q_list_CO2, color='r', label='CO2')
-            plt.plot(xcanaux, q_list_H2O, color='b', label='H2O')
-            plt.plot(xcanaux, qRad_list, color='g', label='total')
-            plt.title('Radiative heat flux(W/m2)')
-            plt.legend()
-            plt.savefig(f"{plot_dir2}/Radiative heat flux.png")
-            plt.close()
+            fig = t.n_plots(x=x_coords_reader,
+                            y_list=[q_list_CO2, q_list_H2O, qRad_list],
+                            xlabel=r'Position x along the engine [mm]',
+                            ylabel=r'Heat flux density [W/m²]',
+                            y_label_list=["CO2", "H2O", "Total"],
+                            colors_list=["r", "b", "k"],
+                            title="Radiative heat flux density",
+                            show=False, xmin=-190, xmax=35, ymin=0,
+                            sci_notation=True, reverse=True)
+            fig.savefig(f"{plot_dir2}/Radiative heat flux.png")
+            plt.close(fig)
 
         if plot_detail >= 3:
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, coolant_reynolds_list, color='blue')
-            plt.title(
-                "Reynolds number of the coolant as a function of the engine axis")
-            plt.savefig(f"{plot_dir3}/Reynolds number.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=coolant_reynolds_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Reynolds [-]',
+                             title="Coolant Reynolds number",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Reynolds number.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hotgas_visc_list, color='orangered')
-            plt.title("Gas viscosity as a function of the engine axis")
-            plt.savefig(f"{plot_dir3}/Gas viscosity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hotgas_visc_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Dynamic viscosity [Pa s]',
+                             title="Coolant viscosity",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True)
+            fig.savefig(f"{plot_dir3}/Gas viscosity.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hotgas_cp_list, color='orangered')
-            plt.title("Gas Cp as a function of the engine axis")
-            plt.savefig(f"{plot_dir3}/Gas Cp.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hotgas_cp_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Cp [J/kg K]',
+                             title="Gas specific heat",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Gas Cp.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hotgas_cond_list, color='orangered')
-            plt.title("Gas conductivity as a function of engine axis")
-            plt.savefig(f"{plot_dir3}/Gas conductivity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hotgas_cond_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Conductivity [W/m K]',
+                             title="Gas conductivity",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True)
+            fig.savefig(f"{plot_dir3}/Gas conductivity.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, hotgas_prandtl_list, color='orangered')
-            plt.title("Gas Prandtl number as a function of engine axis")
-            plt.savefig(f"{plot_dir3}/Gas Prandtl.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=hotgas_prandtl_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Prandtl [-]',
+                             title="Gas Prandtl number",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Gas Prandtl.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, sigma_list, color='orangered')
-            plt.title("Sigma as a function of the engine axis")
-            plt.savefig(f"{plot_dir3}/Sigma.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=sigma_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Sigma [-]',
+                             title="Bartz correction factor sigma",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Sigma.png")
+            plt.close(fig)
 
             condcoolant_list.pop()
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, condcoolant_list, color='blue')
-            plt.title('Conductivity of the coolant as a function of engine axis')
-            plt.savefig(f"{plot_dir3}/Coolant conductivity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=condcoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Conductivity [W/m K]',
+                             title="Coolant conductivity",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True)
+            fig.savefig(f"{plot_dir3}/Coolant conductivity.png")
+            plt.close(fig)
 
             cpcoolant_list.pop()
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, cpcoolant_list, color='blue')
-            plt.title('Cp of the coolant as a function of engine axis')
-            plt.savefig(f"{plot_dir3}/Coolant Cp.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=cpcoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Specific heat [J/kg K]',
+                             title="Coolant specific heat",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Coolant Cp.png")
+            plt.close(fig)
 
             visccoolant_list.pop()
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, visccoolant_list, color='blue')
-            plt.title('Viscosity of the coolant as a function of engine axis')
-            plt.savefig(f"{plot_dir3}/Coolant viscosity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=visccoolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Dynamic viscosity [Pa s]',
+                             title="Coolant viscosity",
+                             show=False, xmin=-190, xmax=35,
+                             sci_notation=True, reverse=True)
+            fig.savefig(f"{plot_dir3}/Coolant viscosity.png")
+            plt.close(fig)
 
-            plt.figure(dpi=figure_dpi)
-            plt.plot(xcanaux, sound_speed_coolant_list, color='pink')
-            plt.title(
-                'Sound velocity of the coolant (in m/s) as a function of engine axis')
-            plt.savefig(f"{plot_dir3}/Sound velocity.png")
-            plt.close()
+            fig = t.one_plot(x=x_coords_reader, y=sound_speed_coolant_list,
+                             xlabel=r'Position x along the engine [mm]',
+                             ylabel=r'Sound speed [m/s]',
+                             title="Coolant speed of sound",
+                             show=False, xmin=-190, xmax=35, reverse=True)
+            fig.savefig(f"{plot_dir3}/Sound velocity.png")
+            plt.close(fig)
 
         if plot_detail >= 1 and show_3d_plots:
             colormap = plt.cm.plasma

@@ -1,5 +1,7 @@
 import numpy as np
 from skaero.gasdynamics import isentropic
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 
 def mach_solv(area_i, area_throat, gamma, subsonic):
@@ -22,7 +24,6 @@ def mach_solv(area_i, area_throat, gamma, subsonic):
     fl = isentropic.IsentropicFlow(gamma=gamma)
     area_ratio = area_i / area_throat
     solution_subsonic, solution_supersonic = isentropic.mach_from_area_ratio(fl, area_ratio)
-    print(solution_subsonic, solution_supersonic)
     if subsonic:
         return solution_subsonic
     else:
@@ -118,3 +119,116 @@ def darcy_weisbach(Dhy, Re, roughness):
             ((roughness / (Dhy * 3.7)) + 2.51 / (Re * (friction_factor_1 ** 0.5)))))) ** 2
 
     return friction_factor_2
+
+
+def one_plot(x, y,
+             xlabel=r'Default xlabel',
+             ylabel=r'Default ylabel',
+             xmin=None, xmax=None,
+             ymin=None, ymax=None,
+             title=r'Default title', equal_axes=False, show_grid=True,
+             fmt='-k', lw=1.5, dpi=150, sci_notation=False, show=True,
+             reverse=False):
+    serif = {'fontname': 'DejaVu Serif'}
+
+    margin = 0.05
+    if xmin is None:
+        xmin = min(x) - margin * min(x)
+    if xmax is None:
+        xmax = max(x) + margin * max(x)
+    if ymin is None:
+        ymin = min(y) - margin * min(y)
+    if ymax is None:
+        ymax = max(y) + margin * max(y)
+
+    plt.rcParams["mathtext.fontset"] = 'dejavuserif'
+    plt.rcParams['xtick.direction'] = 'inout'
+    plt.rcParams['ytick.direction'] = 'inout'
+
+    fig = plt.figure(dpi=dpi)
+    ax = fig.add_subplot(111)
+    ax.minorticks_on()
+    if reverse:
+        x_rev = [x_ for x_ in reversed(x)]
+        ax.plot(x_rev, y, fmt, linewidth=lw)
+    else:
+        ax.plot(x, y, fmt, linewidth=lw)
+    ax.set_xlabel(xlabel, **serif)
+    ax.set_ylabel(ylabel, **serif)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_title(title, **serif)
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(9))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(10))
+    if equal_axes:
+        ax.set_aspect('equal', adjustable='box')
+    if show_grid:
+        ax.grid(ls=':')
+    if sci_notation:
+        ax.ticklabel_format(style='sci', axis='y')
+
+    if show:
+        plt.show()
+
+    return fig
+
+
+def n_plots(x, y_list,
+            y_label_list, colors_list,
+            xlabel=r'Default xlabel',
+            ylabel=r'Default ylabel',
+            xmin=None, xmax=None,
+            ymin=None, ymax=None,
+            title=r'Default title', equal_axes=False, show_grid=True,
+            fmt='-', lw=1.5, dpi=150,
+            label_loc='best', sci_notation=False, show=True, reverse=False):
+    serif = {'fontname': 'DejaVu Serif'}
+
+    margin = 0.05
+    if xmin is None:
+        xmin = min(x) - margin * min(x)
+    if xmax is None:
+        xmax = max(x) + margin * max(x)
+    if ymin is None:
+        ymin = np.min(y_list)
+        ymin = ymin - margin * ymin
+    if ymax is None:
+        ymax = np.max(y_list)
+        ymax = ymax + margin * ymax
+
+    plt.rcParams["mathtext.fontset"] = 'dejavuserif'
+    plt.rcParams['xtick.direction'] = 'inout'
+    plt.rcParams['ytick.direction'] = 'inout'
+
+    fig = plt.figure(dpi=dpi)
+    ax = fig.add_subplot(111)
+    ax.minorticks_on()
+    for i, y in enumerate(y_list):
+        if reverse:
+            x_rev = [x_ for x_ in reversed(x)]
+            ax.plot(x_rev, y, fmt, linewidth=lw,
+                    label=y_label_list[i],
+                    color=colors_list[i])
+        else:
+            ax.plot(x, y, fmt, linewidth=lw,
+                    label=y_label_list[i],
+                    color=colors_list[i])
+    ax.set_xlabel(xlabel, **serif)
+    ax.set_ylabel(ylabel, **serif)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_title(title, **serif)
+    ax.xaxis.set_major_locator(ticker.MaxNLocator(9))
+    ax.yaxis.set_major_locator(plt.MaxNLocator(10))
+    ax.legend(loc=label_loc)
+    if equal_axes:
+        ax.set_aspect('equal', adjustable='box')
+    if show_grid:
+        ax.grid(ls=':')
+    if sci_notation:
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+
+    if show:
+        plt.show()
+
+    return fig

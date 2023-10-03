@@ -7,7 +7,7 @@ Pc,1000000
 Tc,3121.44
 gamma_chambre,1.1296
 gamma_col,1.1308
-gamma_exit,1.218
+gamma_exit,1.169
 M,22.036
 Cstar,1710.2
 Dcol,0.0233
