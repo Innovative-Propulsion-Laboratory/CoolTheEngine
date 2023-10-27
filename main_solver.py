@@ -112,7 +112,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
                 # Coolant-side convective heat transfer coefficient from Taylor (NASA TN D-4332)
                 Nu = 0.023 * Re_cool ** 0.705 * Pr_cool ** 0.8 * (coldwall_temp / coolant_temp_list[i]) ** -(
-                        -0.57 - 1.59 * Dhy / length_from_inlet)
+                        -0.57 + 1.59 * Dhy / length_from_inlet)
 
                 # Nusselt number correction for the channel roughness
                 xi = t.darcy_weisbach(Dhy, Re_cool, roughness) / t.darcy_weisbach(Dhy, Re_cool, 0)
@@ -147,7 +147,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 flux = (hotgas_temp_list[i] - coolant_temp_list[i] + qRad / hg) / (
                         1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
                 new_hotwall_temp = hotgas_temp_list[i] + (qRad - flux) / hg
-                new_coldwall_temp = coolant_temp_list[i] + flux / hl
+                new_coldwall_temp = coolant_temp_list[i] + flux / hl_cor
 
                 # Compute new value of sigma (used in the Bartz equation)
                 T_hotgas_throat = hotgas_temp_list[index_throat]
