@@ -10,10 +10,28 @@ import os
 import matplotlib.pyplot as plt
 import cte_tools as t
 from scipy.interpolate import interp1d
+from mpl_toolkits.mplot3d import Axes3D
 
 
-def canaux(profile_data, width_data, height_data, angle_data, wall_thickness,
-           nbc, x_chamber_throat_exit, plot_detail, write_in_csv, figure_dpi, plot_dir=None):
+def set_axes_equal(ax):
+    '''Set 3D plot axes to equal scale (so 1mm is the same on all axes).'''
+    x_limits = ax.get_xlim3d()
+    y_limits = ax.get_ylim3d()
+    z_limits = ax.get_zlim3d()
+    x_range = abs(x_limits[1] - x_limits[0])
+    x_middle = np.mean(x_limits)
+    y_range = abs(y_limits[1] - y_limits[0])
+    y_middle = np.mean(y_limits)
+    z_range = abs(z_limits[1] - z_limits[0])
+    z_middle = np.mean(z_limits)
+    plot_radius = 0.5 * max([x_range, y_range, z_range])
+    ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
+    ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
+    ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
+
+
+def generate_channels(profile_data, width_data, height_data, angle_data, wall_thickness,
+                      nbc, x_chamber_throat_exit, plot_detail, write_in_csv, figure_dpi, plot_dir=None):
     """
     This function computes the caracteristics of channels on each point
     by interpolation between given values at injection plate (inj), end of cylindrical chamber (conv), 
@@ -39,34 +57,93 @@ def canaux(profile_data, width_data, height_data, angle_data, wall_thickness,
     beta_list_reversed = np.flip(beta_list)
 
     # Create and fill the list of alpha angle (angle about the z-axis)
-    alpha_list = np.zeros_like(z_coord_list)
-    for i, _ in enumerate(z_coord_list):
-        alpha_list[i+1] = alpha_list[i] + np.tan(beta_list[i+1]) *\
-            abs(z_coord_list_reversed[i]-z_coord_list_reversed[i+1])/r_coord_list_reversed[i+1]
+    alpha_list_reversed = np.zeros_like(z_coord_list_reversed)
+    for i, _ in enumerate(z_coord_list_reversed[:-1]):
+        alpha_list_reversed[i+1] = np.rad2deg(np.deg2rad(alpha_list_reversed[i]) + np.tan(np.deg2rad(beta_list_reversed[i+1])) *
+                                              abs(z_coord_list_reversed[i]-z_coord_list_reversed[i+1])/r_coord_list_reversed[i+1])
+    alpha_list = np.flip(alpha_list_reversed)
 
-    # We generate the four points of lists corresponding to the four
-    # vertices of the cooling channels
+    # We generate the four points of lists corresponding to the four vertices of the cooling channels
     # The central axis of the engine is located along the z-axis
-    xA_list = -(r_coord_list_reversed + wall_thickness) * np.sin(np.deg2rad(alpha_list))\
-        - (width_list_reversed / 2) * np.cos(np.deg2rad(alpha_list))
-    yA_list = (r_coord_list_reversed + wall_thickness) * np.cos(np.deg2rad(alpha_list))\
-        - (width_list_reversed / 2) * np.sin(np.deg2rad(alpha_list))
-    xB_list = -(r_coord_list_reversed + wall_thickness) * np.sin(np.deg2rad(alpha_list))\
-        + (width_list_reversed / 2) * np.cos(np.deg2rad(alpha_list))
-    yB_list = (r_coord_list_reversed + wall_thickness) * np.cos(np.deg2rad(alpha_list))\
-        + (width_list_reversed / 2) * np.sin(np.deg2rad(alpha_list))
+    xA_list = -(r_coord_list + wall_thickness) * np.sin(np.deg2rad(alpha_list))\
+        - (width_list / 2) * np.cos(np.deg2rad(alpha_list))
+    yA_list = (r_coord_list + wall_thickness) * np.cos(np.deg2rad(alpha_list))\
+        - (width_list / 2) * np.sin(np.deg2rad(alpha_list))
+    xB_list = -(r_coord_list + wall_thickness) * np.sin(np.deg2rad(alpha_list))\
+        + (width_list / 2) * np.cos(np.deg2rad(alpha_list))
+    yB_list = (r_coord_list + wall_thickness) * np.cos(np.deg2rad(alpha_list))\
+        + (width_list / 2) * np.sin(np.deg2rad(alpha_list))
 
-    xC_list = -(r_coord_list_reversed + wall_thickness + ht_list_reversed) * np.sin(np.deg2rad(alpha_list))\
-        + (width_list_reversed / 2) * np.cos(np.deg2rad(alpha_list))
-    yC_list = (r_coord_list_reversed + wall_thickness + ht_list_reversed) * np.cos(np.deg2rad(alpha_list))\
-        + (width_list_reversed / 2) * np.sin(np.deg2rad(alpha_list))
-    xD_list = -(r_coord_list_reversed + wall_thickness + ht_list_reversed) * np.sin(np.deg2rad(alpha_list))\
-        - (width_list_reversed / 2) * np.cos(np.deg2rad(alpha_list))
-    yD_list = (r_coord_list_reversed + wall_thickness + ht_list_reversed) * np.cos(np.deg2rad(alpha_list))\
-        - (width_list_reversed / 2) * np.sin(np.deg2rad(alpha_list))
+    xC_list = -(r_coord_list + wall_thickness + ht_list) * np.sin(np.deg2rad(alpha_list))\
+        + (width_list / 2) * np.cos(np.deg2rad(alpha_list))
+    yC_list = (r_coord_list + wall_thickness + ht_list) * np.cos(np.deg2rad(alpha_list))\
+        + (width_list / 2) * np.sin(np.deg2rad(alpha_list))
+    xD_list = -(r_coord_list + wall_thickness + ht_list) * np.sin(np.deg2rad(alpha_list))\
+        - (width_list / 2) * np.cos(np.deg2rad(alpha_list))
+    yD_list = (r_coord_list + wall_thickness + ht_list) * np.cos(np.deg2rad(alpha_list))\
+        - (width_list / 2) * np.sin(np.deg2rad(alpha_list))
 
     # We compute the list of channel center points
-    x_center_list = -(r_coord_list_reversed + wall_thickness + ht_list_reversed / 2) * np.sin(np.deg2rad(alpha_list))
-    y_center_list = (r_coord_list_reversed + wall_thickness + ht_list_reversed / 2) * np.cos(np.deg2rad(alpha_list))
+    x_center_list = -(r_coord_list + wall_thickness + ht_list / 2) * np.sin(np.deg2rad(alpha_list))
+    y_center_list = (r_coord_list + wall_thickness + ht_list / 2) * np.cos(np.deg2rad(alpha_list))
+
+    # 3D plot of channel centerline and surface of revolution
+    fig = plt.figure(dpi=figure_dpi)
+    ax = fig.add_subplot(111, projection='3d')
+    # Plot channel centerline
+    ax.plot(x_center_list, y_center_list, z_coord_list, color='blue', label='Channel centerline')
+    # Plot surface of revolution
+    theta = np.linspace(0, 2 * np.pi, 60)
+    Z, Theta = np.meshgrid(z_coord_list_reversed, theta)
+    R = np.tile(r_coord_list_reversed, (len(theta), 1))
+    X = R * np.cos(Theta)
+    Y = R * np.sin(Theta)
+    ax.plot_surface(X, Y, Z, color='red', alpha=0.3, linewidth=0, antialiased=True)
+    ax.set_xlabel('z (engine axis) [m]')
+    ax.set_ylabel('x (radial) [m]')
+    ax.set_zlabel('y (radial) [m]')
+    ax.set_title('3D Channel Centerline and Engine Surface')
+    ax.legend()
+    set_axes_equal(ax)
+    plt.show()
+
+    # Compute channel inclination (angle with x-y plane)
+    dx = np.diff(x_center_list)
+    dy = np.diff(y_center_list)
+    dz = np.diff(z_coord_list)
+    horizontal_dist = np.sqrt(dx**2 + dy**2)
+    channel_inclination = np.zeros_like(z_coord_list)
+    channel_inclination[:-1] = np.arctan2(dz, horizontal_dist)  # radians
+    channel_inclination[-1] = channel_inclination[-2]  # repeat last value
+
+    # Compute channel cross-section area (rectangle: width * height)
+    AB = np.sqrt((xB_list - xA_list)**2 + (yB_list - yA_list)**2)
+    BC = np.sqrt((xC_list - xB_list)**2 + (yC_list - yB_list)**2)
+    channel_cross_section = AB * BC
+
+    # Compute effective flow cross-sectional area
+    effective_channel_cross_section = channel_cross_section * np.abs(np.sin(channel_inclination))
+
+    # Plot channel inclination vs z_coord_list
+    plt.figure(dpi=figure_dpi)
+    plt.plot(z_coord_list, np.degrees(channel_inclination), label='Channel Inclination (deg)')
+    plt.xlabel('z (engine axis) [m]')
+    plt.ylabel('Inclination [deg]')
+    plt.title('Channel Inclination vs Engine Axis')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    # Plot effective channel cross section vs z_coord_list
+    plt.figure(dpi=figure_dpi)
+    plt.plot(z_coord_list, effective_channel_cross_section, label='Effective Channel Cross Section')
+    plt.xlabel('z (engine axis) [m]')
+    plt.ylabel('Effective Cross Section [m²]')
+    plt.title('Effective Channel Cross Section vs Engine Axis')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
     return

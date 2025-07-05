@@ -15,18 +15,18 @@
     "channel_widths": {
         "inj": 0.001,
         "conv": 0.0015,
-        "throat": 0.02,
-        "exit": 0.025
+        "throat": 0.002,
+        "exit": 0.0025
     },
     "channel_heights": {
-        "inj": 0.03,
-        "conv": 0.03,
-        "throat": 0.02,
-        "exit": 0.025
+        "inj": 0.003,
+        "conv": 0.003,
+        "throat": 0.002,
+        "exit": 0.0025
     },
     "channel_angles": {
-        "inj": 45.0,
-        "conv": 45.0,
+        "inj": 30.0,
+        "conv": 30.0,
         "throat": 0.0,
         "exit": 0.0
     }

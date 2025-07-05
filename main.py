@@ -1,9 +1,9 @@
 """
 Created on Fri Nov 27 14:47:27 2020
 
-Original author: Julien S
+Original author: Julien S (2020)
 
-Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R
+Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R (2023)
 
 Improved and enhanced by Paul Marchi (july 2025)
 """
@@ -19,7 +19,7 @@ import cte_tools as t
 from solver import solver
 
 # Data
-from channels import canaux_library
+from channels import generate_channels
 import cea
 
 # Graphics
@@ -30,7 +30,7 @@ from tqdm import tqdm  # For progress bars
 
 start_time = time.perf_counter()  # Beginning of the timer
 
-print("██████████████████████████ Cool The Engine V 2.0.0 █████████████████████████")
+print("██████████████████████████  Cool The Engine  V3.0  █████████████████████████")
 print("█                                                                          █")
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█__________________________________________________________________________█")
@@ -284,11 +284,10 @@ profile = (z_coord_list, r_coord_list)
 widths = (width_inj, width_conv, width_throat, width_exit)
 heights = (ht_inj, ht_conv, ht_throat, ht_exit)
 angles = (beta_inj, beta_conv, beta_throat, beta_exit)
-# Compute dimensions
-xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, area_channel, nb_points_channel, \
-    y_coord_avec_canaux \
-    = canaux_library(profile, widths, heights, wall_thickness, manifold_pos, debit_volumique_total_cool, nb_channels,
-                     plot_detail, write_in_csv, figure_dpi)
+
+# Generate the cooling channels
+generate_channels(profile, widths, heights, angles, wall_thickness, nb_channels,
+                  x_chamber_throat_exit, plot_detail, write_in_csv, figure_dpi, plot_dir=None)
 
 # Write the dimensions of the channels in a CSV file
 file_name = "output/channelvalue.csv"
