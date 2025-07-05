@@ -30,28 +30,20 @@ def mach_solv(area_i, area_throat, gamma, subsonic):
         return solution_supersonic
 
 
-def pressure_solv(mach_1, mach_2, pressure_1, gamma):
+def pressure_solv(mach, gamma, stagnation_pressure):
     """
-    Compute hot gas pressure at next point, given mach numbers and previous pressure
-    """
-
-    part1 = (gamma / (gamma - 1)) * np.log(mach_1 * mach_1 + (2 / (gamma - 1)))
-    part2 = (gamma / (gamma - 1)) * np.log(mach_2 * mach_2 + (2 / (gamma - 1)))
-    part3 = np.log(pressure_1)
-
-    return np.exp(part1 - part2 + part3)
-
-
-def temperature_hotgas_solv(mach_1, mach_2, temperature_1, gamma):
-    """
-    Compute hot gas temperature at next point, given mach numbers and previous temperature
+    Compute static pressure from stagnation pressure, mach number, and gamma using isentropic flow relations.
     """
 
-    part1 = np.log(abs(((gamma - 1) * mach_1 * mach_1) + 2))
-    part2 = np.log(abs(((gamma - 1) * mach_2 * mach_2) + 2))
-    part3 = np.log(temperature_1)
+    return stagnation_pressure * (1 + 0.5 * (gamma - 1) * mach ** 2) ** (-gamma / (gamma - 1))
 
-    return np.exp(part1 - part2 + part3)
+
+def temperature_hotgas_solv(mach, gamma, stagnation_temperature):
+    """
+    Compute static temperature from stagnation temperature, mach number, and gamma using isentropic flow relations.
+    """
+
+    return stagnation_temperature * (1 + 0.5 * (gamma - 1) * mach ** 2) ** -1
 
 
 def tempcorrige_pempie(temp_original, gamma, mach):

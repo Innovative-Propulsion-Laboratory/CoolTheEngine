@@ -4,6 +4,8 @@ Created on Fri Nov 27 14:47:27 2020
 Original author: Julien S
 
 Refactored and improved by Mehdi D, Paul B, Paul M, Eve X and Antoine R
+
+Improved and enhanced by Paul Marchi (july 2025)
 """
 
 from scipy.interpolate import interp1d
@@ -17,6 +19,7 @@ from solver import solver
 
 # Data
 from channels import canaux_library
+import cea
 
 # Graphics
 from solver2D import carto2D
@@ -34,7 +37,7 @@ print("█                                                                      
 print("█ Initialisation                                                           █")
 print("█                                                                          █")
 
-# %% Initial definitions
+# Initial definitions
 
 input_file = "input/input.txt"  # Engine parameters
 contour_file = "input/engine_contour.csv"  # Engine contour
@@ -73,16 +76,24 @@ with open(input_file) as f:
 
     # Store the data from the input text file in the right variables
     rows = list(csvreader)
-    chamber_pressure = rows[0][1]
-    coolant_inlet_pressure = rows[1][1]
-    coolant_inlet_temp = rows[2][1]
-    ox_mfr = rows[3][1]
-    fuel_mfr = rows[4][1]
-    coolant_mfr = rows[5][1]
+    chamber_pressure = float(rows[0][1])
+    coolant_inlet_pressure = float(rows[1][1])
+    coolant_inlet_temp = float(rows[2][1])
+    ox_mfr = float(rows[3][1])
+    fuel_mfr = float(rows[4][1])
+    coolant_mfr = float(rows[5][1])
     ox = rows[6][1]
     fuel = rows[7][1]
     coolant = rows[8][1]
 
+chamber_radius = r_coord_list[0]  # Radius of the chamber (in m)
+throat_radius = np.min(r_coord_list)  # Radius of the throat (in m)
+exit_radius = r_coord_list[-1]  # Radius of the exit (in m)
+throat_diam = 2 * throat_radius  # Diameter of the throat (in m)
+chamber_diam = 2 * chamber_radius  # Diameter of the chamber (in m)
+exit_diam = 2 * exit_radius  # Diameter of the exit (in m)
+
+throat_area = np.pi * throat_radius**2  # Area of the throat (in m²)
 
 # Plot of the engine profile
 if plot_detail >= 3:
@@ -104,52 +115,8 @@ if plot_detail >= 3:
 # Adiabatic constant (gamma) parametrization
 print("█ Computing gamma                                                          █")
 
-i_conv = 0  # Index of the beginning of the convergent
-y1 = 1
-y2 = 1
-while y1 == y2:  # Read y values two per two in order to detect the beginning of the convergent
-    y1 = r_coord_list[i_conv]
-    i_conv += 1
-    y2 = r_coord_list[i_conv]
-i_throat = r_coord_list.index(min(r_coord_list))  # Throat index
-
-x_given = [x_coord_list[0],
-           x_coord_list[i_conv],
-           x_1_input,
-           x_coord_list[i_throat],
-           x_2_input,
-           x_3_input,
-           x_4_input,
-           x_5_input,
-           x_6_input,
-           x_7_input,
-           x_8_input,
-           x_9_input,
-           x_10_input,
-           x_11_input,
-           x_12_input,
-           x_13_input,
-           x_14_input,
-           x_coord_list[-1]]
-gamma_given = [gamma_c_input,
-               gamma_c_input,
-               gamma_1_input,
-               gamma_t_input,
-               gamma_2_input,
-               gamma_3_input,
-               gamma_4_input,
-               gamma_5_input,
-               gamma_6_input,
-               gamma_7_input,
-               gamma_8_input,
-               gamma_9_input,
-               gamma_10_input,
-               gamma_11_input,
-               gamma_12_input,
-               gamma_13_input,
-               gamma_14_input,
-               gamma_e_input]
-gamma_list = [x for x in np.interp(x_coord_list, x_given, gamma_given)]
+gamma_list = cea.compute_gamma(chamber_pressure, ox_mfr/fuel_mfr,
+                               ox, fuel, cross_section_area_list/throat_area)
 
 # Plot of the gamma linearisation
 if plot_detail >= 3:
@@ -161,21 +128,8 @@ if plot_detail >= 3:
 # %% Mach number computation
 "Computation of gases mach number of the hot gases (and their initial velocity)"
 
-v_init_gas = (debit_LOX + debit_mass_coolant) / (rho_init * cross_section_area_list[0])  # Initial velocity of the gases
-mach_init_gas = v_init_gas / sound_speed_init  # Initial mach number
-mach_list = [0.07]
-
-# Mach number computations along the engine
-with tqdm(total=nb_points - 1,
-          desc="█ Computing mach number        ",
-          unit="|   █", bar_format="{l_bar}{bar}{unit}",
-          ncols=76) as progressbar:
-    for i in range(0, nb_points - 1):
-        subsonic = True if i < i_throat else False
-        mach_gas = t.mach_solv(cross_section_area_list[i], cross_section_area_list[i_throat],
-                               gamma_list[i], subsonic)
-        mach_list.append(mach_gas)
-        progressbar.update(1)
+mach_list = cea.compute_mach(chamber_pressure, ox_mfr/fuel_mfr,
+                             ox, fuel, cross_section_area_list/throat_area)
 
 # Plots of the Mach number in the engine (2D/3D)
 if plot_detail >= 1:
@@ -184,21 +138,15 @@ if plot_detail >= 1:
     plt.title("Mach number as a function of the engine axis")
     plt.show()
 
-if plot_detail >= 1 and show_3d_plots:
-    colormap = plt.cm.Spectral
-    inv = 1, 1, 1  # 1 means should be reversed
-    print("█ Plotting 3D graph                                                        █")
-    view3d(inv, x_coord_list, r_coord_list, mach_list, colormap, 'Mach number of hot gases', size2, limitation)
-
 # %% Static pressure computation
-pressure_list = [Pc]  # (in Pa)
+pressure_list = [chamber_pressure]  # (in Pa)
 
 with tqdm(total=nb_points - 1,
           desc="█ Computing static pressure    ",
           unit="|   █", bar_format="{l_bar}{bar}{unit}",
           ncols=76) as progressbar:
     for i in range(0, nb_points - 1):
-        pressure = t.pressure_solv(mach_list[i], mach_list[i + 1], pressure_list[i], gamma_list[i])
+        pressure = t.pressure_solv(mach_list[i], gamma_list[i], chamber_pressure)
         pressure_list.append(pressure)
         progressbar.update(1)
 
@@ -208,12 +156,6 @@ if plot_detail >= 2:
     plt.plot(x_coord_list, pressure_list, color='gold')
     plt.title("Global static pressure (in Pa) as a function of the engine axis")
     plt.show()
-
-if plot_detail >= 2 and show_3d_plots:
-    colormap = plt.cm.gist_rainbow_r
-    inv = 1, 1, 1  # 1 means should be reversed
-    print("█ Plotting 3D graph                                                        █")
-    view3d(inv, x_coord_list, r_coord_list, pressure_list, colormap, 'Static pressure (in Pa)', size2, limitation)
 
 # %% Partial pressure computation and interpolation of the molar fraction
 x_Molfrac = [x_coord_list[0], x_coord_list[i_throat], x_coord_list[-1]]  # Location associated to the molar mass
