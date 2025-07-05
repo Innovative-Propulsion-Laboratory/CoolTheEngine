@@ -4,7 +4,7 @@ from tqdm import tqdm
 import cte_tools as t
 
 
-def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
+def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     """
     This is the main function used for solving the 1D case.
     The geometry is discretised into a 1 dimensionnal set of points.
@@ -14,11 +14,11 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
     hotgas_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O, PCO2 = hotgas_data
     init_coolant_temp, init_coolant_pressure, fluid, \
-    debit_mass_coolant = coolant_data
+        debit_mass_coolant = coolant_data
     xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, \
-    area_channel, nb_points_channel = channel_data
+        area_channel, nb_points_channel = channel_data
     y_coord_avec_canaux, nbc, diam_throat, curv_radius_pre_throat, area_throat, roughness, \
-    cross_section_area_list, mach_list, material_name = chamber_data
+        cross_section_area_list, mach_list, material_name = chamber_data
 
     # Lists containing the physical quantities at each point
     coolant_temp_list = [init_coolant_temp]
@@ -107,17 +107,17 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
                 # Gas-side convective heat transfer coefficient (Bartz equation)
                 hg = (0.026 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
-                        (Pc / c_star) ** 0.8) * ((diam_throat / curv_radius_pre_throat) ** 0.1) * (
-                              (area_throat / cross_section_area_list[i]) ** 0.9)) * sigma
+                    (Pc / c_star) ** 0.8) * ((diam_throat / curv_radius_pre_throat) ** 0.1) * (
+                    (area_throat / cross_section_area_list[i]) ** 0.9)) * sigma
 
                 # Coolant-side convective heat transfer coefficient from Taylor (NASA TN D-4332)
                 Nu = 0.023 * Re_cool ** 0.705 * Pr_cool ** 0.8 * (coldwall_temp / coolant_temp_list[i]) ** -(
-                        -0.57 + 1.59 * Dhy / length_from_inlet)
+                    -0.57 + 1.59 * Dhy / length_from_inlet)
 
                 # Nusselt number correction for the channel roughness
                 xi = t.darcy_weisbach(Dhy, Re_cool, roughness) / t.darcy_weisbach(Dhy, Re_cool, 0)
                 roughness_correction = xi * ((1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool - 1)) / (
-                        1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool * xi - 1)))
+                    1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool * xi - 1)))
 
                 # Compute coolant-side convective heat-transfer coefficient
                 hl = Nu * roughness_correction * (coolant_cond_list[i] / Dhy)
@@ -130,8 +130,8 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 # Correct for the fin effect (unknown source)
                 m_ = ((2 * hl) / (fin_width * wall_cond)) ** 0.5
                 hl_cor = hl * ((nbc * larg_canal[i]) / (np.pi * D)) + nbc * (
-                        (2 * hl * wall_cond * (((np.pi * D) / nbc) - larg_canal[i])) ** 0.5) * (
-                                 (np.tanh(m_ * ht_canal[i])) / (np.pi * D))
+                    (2 * hl * wall_cond * (((np.pi * D) / nbc) - larg_canal[i])) ** 0.5) * (
+                    (np.tanh(m_ * ht_canal[i])) / (np.pi * D))
 
                 # Correct for the fin effect (Luka Denies)
                 intermediate_calc_1 = ((2 * hl * fin_width) / wall_cond) ** 0.5 * ht_canal[i] / fin_width
@@ -145,7 +145,7 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
                 flux = (hotgas_temp_list[i] - coolant_temp_list[i] + qRad / hg) / (
-                        1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
+                    1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
                 new_hotwall_temp = hotgas_temp_list[i] + (qRad - flux) / hg
                 new_coldwall_temp = coolant_temp_list[i] + flux / hl_cor
 
@@ -153,8 +153,8 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
                 T_hotgas_throat = hotgas_temp_list[index_throat]
                 mach_hot_gases = mach_list[i]
                 sigma = (((new_hotwall_temp / (2 * T_hotgas_throat)) * (
-                        1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) + 0.5) ** -0.68) * (
-                                (1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) ** -0.12)
+                    1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) + 0.5) ** -0.68) * (
+                    (1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) ** -0.12)
 
                 # Compute thermal conductivity of the solid at a given temperature
                 wall_cond = t.conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=material_name)
@@ -215,9 +215,9 @@ def mainsolver(hotgas_data, coolant_data, channel_data, chamber_data):
             pbar_main.update(1)
 
         return hl_corrected_list, hl_corrected_list_2, hotgas_viscosity_list, \
-               hotgas_cp_list, hotgas_cond_list, hotgas_prandtl_list, hg_list, \
-               hotwall_temp_list, coldwall_temp_list, flux_list, sigma_list, \
-               coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
-               coolant_cond_list, coolant_cp_list, coolant_density_list, \
-               coolant_velocity_list, coolant_pressure_list, wall_cond_list, \
-               sound_speed_list, hl_normal_list, qRad_list, q_list_CO2, q_list_H2O
+            hotgas_cp_list, hotgas_cond_list, hotgas_prandtl_list, hg_list, \
+            hotwall_temp_list, coldwall_temp_list, flux_list, sigma_list, \
+            coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
+            coolant_cond_list, coolant_cp_list, coolant_density_list, \
+            coolant_velocity_list, coolant_pressure_list, wall_cond_list, \
+            sound_speed_list, hl_normal_list, qRad_list, q_list_CO2, q_list_H2O

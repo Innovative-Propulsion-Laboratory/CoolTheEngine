@@ -1,0 +1,9 @@
+Pc,4000000,Pa
+Pcoolant,6000000,Pa
+Tcoolant,298,K
+mfr_ox,3.4
+mfr_fuel,2.1
+mfr_coolant,2.1
+ox,oxygen
+fuel,ethanol
+coolant,ethanol
