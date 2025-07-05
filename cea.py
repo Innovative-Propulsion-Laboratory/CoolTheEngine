@@ -3,7 +3,7 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 
 
-def compute_cea(Pc, MR, ox, fuel, eps):
+def compute_Cstar_Tc_MolWt(Pc, MR, ox, fuel, exp_ratio):
     """
     Compute the CEA data for a given set of parameters.
 
@@ -15,13 +15,60 @@ def compute_cea(Pc, MR, ox, fuel, eps):
     eps (float): Nozzle expansion ratio.
 
     Returns:
-    dict: A dictionary containing the computed CEA data.
+    tuple: A tuple containing the computed CEA data.
     """
     Pc = Pc * 14.5038  # Convert chamber pressure from bar to psi
+    cea = CEA_Obj(oxName=ox, fuelName=fuel)
 
-    cea = CEA_Obj(ox=ox, fuel=fuel, Pc=Pc, MR=MR, eps=eps)
-    cea.estimate_Ambient_Isp()[0]
-    return {Cstar, Tc, MolWt}
+    # Compute Cstar, Tc, and MolWt using CEA methods
+    Cstar = cea.get_Cstar(Pc=Pc, MR=MR)
+    Tc = cea.get_Tcomb(Pc=Pc, MR=MR)
+    MolWt = cea.get_exit_MolWt_gamma(Pc=Pc, MR=MR, eps=exp_ratio)[0]
+
+    Cstar *= 0.3048  # Convert from ft/s to m/s
+    Tc *= 5/9  # Convert from Rankine to Kelvin
+    return (Cstar, Tc, MolWt)
+
+
+def get_hotgas_properties(Pc, MR, ox, fuel, exp_ratio):
+    """
+    Compute the hot gas conductivity for a given set of parameters.
+
+    Parameters:
+    Pc (float): Chamber pressure in bar.
+    MR (float): Mixture ratio.
+    ox (str): Oxidizer name.
+    fuel (str): Fuel name.
+    exp_ratio (float): Nozzle expansion ratio.
+
+    Returns:
+    tuple: The hot gas properties
+    """
+    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+
+    # Get the properties of the hot gases
+    mu_chamber, cp_chamber, lambda_chamber, pr_chamber = cea.get_Chamber_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
+    mu_throat, cp_throat, lambda_throat, pr_throat = cea.get_Throat_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
+    mu_exit, cp_exit, lambda_exit, pr_exit = cea.get_Exit_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1,  frozenAtThroat=1)
+
+    # Convert units from millipoise to Pa.s for viscosity
+    mu_chamber /= 10000
+    mu_throat /= 10000
+    mu_exit /= 10000
+
+    # Convert specific heat from Btu/(lbm*R) to J/(kg*K)
+    cp_chamber *= 4186.8
+    cp_throat *= 4186.8
+    cp_exit *= 4186.8
+
+    # Convert thermal conductivity mcal/cm-s-K to W/(m*K)
+    lambda_chamber *= 0.41868
+    lambda_throat *= 0.41868
+    lambda_exit *= 0.41868
+
+    return (mu_chamber, cp_chamber, lambda_chamber, pr_chamber,
+            mu_throat, cp_throat, lambda_throat, pr_throat,
+            mu_exit, cp_exit, lambda_exit, pr_exit)
 
 
 def compute_gamma(Pc, MR, ox, fuel, AovAt):
@@ -96,3 +143,43 @@ def compute_mach(Pc, MR, ox, fuel, AovAt):
         mach[i+throat_index] = cea.get_MachNumber(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)
 
     return mach
+
+
+def compute_CO2_molar_fractions(Pc, MR, ox, fuel, exp_ratio):
+    """
+    Compute the molar fractions of CO2 for a given set of parameters.
+
+    Parameters:
+    Pc (float): Chamber pressure in psi.
+    MR (float): Mixture ratio.
+    ox (str): Oxidizer name.
+    fuel (str): Fuel name.
+    AovAt (list): Contraction/expansion ratio.
+
+    Returns:
+    tuple: Molar fractions of CO2 at injector, throat and exit.
+    """
+    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+
+    molFracCO2 = cea.get_SpeciesMoleFractions(Pc=Pc, MR=MR, eps=exp_ratio)[1]['*CO2']
+    return (molFracCO2[1], molFracCO2[2], molFracCO2[3])  # Return values for chamber, throat, and exit
+
+
+def compute_H2O_molar_fractions(Pc, MR, ox, fuel, exp_ratio):
+    """
+    Compute the molar fractions of H2O for a given set of parameters.
+
+    Parameters:
+    Pc (float): Chamber pressure in psi.
+    MR (float): Mixture ratio.
+    ox (str): Oxidizer name.
+    fuel (str): Fuel name.
+    AovAt (list): Contraction/expansion ratio.
+
+    Returns:
+    tuple: Molar fractions of CO2 at injector, throat and exit.
+    """
+    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+
+    molFracH2O = cea.get_SpeciesMoleFractions(Pc=Pc, MR=MR, eps=exp_ratio)[1]['H2O']
+    return (molFracH2O[1], molFracH2O[2], molFracH2O[3])  # Return values for chamber, throat, and exit

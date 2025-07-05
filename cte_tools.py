@@ -46,14 +46,12 @@ def temperature_hotgas_solv(mach, gamma, stagnation_temperature):
     return stagnation_temperature * (1 + 0.5 * (gamma - 1) * mach ** 2) ** -1
 
 
-def tempcorrige_pempie(temp_original, gamma, mach):
+def get_recovery_temperature(total_temp, gamma, mach, Pr):
     """
     Compute the recovery temperature (adiabatic wall temperature) [P. Pempie]
     """
-
-    Pr = 4 * gamma / (9 * gamma - 5)
-    recovery_temp = temp_original * (
-            (1 + (Pr ** 0.33) * ((gamma - 1) / 2) * mach ** 2) / (1 + ((gamma - 1) / 2) * mach ** 2))
+    recovery_temp = total_temp * (
+        (1 + (Pr ** 0.33) * ((gamma - 1) / 2) * mach ** 2) / (1 + ((gamma - 1) / 2) * mach ** 2))
 
     return recovery_temp
 

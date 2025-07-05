@@ -1,0 +1,33 @@
+{
+    "chamber_pressure": 40e5,
+    "P_coolant": 60e5,
+    "T_coolant": 298,
+    "ox_mfr": 3.4,
+    "fuel_mfr": 2.1,
+    "coolant_mfr": 2.1,
+    "oxidizer_name": "LOX",
+    "fuel_name": "Isopropanol",
+    "coolant_name": "Ethanol",
+    "wall_material": "CuCrZr",
+    "channel_roughness": 15e-6,
+    "nb_channels": 50,
+    "wall_thickness": 0.001,
+    "channel_widths": {
+        "inj": 0.001,
+        "conv": 0.0015,
+        "throat": 0.02,
+        "exit": 0.025
+    },
+    "channel_heights": {
+        "inj": 0.03,
+        "conv": 0.03,
+        "throat": 0.02,
+        "exit": 0.025
+    },
+    "channel_angles": {
+        "inj": 45.0,
+        "conv": 45.0,
+        "throat": 0.0,
+        "exit": 0.0
+    }
+}

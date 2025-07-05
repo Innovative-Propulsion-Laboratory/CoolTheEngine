@@ -1,9 +1,25 @@
-Pc,4000000,Pa
-Pcoolant,6000000,Pa
-Tcoolant,298,K
-mfr_ox,3.4
-mfr_fuel,2.1
-mfr_coolant,2.1
-ox,LOX
-fuel,Isopropanol
-coolant,Ethanol
+Chamber pressure,4000000,Pa
+Initial coolant pressure,6000000,Pa
+Initial coolant temperature,298,K
+Oxidizer mass flow rate,3.4
+Fuel mass flow rate,2.1
+Coolant mass flow rate,2.1
+Oxidizer name,LOX
+Fuel name,Isopropanol
+Coolant name,Ethanol
+Wall material name,CuCrZr
+Typical channel roughness,15e-6,m
+Number of channels, 50
+Hotwall thickness,0.001,m
+Width of the channels at the injector,0.0022,m
+Width of the channels at the convergent start,0.002,m
+Width of the channels at the throat,0.0014,m
+Width of the channels at the nozzle exit,0.002,m
+Height of the channels at the injector,0.002,m
+Height of the channels at the convergent start,0.002
+Height of the channels at the throat,0.0018,m
+Height of the channels at the nozzle exit,0.002,m
+Channel beta angle at the injector,45,°
+Channel beta angle at the convergent start,45,°
+Channel beta angle at the throat,0,°
+Channel beta angle at the nozzle exit,0,°
