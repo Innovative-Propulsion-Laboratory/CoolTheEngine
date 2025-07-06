@@ -83,9 +83,9 @@ coolant_inlet_temp = float(data["T_coolant"])
 ox_mfr = float(data["ox_mfr"])
 fuel_mfr = float(data["fuel_mfr"])
 coolant_mfr = float(data["coolant_mfr"])
-ox = data["oxidizer_name"]
-fuel = data["fuel_name"]
-coolant = data["coolant_name"]
+ox_name = data["oxidizer_name"]
+fuel_name = data["fuel_name"]
+coolant_name = data["coolant_name"]
 
 # Channel parameters
 wall_material = data["wall_material"]
@@ -124,6 +124,7 @@ exit_area = np.pi * exit_radius**2  # Area of the exit (in m²)
 
 contraction_ratio = chamber_area / throat_area  # Contraction ratio (A/A*)
 expansion_ratio = exit_area / throat_area  # Expansion ratio (Ae/A*)
+throat_curv_radius = 1.5 * chamber_radius  # Curvature radius before the throat (in m)
 
 i_throat = np.argmin(np.abs(r_coord_list))
 i_convergent = 0
@@ -133,26 +134,26 @@ for i in range(1, len(r_coord_list)):
         break
 
 Cstar, Tc, MolWt = cea.compute_Cstar_Tc_MolWt(chamber_pressure, ox_mfr/fuel_mfr,
-                                              ox, fuel, expansion_ratio)
+                                              ox_name, fuel_name, expansion_ratio)
 
 hotgas_mu_chamber, hotgas_cp_chamber, hotgas_lambda_chamber, hotgas_pr_chamber, \
     hotgas_mu_throat, hotgas_cp_throat, hotgas_lambda_throat, hotgas_pr_throat, \
     hotgas_mu_exit, hotgas_cp_exit, hotgas_lambda_exit, hotgas_pr_exit\
     = cea.get_hotgas_properties(chamber_pressure, ox_mfr/fuel_mfr,
-                                ox, fuel, expansion_ratio)
+                                ox_name, fuel_name, expansion_ratio)
 
 x_chamber_throat_exit = [z_coord_list[0], z_coord_list[i_convergent],
                          z_coord_list[i_throat], z_coord_list[-1]]
 
-hotgas_mu_list = interp1d(x_chamber_throat_exit,
-                          [hotgas_mu_chamber, hotgas_mu_chamber, hotgas_mu_throat, hotgas_mu_exit],
-                          kind='linear')(z_coord_list)
+hotgas_visc_list = interp1d(x_chamber_throat_exit,
+                            [hotgas_mu_chamber, hotgas_mu_chamber, hotgas_mu_throat, hotgas_mu_exit],
+                            kind='linear')(z_coord_list)
 hotgas_cp_list = interp1d(x_chamber_throat_exit,
                           [hotgas_cp_chamber, hotgas_cp_chamber, hotgas_cp_throat, hotgas_cp_exit],
                           kind='linear')(z_coord_list)
-hotgas_lambda_list = interp1d(x_chamber_throat_exit,
-                              [hotgas_lambda_chamber, hotgas_lambda_chamber, hotgas_lambda_throat, hotgas_lambda_exit],
-                              kind='linear')(z_coord_list)
+hotgas_conv_list = interp1d(x_chamber_throat_exit,
+                            [hotgas_lambda_chamber, hotgas_lambda_chamber, hotgas_lambda_throat, hotgas_lambda_exit],
+                            kind='linear')(z_coord_list)
 hotgas_pr_list = interp1d(x_chamber_throat_exit,
                           [hotgas_pr_chamber, hotgas_pr_chamber, hotgas_pr_throat, hotgas_pr_exit],
                           kind='linear')(z_coord_list)
@@ -178,7 +179,7 @@ if plot_detail >= 3:
 print("█ Computing gamma                                                          █")
 
 gamma_list = cea.compute_gamma(chamber_pressure, ox_mfr/fuel_mfr,
-                               ox, fuel, cross_section_area_list/throat_area)
+                               ox_name, fuel_name, cross_section_area_list/throat_area)
 
 # Plot of the gamma linearisation
 if plot_detail >= 3:
@@ -189,7 +190,7 @@ if plot_detail >= 3:
 
 # Computation of mach number of the hot gases
 mach_list = cea.compute_mach(chamber_pressure, ox_mfr/fuel_mfr,
-                             ox, fuel, cross_section_area_list/throat_area)
+                             ox_name, fuel_name, cross_section_area_list/throat_area)
 
 # Plots of the Mach number in the engine (2D/3D)
 if plot_detail >= 1:
@@ -219,18 +220,18 @@ if plot_detail >= 2:
 # Partial pressure computation and interpolation of the molar fraction
 molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit\
     = cea.compute_H2O_molar_fractions(chamber_pressure, ox_mfr/fuel_mfr,
-                                      ox, fuel, expansion_ratio)
+                                      ox_name, fuel_name, expansion_ratio)
 molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit\
     = cea.compute_CO2_molar_fractions(chamber_pressure, ox_mfr/fuel_mfr,
-                                      ox, fuel, expansion_ratio)
+                                      ox_name, fuel_name, expansion_ratio)
 
 # Linear interpolation of molar fractions for H2O and CO2
 molFracH2O = interp1d(x_chamber_throat_exit, [molFracH2O_chamber, molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit], kind='linear')(z_coord_list)
 molFracCO2 = interp1d(x_chamber_throat_exit, [molFracCO2_chamber, molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit], kind='linear')(z_coord_list)
 
 # Partial pressure of H2O and CO2
-PH2O_list = [static_pressure_list[i] * molFracH2O[i] for i in range(0, nb_points)]
-PCO2_list = [static_pressure_list[i] * molFracCO2[i] for i in range(0, nb_points)]
+PH2O_list = np.array([static_pressure_list[i] * molFracH2O[i] for i in range(0, nb_points)])
+PCO2_list = np.array([static_pressure_list[i] * molFracCO2[i] for i in range(0, nb_points)])
 
 # Plots of molar fraction and partial pressure
 if plot_detail >= 3:
@@ -262,8 +263,8 @@ with tqdm(total=nb_points,
     hotgas_total_temp_list = Tc*np.ones_like(z_coord_list)  # List of total hot gas temperatures
 
 # Computation of adiabatic wall temperature (recovery temperature)
-hotgas_recovery_temp_list = [t.get_recovery_temperature(hotgas_total_temp_list[i], gamma_list[i], mach_list[i], hotgas_pr_list[i]) for i in
-                             range(0, nb_points)]
+hotgas_recovery_temp_list = np.array([t.get_recovery_temperature(hotgas_total_temp_list[i], gamma_list[i], mach_list[i], hotgas_pr_list[i]) for i in
+                                      range(0, nb_points)])
 
 # Plot of the temperatures in the engine
 if plot_detail >= 2:
@@ -286,81 +287,51 @@ heights = (ht_inj, ht_conv, ht_throat, ht_exit)
 angles = (beta_inj, beta_conv, beta_throat, beta_exit)
 
 # Generate the cooling channels
-generate_channels(profile, widths, heights, angles, wall_thickness, nb_channels,
-                  x_chamber_throat_exit, plot_detail, write_in_csv, figure_dpi, plot_dir=None)
+channel_vertices, channel_centerline, channel_inclination, width_list, ht_list, \
+    effective_channel_cross_section, hydraulic_diameter, effective_fin_thickness, \
+    alpha_list, beta_list, channel_total_length = generate_channels(profile, widths, heights,
+                                                                    angles, wall_thickness,
+                                                                    nb_channels, x_chamber_throat_exit,
+                                                                    plot_detail, write_in_csv,
+                                                                    figure_dpi, plot_dir=None)
 
 # Write the dimensions of the channels in a CSV file
-file_name = "output/channelvalue.csv"
+file_name = "output/channel_data.csv"
 with open(file_name, "w", newline="") as file:
     writer = csv.writer(file)
-    writer.writerow(("Engine x", "Engine y", "y coolant wall", "Channel width", "Rib width",
-                     "Channel height", "Chamber wall thickness", "Channel area"))
-    for i in range(0, nb_points_channel):
-        writer.writerow((xcanaux[i], y_coord_avec_canaux[i], ycanaux[i], larg_canal[i], larg_ailette_list[i],
-                         ht_canal[i], wall_thickness[i], area_channel[i]))
+    writer.writerow(("Engine z axis", "Engine radius", "Channel width", "Channel height",
+                     "Fin width", "Hydraulic diameter", "Channel cross-sectionnal area"))
+    for i in range(nb_points):
+        writer.writerow((z_coord_list[i], r_coord_list[i],
+                         width_list[i], ht_list[i], effective_fin_thickness[i],
+                         hydraulic_diameter[i], effective_channel_cross_section[i]))
 
 end_init_time = time.perf_counter()  # End of the initialisation timer
 time_elapsed = f"{round(end_init_time - start_time, 2)}"  # Initialisation elapsed time (in s)
-if len(time_elapsed) <= 3:
-    time_elapsed_i = f"   {time_elapsed} s"
-elif len(time_elapsed) == 4:
-    time_elapsed_i = f"  {time_elapsed} s"
-elif len(time_elapsed) == 5:
-    time_elapsed_i = f" {time_elapsed} s"
-else:
-    time_elapsed_i = f"{time_elapsed} s"
+time_elapsed_i = f"{time_elapsed} s"
+
 start_main_time = time.perf_counter()  # Start of the main solution timer
 
-# %% Prepare the lists before main computation
 
-wall_thickness.reverse()
-xcanaux.reverse()
-larg_canal.reverse()
-area_channel.reverse()
-ht_canal.reverse()
-ycanaux.reverse()
-y_coord_avec_canaux.reverse()
-# We reverse the lists in order to calculate from the manifold to the injection
+# Main computation
 
-# Save the data for exporting, before altering the original lists
-hotgas_temperature_saved = hotgas_recovery_temp_list[:]
-aire_saved = cross_section_area_list[:]
-mach_list_saved = mach_list[:]
-gamma_saved = gamma_list[:]
-PH2O_list_saved = PH2O_list[:]
-PCO2_list_saved = PCO2_list[:]
-
-# Remove the data points before the manifold
-hotgas_recovery_temp_list = hotgas_recovery_temp_list[:nb_points_channel]
-cross_section_area_list = cross_section_area_list[:nb_points_channel]
-mach_list = mach_list[:nb_points_channel]
-gamma_list = gamma_list[:nb_points_channel]
-PH2O_list = PH2O_list[:nb_points_channel]
-PCO2_list = PCO2_list[:nb_points_channel]
-
-gamma_list.reverse()
-mach_list.reverse()
-cross_section_area_list.reverse()
-hotgas_recovery_temp_list.reverse()
-PH2O_list.reverse()
-PCO2_list.reverse()
-
-# %% Main computation
-
-data_hotgas = (hotgas_recovery_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O_list, PCO2_list)
-data_coolant = (Temp_cool_init, Pressure_cool_init, fluid, debit_mass_coolant)
-data_channel = (xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal,
-                wall_thickness, area_channel, nb_points_channel)
-data_chamber = (y_coord_avec_canaux, nb_channels, diam_throat, curv_radius_pre_throat, area_throat,
-                roughness, cross_section_area_list, mach_list, material_name)
+data_hotgas = (hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list,
+               hotgas_cp_list, hotgas_conv_list, MolWt, gamma_list, chamber_pressure,
+               Cstar, PH2O_list, PCO2_list)
+data_coolant = (coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr)
+data_channel = (nb_channels, width_list, ht_list, effective_fin_thickness,
+                wall_thickness, hydraulic_diameter, effective_channel_cross_section,
+                channel_centerline, beta_list)
+data_chamber = (z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area,
+                channel_roughness, cross_section_area_list, mach_list, wall_material)
 
 # Call the main solving loop
-hlcor_list, hlcor_list_2, hotgas_visc_list, hotgas_cp_list, hotgas_cond_list, \
-    hotgas_prandtl_list, hg_list, hotwall_temp_list, coldwall_temp_list, flux_list, \
-    sigma_list, coolant_reynolds_list, tempcoolant_list, visccoolant_list, \
-    condcoolant_list, cpcoolant_list, densitycoolant_list, velocitycoolant_list, \
-    pcoolant_list, wallcond_list, sound_speed_coolant_list, hlnormal_list, \
-    qRad_list, q_list_CO2, q_list_H2O \
+hl_corrected_list, hg_list, \
+    hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
+    coolant_reynolds_list, coolant_temp_list, coolant_visc_list, \
+    coolant_cond_list, coolant_cp_list, coolant_density_list, \
+    coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
+    hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O \
     = solver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 end_m = time.perf_counter()  # End of the main solution timer
@@ -374,7 +345,7 @@ elif len(time_elapsed) == 5:
 else:
     time_elapsed_m = f"{time_elapsed} s"
 
-# %% Display of the 1D analysis results
+# Display of the 1D analysis results
 print("█                                                                          █")
 
 if plot_detail >= 1:
@@ -382,138 +353,103 @@ if plot_detail >= 1:
     print("█ Display of results                                                       █")
     print("█                                                                          █")
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hlcor_list_2, color='blue', label='Hl corrected (Luka Denies)')
-    plt.plot(xcanaux, hlcor_list, color='green', label='Hl corrected (Julien)')
-    plt.plot(xcanaux, hlnormal_list, color='cyan', label='Hl')
+    plt.plot(z_coord_list, hl_corrected_list, color='blue', label='Hl corrected (Luka Denies)')
+    plt.plot(z_coord_list, hl_normal_list, color='cyan', label='Hl')
     plt.title("Convection coeff as a function of the engine axis")
     plt.legend(loc='upper left')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, coldwall_temp_list, color='blue', label='Twl')
-    plt.plot(xcanaux, hotwall_temp_list, color='red', label='Twg')
+    plt.plot(z_coord_list, coldwall_temp_list, color='blue', label='Twl')
+    plt.plot(z_coord_list, hotwall_temp_list, color='red', label='Twg')
     plt.title('Wall temperature (in K) as a function of engine axis')
     plt.legend(loc='lower left')
     plt.show()
 
-    tempcoolant_list.pop()
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, tempcoolant_list, color='blue')
+    plt.plot(z_coord_list, coolant_temp_list, color='blue')
     plt.title('Coolant temperature (in K) as a function of engine axis')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, flux_list, color='red')
+    plt.plot(z_coord_list, q_conv_list, color='red')
     plt.title('Heat flux (in W) as a function of engine axis')
     plt.show()
 
-    mach_03 = [x * 0.3 for x in sound_speed_coolant_list]
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, velocitycoolant_list, color='blue', label='Coolant')
-    plt.plot(xcanaux, mach_03, color='orange', label='Mach 0.3 limit')
-    plt.title('Velocity (in m/s) of the coolant as a function of engine axis')
-    plt.legend(loc='upper left')
-    plt.show()
-
-    pcoolant_list.pop()
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, pcoolant_list, color='orange')
+    plt.plot(z_coord_list, coolant_pressure_list, color='orange')
     plt.title('Pressure drop in the cooling channels')
     plt.show()
 
 if plot_detail >= 2:
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, wallcond_list, color='orangered')
+    plt.plot(z_coord_list, wall_cond_list, color='orangered')
     plt.title('Conductivity of the wall as a function of engine axis')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hg_list, color='orangered')
+    plt.plot(z_coord_list, hg_list, color='orangered')
     plt.title('Convection coefficient Hg as a function of engine axis')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    densitycoolant_list.pop()
-    plt.plot(xcanaux, densitycoolant_list, color='blue')
+    plt.plot(z_coord_list, coolant_density_list, color='blue')
     plt.title('Volumic mass of the coolant as a function of engine axis')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, q_list_CO2, color='r', label='CO2')
-    plt.plot(xcanaux, q_list_H2O, color='b', label='H2O')
-    plt.plot(xcanaux, qRad_list, color='g', label='total')
+    plt.plot(z_coord_list, q_rad_list_CO2, color='r', label='CO2')
+    plt.plot(z_coord_list, q_rad_list_H2O, color='b', label='H2O')
+    plt.plot(z_coord_list, q_rad_list, color='g', label='total')
     plt.title('Radiative heat flux(W/m2)')
     plt.legend()
     plt.show()
 
 if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, coolant_reynolds_list, color='blue')
+    plt.plot(z_coord_list, coolant_reynolds_list, color='blue')
     plt.title("Reynolds number of the coolant as a function of the engine axis")
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hotgas_visc_list, color='orangered')
+    plt.plot(z_coord_list, hotgas_visc_list, color='orangered')
     plt.title("Gas viscosity as a function of the engine axis")
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hotgas_cp_list, color='orangered')
+    plt.plot(z_coord_list, hotgas_cp_list, color='orangered')
     plt.title("Gas Cp as a function of the engine axis")
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hotgas_cond_list, color='orangered')
+    plt.plot(z_coord_list, hotgas_conv_list, color='orangered')
     plt.title("Gas conductivity as a function of engine axis")
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, hotgas_prandtl_list, color='orangered')
+    plt.plot(z_coord_list, hotgas_pr_list, color='orangered')
     plt.title("Gas Prandtl number as a function of engine axis")
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, sigma_list, color='orangered')
+    plt.plot(z_coord_list, sigma_list, color='orangered')
     plt.title("Sigma as a function of the engine axis")
     plt.show()
 
-    condcoolant_list.pop()
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, condcoolant_list, color='blue')
+    plt.plot(z_coord_list, coolant_cond_list, color='blue')
     plt.title('Conductivity of the coolant as a function of engine axis')
     plt.show()
 
-    cpcoolant_list.pop()
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, cpcoolant_list, color='blue')
+    plt.plot(z_coord_list, coolant_cp_list, color='blue')
     plt.title('Cp of the coolant as a function of engine axis')
     plt.show()
 
-    visccoolant_list.pop()
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, visccoolant_list, color='blue')
+    plt.plot(z_coord_list, coolant_visc_list, color='blue')
     plt.title('Viscosity of the coolant as a function of engine axis')
     plt.show()
-
-    plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, sound_speed_coolant_list, color='pink')
-    plt.title('Sound velocity of the coolant (in m/s) as a function of engine axis')
-    plt.show()
-
-if plot_detail >= 1 and show_3d_plots:
-    colormap = plt.cm.plasma
-    inv = 0, 0, 0
-    view3d(inv, xcanaux, ycanaux, flux_list, colormap, "Heat flux (in MW/m²)", size2, limitation)
-
-    colormap = plt.cm.coolwarm
-    inv = 0, 0, 0
-    view3d(inv, xcanaux, ycanaux, tempcoolant_list, colormap, "Temperature of the coolant (in K)", size2, limitation)
-
-if plot_detail >= 2 and show_3d_plots:
-    colormap = plt.cm.magma
-    inv = 0, 0, 0  # 1 means should be reversed
-    view3d(inv, xcanaux, ycanaux, coldwall_temp_list, colormap, "Wall temperature on the gas side (in K)", size2,
-           limitation)
 
 if plot_detail >= 1:
     end_d1 = time.perf_counter()  # End of the display of 1D timer
@@ -527,9 +463,8 @@ if plot_detail >= 1:
     else:
         time_elapsed_d1 = f"{time_elapsed} s"
 
-# %% Flux computation in 2D and 3D
+# Flux computation in 2D and 3D
 """2D flux computation"""
-larg_ailette_list.reverse()
 
 if show_2D_temperature:
     start_d2 = time.perf_counter()  # Start of the display of 2D timer
@@ -537,7 +472,7 @@ if show_2D_temperature:
     print("█ Results at the beginning of the chamber :                                █")
     dx = 0.00004  # *3.5
     location = " at the beginning of the chamber"
-    carto2D(larg_ailette_list[-1] + larg_canal[-1], larg_canal[-1], wall_thickness, ht_canal[-1], dx, hg_list[-1],
+    carto2D(eff[-1] + larg_canal[-1], larg_canal[-1], wall_thickness, ht_canal[-1], dx, hg_list[-1],
             wallcond_list[-1], hotgas_recovery_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1,
             location,
             False)
@@ -590,7 +525,7 @@ if do_final_3d_plot:
             progressbar.update(1)
 
     # Stack all these slices in a final 3D plot
-    carto3d([0, 0, 0], xcanaux, ycanaux, temperature_slice_list, plt.cm.Spectral_r,
+    carto3d([0, 0, 0], z_coord_list, ycanaux, temperature_slice_list, plt.cm.Spectral_r,
             '3D view of wall temperatures (in K)', nb_channels, limitation)
     print("█                                                                          █")
     # End of the 3D display timer
@@ -612,7 +547,7 @@ cross_section_area_list.reverse()
 gamma_list.reverse()
 mach_list.reverse()
 hotgas_recovery_temp_list.reverse()
-xcanaux.reverse()
+z_coord_list.reverse()
 ycanaux.reverse()
 larg_canal.reverse()
 ht_canal.reverse()
@@ -643,22 +578,22 @@ y_coord_avec_canaux.reverse()
 "Changing the coordinates of the height of the channels (otherwise it is geometrically wrong)"
 
 angles = [0]
-newxhtre = [xcanaux[0]]
+newxhtre = [z_coord_list[0]]
 newyhtre = [ycanaux[0] + ht_canal[0]]
 for i in range(1, nb_points_channel):
     if i == (nb_points_channel - 1):
         angle = angles[i - 1]
         angles.append(angle)
     else:
-        vect1 = (xcanaux[i] - xcanaux[i - 1]) / (
-                (((ycanaux[i] - ycanaux[i - 1]) ** 2) + ((xcanaux[i] - xcanaux[i - 1]) ** 2)) ** 0.5)
-        vect2 = (xcanaux[i + 1] - xcanaux[i]) / (
-                (((ycanaux[i + 1] - ycanaux[i]) ** 2) + ((xcanaux[i + 1] - xcanaux[i]) ** 2)) ** 0.5)
+        vect1 = (z_coord_list[i] - z_coord_list[i - 1]) / (
+                (((ycanaux[i] - ycanaux[i - 1]) ** 2) + ((z_coord_list[i] - z_coord_list[i - 1]) ** 2)) ** 0.5)
+        vect2 = (z_coord_list[i + 1] - z_coord_list[i]) / (
+                (((ycanaux[i + 1] - ycanaux[i]) ** 2) + ((z_coord_list[i + 1] - z_coord_list[i]) ** 2)) ** 0.5)
         angle1 = np.rad2deg(np.arccos(vect1))
         angle2 = np.rad2deg(np.arccos(vect2))
         angle = angle2
         angles.append(angle)
-    newx = xcanaux[i] + ht_canal[i] * np.sin(np.deg2rad(angles[i]))
+    newx = z_coord_list[i] + ht_canal[i] * np.sin(np.deg2rad(angles[i]))
     newy = ycanaux[i] + ht_canal[i] * np.cos(np.deg2rad(angles[i]))
     newxhtre.append(newx)
     newyhtre.append(newy)
@@ -667,20 +602,20 @@ for i in range(1, nb_points_channel):
 verification = []
 print("█ Checking and computing channel height                                    █")
 for i in range(0, nb_points_channel):
-    verifhtre = (((newxhtre[i] - xcanaux[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
+    verifhtre = (((newxhtre[i] - z_coord_list[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
 
 if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
     plt.plot(newxhtre, newyhtre, color='blue', label='New height')
-    plt.plot(xcanaux, ycanaux, color='chocolate', label='Former height')
+    plt.plot(z_coord_list, ycanaux, color='chocolate', label='Former height')
     plt.title("Geometrical aspect of the channel (height as a function of the engine axis)")
     plt.axis("equal")
     plt.legend(loc='upper left')
     plt.show()
 
     plt.figure(dpi=figure_dpi)
-    plt.plot(xcanaux, verification)
+    plt.plot(z_coord_list, verification)
     plt.title("Checking the height of the generated channels")
     plt.show()
 
@@ -712,7 +647,7 @@ if write_in_csv:
             geometry2_writer.writerow((ycanaux[i] * 1000, newxhtre[i] * (-1000)))
             valuexport_writer.writerow((z_coord_list[i], r_coord_list[i], aire_saved[i], gamma_saved[i],
                                         mach_list_saved[i], static_pressure_list[i],
-                                        hotgas_temperature_saved[i], xcanaux[i], ycanaux[i],
+                                        hotgas_temperature_saved[i], z_coord_list[i], ycanaux[i],
                                         larg_canal[i], ht_canal[i], area_channel[i], hotgas_visc_list[i],
                                         hotgas_cp_list[i], hotgas_cond_list[i], hotgas_prandtl_list[i],
                                         hg_list[i], sigma_list[i], coldwall_temp_list[i],

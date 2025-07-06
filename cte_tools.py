@@ -2,6 +2,7 @@ import numpy as np
 from skaero.gasdynamics import isentropic
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from scipy.optimize import root_scalar
 
 
 def mach_solv(area_i, area_throat, gamma, subsonic):
@@ -64,7 +65,7 @@ def conductivity(Twg: float, Twl: float, material_name: str):
     T_avg = (Twg + Twl) / 2
     if material_name == "pure copper":
         return -0.065665 * T_avg + 421.82
-    if material_name == "cucrzr":
+    if material_name == "CuCrZr":
         return -0.0269 * T_avg + 365.33
     if material_name == "inconel":
         return 0.0138 * T_avg + 5.577
@@ -99,16 +100,13 @@ def flux_equations(guess, *data):
 
 
 def darcy_weisbach(Dhy, Re, roughness):
-    friction_factor_1 = 1e-3
-    friction_factor_2 = (1 / (-2 * np.log10(
-        ((roughness / (Dhy * 3.7)) + 2.51 / (Re * (friction_factor_1 ** 0.5)))))) ** 2
+    def colebrook(f):
+        return 1.0 / (-2.0 * np.log10((roughness / (Dhy * 3.7)) + 2.51 / (Re * np.sqrt(f))))**2 - f
 
-    while abs((friction_factor_1 / friction_factor_2) - 1) > 0.0000001:
-        friction_factor_1 = friction_factor_2
-        friction_factor_2 = (1 / (-2 * np.log10(
-            ((roughness / (Dhy * 3.7)) + 2.51 / (Re * (friction_factor_1 ** 0.5)))))) ** 2
-
-    return friction_factor_2
+    sol = root_scalar(colebrook, bracket=[1e-6, 0.1], method='brentq')
+    if not sol.converged:
+        raise RuntimeError("Colebrook equation did not converge")
+    return sol.root
 
 
 def one_plot(x, y,

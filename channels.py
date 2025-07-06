@@ -30,6 +30,11 @@ def set_axes_equal(ax):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
 
+def project_onto_plane(v, n):
+    n = n / np.linalg.norm(n, axis=-1, keepdims=True)
+    return v - np.sum(v * n, axis=-1, keepdims=True) * n
+
+
 def generate_channels(profile_data, width_data, height_data, angle_data, wall_thickness,
                       nbc, x_chamber_throat_exit, plot_detail, write_in_csv, figure_dpi, plot_dir=None):
     """
@@ -52,8 +57,6 @@ def generate_channels(profile_data, width_data, height_data, angle_data, wall_th
     # The reversed lists go from the end of the nozzle to the injection plate
     z_coord_list_reversed = np.flip(z_coord_list)
     r_coord_list_reversed = np.flip(r_coord_list)
-    width_list_reversed = np.flip(width_list)
-    ht_list_reversed = np.flip(ht_list)
     beta_list_reversed = np.flip(beta_list)
 
     # Create and fill the list of alpha angle (angle about the z-axis)
@@ -87,6 +90,63 @@ def generate_channels(profile_data, width_data, height_data, angle_data, wall_th
     x_center_list = -(r_coord_list + wall_thickness + ht_list / 2) * np.sin(np.deg2rad(alpha_list))
     y_center_list = (r_coord_list + wall_thickness + ht_list / 2) * np.cos(np.deg2rad(alpha_list))
 
+    # Compute channel inclination (angle with x-y plane)
+    dx = np.diff(x_center_list)
+    dy = np.diff(y_center_list)
+    dz = np.diff(z_coord_list)
+    channel_inclination = np.zeros_like(z_coord_list)
+    channel_inclination[:-1] = np.rad2deg(np.arccos(abs(dz)/np.sqrt(dx**2 + dy**2 + dz**2)))
+    channel_inclination[-1] = channel_inclination[-2]  # repeat last value
+
+    # Compute channel cross-section area along x-y plane
+    AB = np.sqrt((xB_list - xA_list)**2 + (yB_list - yA_list)**2)
+    BC = np.sqrt((xC_list - xB_list)**2 + (yC_list - yB_list)**2)
+    channel_cross_section = AB * BC
+
+    # Compute effective flow cross-sectional area (normal to flow direction)
+    effective_channel_cross_section = channel_cross_section * np.abs(np.cos(np.deg2rad(channel_inclination)))
+
+    # Compute effective wetted perimeter and hydraulic diameter
+    # Get centerline direction vectors (unit vectors)
+    directions = np.stack([dx, dy, dz], axis=1)
+    norms = np.linalg.norm(directions, axis=1)
+    directions_unit = np.zeros_like(directions)
+    directions_unit = directions / norms[:, None]
+    # Repeat last direction for last point
+    directions_unit = np.vstack([directions_unit, directions_unit[-1]])
+    # For each section, get the 3D coordinates of the corners
+    points = np.stack([
+        np.column_stack([xA_list, yA_list, z_coord_list]),
+        np.column_stack([xB_list, yB_list, z_coord_list]),
+        np.column_stack([xC_list, yC_list, z_coord_list]),
+        np.column_stack([xD_list, yD_list, z_coord_list])
+    ], axis=1)  # shape (N, 4, 3)
+    # Compute side vectors
+    AB = points[:, 1] - points[:, 0]
+    BC = points[:, 2] - points[:, 1]
+    CD = points[:, 3] - points[:, 2]
+    DA = points[:, 0] - points[:, 3]
+    sides = [AB, BC, CD, DA]
+    # Project each side onto plane normal to flow direction
+    perimeter = np.zeros(len(z_coord_list))
+    for side in sides:
+        proj = project_onto_plane(side, directions_unit)
+        perimeter += np.linalg.norm(proj, axis=1)
+    effective_wetted_perimeter = perimeter
+
+    # Hydraulic diameter
+    hydraulic_diameter = 4 * effective_channel_cross_section / effective_wetted_perimeter
+
+    # Compute fin thickness along the engine (no inclination)
+    fin_thickness = ((2 * np.pi * (r_coord_list + wall_thickness)) - (nbc * width_list)) / nbc
+
+    # Compute fin thickness with inclination
+    effective_fin_thickness = fin_thickness*np.cos(np.deg2rad(beta_list))
+
+    # Compute total channel length
+    channel_total_length = np.sum(np.sqrt(dx**2 + dy**2 + dz**2))
+    ######################### PLOTTING #########################
+
     # 3D plot of channel centerline and surface of revolution
     fig = plt.figure(dpi=figure_dpi)
     ax = fig.add_subplot(111, projection='3d')
@@ -99,34 +159,16 @@ def generate_channels(profile_data, width_data, height_data, angle_data, wall_th
     X = R * np.cos(Theta)
     Y = R * np.sin(Theta)
     ax.plot_surface(X, Y, Z, color='red', alpha=0.3, linewidth=0, antialiased=True)
-    ax.set_xlabel('z (engine axis) [m]')
-    ax.set_ylabel('x (radial) [m]')
-    ax.set_zlabel('y (radial) [m]')
+    ax.set_xlabel('x (radial) [m]')
+    ax.set_ylabel('y (radial) [m]')
+    ax.set_zlabel('z (engine axis) [m]')
     ax.set_title('3D Channel Centerline and Engine Surface')
     ax.legend()
     set_axes_equal(ax)
     plt.show()
 
-    # Compute channel inclination (angle with x-y plane)
-    dx = np.diff(x_center_list)
-    dy = np.diff(y_center_list)
-    dz = np.diff(z_coord_list)
-    horizontal_dist = np.sqrt(dx**2 + dy**2)
-    channel_inclination = np.zeros_like(z_coord_list)
-    channel_inclination[:-1] = np.arctan2(dz, horizontal_dist)  # radians
-    channel_inclination[-1] = channel_inclination[-2]  # repeat last value
-
-    # Compute channel cross-section area (rectangle: width * height)
-    AB = np.sqrt((xB_list - xA_list)**2 + (yB_list - yA_list)**2)
-    BC = np.sqrt((xC_list - xB_list)**2 + (yC_list - yB_list)**2)
-    channel_cross_section = AB * BC
-
-    # Compute effective flow cross-sectional area
-    effective_channel_cross_section = channel_cross_section * np.abs(np.sin(channel_inclination))
-
-    # Plot channel inclination vs z_coord_list
     plt.figure(dpi=figure_dpi)
-    plt.plot(z_coord_list, np.degrees(channel_inclination), label='Channel Inclination (deg)')
+    plt.plot(z_coord_list, channel_inclination, label='Channel Inclination (deg)')
     plt.xlabel('z (engine axis) [m]')
     plt.ylabel('Inclination [deg]')
     plt.title('Channel Inclination vs Engine Axis')
@@ -135,15 +177,45 @@ def generate_channels(profile_data, width_data, height_data, angle_data, wall_th
     plt.tight_layout()
     plt.show()
 
-    # Plot effective channel cross section vs z_coord_list
     plt.figure(dpi=figure_dpi)
-    plt.plot(z_coord_list, effective_channel_cross_section, label='Effective Channel Cross Section')
+    plt.plot(z_coord_list, channel_cross_section, label='Initial CS')
+    plt.plot(z_coord_list, effective_channel_cross_section, label='Effective CS')
     plt.xlabel('z (engine axis) [m]')
-    plt.ylabel('Effective Cross Section [m²]')
-    plt.title('Effective Channel Cross Section vs Engine Axis')
+    plt.ylabel('Cross Section [m²]')
+    plt.title('Channel Cross Section vs Engine Axis')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-    return
+    plt.figure(dpi=figure_dpi)
+    plt.plot(z_coord_list, hydraulic_diameter, label='Hydraulic diameter (m)')
+    plt.xlabel('z (engine axis) [m]')
+    plt.ylabel('Diameter [m]]')
+    plt.title('Hydraulic diameter vs Engine Axis')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(z_coord_list, fin_thickness, label='Initial fin thickness (m)')
+    plt.plot(z_coord_list, effective_fin_thickness, label='Effective fin thickness (m)')
+    plt.xlabel('z (engine axis) [m]')
+    plt.ylabel('Thickness [m]]')
+    plt.title('Fin thickness vs Engine Axis')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    channel_vertices = {"A": np.column_stack((xA_list, yA_list, z_coord_list)),
+                        "B": np.column_stack((xB_list, yB_list, z_coord_list)),
+                        "C": np.column_stack((xC_list, yC_list, z_coord_list)),
+                        "D": np.column_stack((xD_list, yD_list, z_coord_list))}
+
+    channel_centerline = np.column_stack((x_center_list, y_center_list, z_coord_list))
+
+    return channel_vertices, channel_centerline, channel_inclination, width_list, ht_list, \
+        effective_channel_cross_section, hydraulic_diameter, \
+        effective_fin_thickness, alpha_list, beta_list, channel_total_length

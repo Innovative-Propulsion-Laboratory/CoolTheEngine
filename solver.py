@@ -12,41 +12,68 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     quantities at each point. The values obtained are then used on the next point.
     """
 
-    hotgas_temp_list, molar_mass, gamma_list, Pc, c_star, PH2O, PCO2 = hotgas_data
-    init_coolant_temp, init_coolant_pressure, fluid, \
-        debit_mass_coolant = coolant_data
-    xcanaux, ycanaux, larg_canal, larg_ailette_list, ht_canal, wall_thickness, \
-        area_channel, nb_points_channel = channel_data
-    y_coord_avec_canaux, nbc, diam_throat, curv_radius_pre_throat, area_throat, roughness, \
-        cross_section_area_list, mach_list, material_name = chamber_data
+    hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list, \
+        hotgas_cp_list, hotgas_cond_list, MolWt, gamma_list, \
+        chamber_pressure, Cstar, PH2O_list, PCO2_list = hotgas_data
+    coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr = coolant_data
+    nb_channels, channel_width_list, channel_height_list, effective_fin_thickness, wall_thickness, \
+        hydraulic_diameter, effective_channel_cross_section, channel_centerline, beta_list = channel_data
+    z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area, \
+        channel_roughness, cross_section_area_list, mach_list, wall_material = chamber_data
+
+    # hotgas_recovery_temp_list = np.flip(hotgas_recovery_temp_list)
+    # gamma_list = np.flip(gamma_list)
+    # PH2O_list = np.flip(PH2O_list)
+    # PCO2_list = np.flip(PCO2_list)
+    # z_coord_list = np.flip(z_coord_list)
+    # r_coord_list = np.flip(r_coord_list)
+    # cross_section_area_list = np.flip(cross_section_area_list)
+    # mach_list = np.flip(mach_list)
+    # hotgas_visc_list = np.flip(hotgas_visc_list)
+    # hotgas_pr_list = np.flip(hotgas_pr_list)
+    # hotgas_cp_list = np.flip(hotgas_cp_list)
+    # hotgas_cond_list = np.flip(hotgas_cond_list)
+
+    n_points = len(z_coord_list)
+    index_throat = np.argmin(np.abs(z_coord_list))
+
+    # Compute the distance between consecutive points in the channel centerline
+    dx_channels = np.diff(channel_centerline[:, 0], append=channel_centerline[:, 0][-1])
+    dy_channels = np.diff(channel_centerline[:, 1], append=channel_centerline[:, 1][-1])
+    dz = np.diff(channel_centerline[:, 2], append=channel_centerline[:, 2][-1])
+    dr = np.diff(r_coord_list, append=r_coord_list[-1])
+    dl_channel_list = np.sqrt(dx_channels**2 + dy_channels**2 + dz**2)
+    dl_chamber_list = np.sqrt(dr**2 + dz**2)
 
     # Lists containing the physical quantities at each point
-    coolant_temp_list = [init_coolant_temp]
-    coolant_pressure_list = [init_coolant_pressure]
-    coolant_viscosity_list = [flp.viscosity(init_coolant_pressure, init_coolant_temp, fluid)]
-    coolant_cond_list = [flp.conductivity(init_coolant_pressure, init_coolant_temp, fluid)]
-    coolant_cp_list = [flp.cp(init_coolant_pressure, init_coolant_temp, fluid)]
-    coolant_density_list = [flp.density(init_coolant_pressure, init_coolant_temp, fluid)]
-    hotgas_viscosity_list = []
-    hotgas_cp_list = []
-    hotgas_cond_list = []
-    hotgas_prandtl_list = []
-    coolant_reynolds_list = []
-    hg_list = []
-    sigma_list = []
-    wall_cond_list = []
-    hotwall_temp_list = []
-    coldwall_temp_list = []
-    flux_list = []
-    coolant_velocity_list = []
-    sound_speed_list = []
-    hl_normal_list = []
-    hl_corrected_list = []
-    hl_corrected_list_2 = []
-    q_list_H2O = []
-    q_list_CO2 = []
-    qRad_list = []
-    index_throat = y_coord_avec_canaux.index(min(y_coord_avec_canaux))
+    coolant_temp_list = np.zeros(n_points)
+    coolant_temp_list[-1] = coolant_inlet_temp
+    coolant_pressure_list = np.zeros(n_points)
+    coolant_pressure_list[-1] = coolant_inlet_pressure
+    coolant_viscosity_list = np.zeros(n_points)
+    coolant_viscosity_list[-1] = flp.viscosity(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
+    coolant_cond_list = np.zeros(n_points)
+    coolant_cond_list[-1] = flp.conductivity(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
+    coolant_cp_list = np.zeros(n_points)
+    coolant_cp_list[-1] = flp.cp(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
+    coolant_density_list = np.zeros(n_points)
+    coolant_density_list[-1] = flp.density(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
+    coolant_reynolds_list = np.zeros(n_points)
+    coolant_prandtl_list = np.zeros(n_points)
+    hg_list = np.zeros(n_points)
+    sigma_list = np.zeros(n_points)
+    wall_cond_list = np.zeros(n_points)
+    hotwall_temp_list = np.zeros(n_points)
+    coldwall_temp_list = np.zeros(n_points)
+    q_conv_list = np.zeros(n_points)
+    coolant_velocity_list = np.zeros(n_points)
+    sound_speed_list = np.zeros(n_points)
+    hl_normal_list = np.zeros(n_points)
+    hl_corrected_list = np.zeros(n_points)
+    hl_corrected_list_2 = np.zeros(n_points)
+    q_rad_list_H2O = np.zeros(n_points)
+    q_rad_list_CO2 = np.zeros(n_points)
+    q_rad_list = np.zeros(n_points)
 
     # This is to avoid oscillations near the inlet because of division by zero
     length_from_inlet = 0.03
@@ -55,49 +82,34 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     coldwall_temp = 300
     hotwall_temp = 300
 
-    with tqdm(total=nb_points_channel,
+    with tqdm(total=n_points,
               desc="█ Global resolution            ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as pbar_main:
 
-        # Main computation loop
-        for i in range(0, nb_points_channel):
-            # Hydraulic diameter (4 * Area/Perimeter )
-            Dhy = (2 * ht_canal[i] * larg_canal[i]) / (ht_canal[i] + larg_canal[i])
-
+        # Main computation loop (reverse direction)
+        for i in range(n_points - 1, -1, -1):
             # Velocity of the coolant
-            v_cool = debit_mass_coolant / (nbc * coolant_density_list[i] * area_channel[i])
-            coolant_velocity_list.append(v_cool)
+            coolant_velocity_list[i] = coolant_mfr / (nb_channels * coolant_density_list[i] * effective_channel_cross_section[i])
 
             # Reynolds number of the coolant
-            Re_cool = (v_cool * Dhy * coolant_density_list[i]) / coolant_viscosity_list[i]
-            coolant_reynolds_list.append(Re_cool)
+            coolant_reynolds_list[i] = (coolant_velocity_list[i] * hydraulic_diameter[i] * coolant_density_list[i]) / coolant_viscosity_list[i]
 
             # Prandtl number of the coolant
-            Pr_cool = (coolant_viscosity_list[i] * coolant_cp_list[i]) / coolant_cond_list[i]
+            coolant_prandtl_list[i] = (coolant_viscosity_list[i] * coolant_cp_list[i]) / coolant_cond_list[i]
 
-            # Compute viscosity, Cp, conductivity and Prandtl number of the hot gases
-            hotgas_visc, hotgas_cp, hotgas_cond, hotgas_prandtl = t.hotgas_properties(hotgas_temp_list[i],
-                                                                                      molar_mass,
-                                                                                      gamma_list[i])
-
-            # If last point in the list
-            if i == nb_points_channel - 1:
-                # Distance between current point and the previous (Pythagoras)
-                dl = ((xcanaux[i - 1] - xcanaux[i]) ** 2 + (ycanaux[i - 1] - ycanaux[i]) ** 2) ** 0.5
-            else:
-                # Distance between current point and the next (Pythagoras)
-                dl = ((xcanaux[i + 1] - xcanaux[i]) ** 2 + (ycanaux[i + 1] - ycanaux[i]) ** 2) ** 0.5
-
-            length_from_inlet += dl
+            length_from_inlet += dl_channel_list[i]
 
             # Reuse the value at previous point for a more accurate first guess (and faster convergence)
-            wall_cond = 350 if i == 0 else wall_cond_list[i - 1]
-            sigma = 1 if i == 0 else sigma_list[i - 1]
+            wall_cond_list[i] = t.conductivity(Twg=300, Twl=300, material_name=wall_material) if i == n_points - 1 else wall_cond_list[i + 1]
+            sigma = 1 if i == n_points - 1 else sigma_list[i + 1]
 
             # Arbitrarely create a difference to enter the loop
             new_coldwall_temp = coldwall_temp + 10
             new_hotwall_temp = hotwall_temp + 10
+            # Ensure scalars for while loop
+            new_coldwall_temp = float(new_coldwall_temp)
+            new_hotwall_temp = float(new_hotwall_temp)
 
             # This loop's goal is to find sigma and the wall conductivity
             # It iterates until the wall temperatures have converged
@@ -106,118 +118,89 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hotwall_temp = new_hotwall_temp
 
                 # Gas-side convective heat transfer coefficient (Bartz equation)
-                hg = (0.026 / (diam_throat ** 0.2) * (((hotgas_visc ** 0.2) * hotgas_cp) / (hotgas_prandtl ** 0.6)) * (
-                    (Pc / c_star) ** 0.8) * ((diam_throat / curv_radius_pre_throat) ** 0.1) * (
-                    (area_throat / cross_section_area_list[i]) ** 0.9)) * sigma
+                hg = (0.026 / (throat_diam ** 0.2) * (((hotgas_visc_list[i] ** 0.2) * hotgas_cp_list[i]) / (hotgas_pr_list[i] ** 0.6)) * (
+                    (chamber_pressure / Cstar) ** 0.8) * ((throat_diam / throat_curv_radius) ** 0.1) * (
+                    (throat_area / cross_section_area_list[i]) ** 0.9)) * sigma
 
-                # Coolant-side convective heat transfer coefficient from Taylor (NASA TN D-4332)
-                Nu = 0.023 * Re_cool ** 0.705 * Pr_cool ** 0.8 * (coldwall_temp / coolant_temp_list[i]) ** -(
-                    -0.57 + 1.59 * Dhy / length_from_inlet)
+                # Compute the Darcy-Weisbach friction factor
+                fD = t.darcy_weisbach(hydraulic_diameter[i], coolant_reynolds_list[i], channel_roughness)
 
-                # Nusselt number correction for the channel roughness
-                xi = t.darcy_weisbach(Dhy, Re_cool, roughness) / t.darcy_weisbach(Dhy, Re_cool, 0)
-                roughness_correction = xi * ((1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool - 1)) / (
-                    1 + 1.5 * Pr_cool ** (-1 / 6) * Re_cool ** (-1 / 8) * (Pr_cool * xi - 1)))
+                # Coolant-side convective heat transfer coefficient from Petukhov (https://doi.org/10.1016/S0065-2717(08)70153-9)
+                k1 = 1 + 3.4*fD
+                k2 = 11.7 + 1.8*coolant_prandtl_list[i]**(-1.0/3.0)
+                Nu = (fD/8 * coolant_reynolds_list[i]*coolant_prandtl_list[i])/(k1*k2*(coolant_prandtl_list[i]**(2.0/3.0) - 1)*np.sqrt(fD/8))
 
                 # Compute coolant-side convective heat-transfer coefficient
-                hl = Nu * roughness_correction * (coolant_cond_list[i] / Dhy)
-
-                # Fin dimensions
-                D = 2 * y_coord_avec_canaux[i]  # Diameter inside the engine
-                fin_width = (np.pi * (D + ht_canal[i] + wall_thickness[i]) - nbc * larg_canal[
-                    i]) / nbc  # Width of the fin
-
-                # Correct for the fin effect (unknown source)
-                m_ = ((2 * hl) / (fin_width * wall_cond)) ** 0.5
-                hl_cor = hl * ((nbc * larg_canal[i]) / (np.pi * D)) + nbc * (
-                    (2 * hl * wall_cond * (((np.pi * D) / nbc) - larg_canal[i])) ** 0.5) * (
-                    (np.tanh(m_ * ht_canal[i])) / (np.pi * D))
+                hl = Nu * (coolant_cond_list[i] / hydraulic_diameter[i])
 
                 # Correct for the fin effect (Luka Denies)
-                intermediate_calc_1 = ((2 * hl * fin_width) / wall_cond) ** 0.5 * ht_canal[i] / fin_width
+                intermediate_calc_1 = ((2 * hl * effective_fin_thickness[i]) / wall_cond_list[i]) ** 0.5 * channel_height_list[i] / effective_fin_thickness[i]
                 nf = np.tanh(intermediate_calc_1) / intermediate_calc_1
-                hl_cor2 = hl * (larg_canal[i] + 2 * nf * ht_canal[i]) / (larg_canal[i] + fin_width)
+                hl_cor = hl * (channel_width_list[i] + 2 * nf * channel_height_list[i]) / (channel_width_list[i] + effective_fin_thickness[i])
 
                 # Compute radiative heat transfer of H2O (W) and CO2 (C) (Luka Denies)
-                qW = 5.74 * ((PH2O[i] * y_coord_avec_canaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
-                qC = 4 * ((PCO2[i] * y_coord_avec_canaux[i]) / 1e5) ** 0.3 * (hotgas_temp_list[i] / 100) ** 3.5
-                qRad = qW + qC
+                q_rad_H2O = 5.74 * ((PH2O_list[i] * r_coord_list[i]) / 1e5) ** 0.3 * (hotgas_static_temp_list[i] / 100) ** 3.5
+                q_rad_CO2 = 4 * ((PCO2_list[i] * r_coord_list[i]) / 1e5) ** 0.3 * (hotgas_static_temp_list[i] / 100) ** 3.5
+                q_rad = q_rad_H2O + q_rad_CO2
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
-                flux = (hotgas_temp_list[i] - coolant_temp_list[i] + qRad / hg) / (
-                    1 / hg + 1 / hl_cor + wall_thickness[i] / wall_cond)
-                new_hotwall_temp = hotgas_temp_list[i] + (qRad - flux) / hg
-                new_coldwall_temp = coolant_temp_list[i] + flux / hl_cor
+                q_conv = (hotgas_recovery_temp_list[i] - coolant_temp_list[i] + q_rad / hg) / (
+                    1 / hg + 1 / hl_cor + wall_thickness / wall_cond_list[i])
+                new_hotwall_temp = hotgas_recovery_temp_list[i] + (q_rad - q_conv) / hg
+                new_coldwall_temp = coolant_temp_list[i] + q_conv / hl_cor
 
                 # Compute new value of sigma (used in the Bartz equation)
-                T_hotgas_throat = hotgas_temp_list[index_throat]
-                mach_hot_gases = mach_list[i]
-                sigma = (((new_hotwall_temp / (2 * T_hotgas_throat)) * (
-                    1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) + 0.5) ** -0.68) * (
-                    (1 + (((gamma_list[i] - 1) / 2) * (mach_hot_gases ** 2))) ** -0.12)
+                sigma = (((new_hotwall_temp / (2 * hotgas_recovery_temp_list[i])) *
+                          (1 + (((gamma_list[i] - 1) / 2) * (mach_list[i] ** 2))
+                           ) + 0.5) ** -0.68) * ((1 + (((gamma_list[i] - 1) / 2)
+                                                       * (mach_list[i] ** 2))) ** -0.12)
 
                 # Compute thermal conductivity of the solid at a given temperature
-                wall_cond = t.conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=material_name)
+                wall_cond_list[i] = t.conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=wall_material)
 
             coldwall_temp = new_coldwall_temp
             hotwall_temp = new_hotwall_temp
 
             # Compute heat exchange area between two points
-            # Cold-wall version (Julien)
-            dA_1 = 2 * dl * (larg_canal[i] + ht_canal[i])
-            # Hot-wall version (Luka Denies)
-            dA_2 = (np.pi * D * dl) / nbc
+            dA = (np.pi * 2 * r_coord_list[i] * dl_chamber_list[i]) / (nb_channels * np.cos(np.deg2rad(beta_list[i])))
 
-            # New temperature at next point
-            delta_T_coolant = ((flux * dA_1) / ((debit_mass_coolant / nbc) * coolant_cp_list[i]))
+            # New temperature at previous point
+            delta_T_coolant = ((q_conv * dA) / ((coolant_mfr / nb_channels) * coolant_cp_list[i]))
             new_coolant_temp = coolant_temp_list[i] + delta_T_coolant
 
-            # Solving Colebrook's formula to obtain the Darcy-Weisbach friction factor
-            frict_factor = t.darcy_weisbach(Dhy, Re_cool, roughness)
-
             # Computing pressure loss with the Darcy-Weisbach friction factor
-            delta_p = 0.5 * frict_factor * (dl / Dhy) * coolant_density_list[i] * v_cool ** 2
+            delta_p = 0.5 * fD * (dl_channel_list[i] / hydraulic_diameter[i]) * coolant_density_list[i] * coolant_velocity_list[i] ** 2
             new_coolant_pressure = coolant_pressure_list[i] - delta_p
 
-            # Computing the new properties of the CH4
+            # Computing the new properties of the coolant
             if new_coolant_pressure < 0:
                 raise ValueError("Negative pressure ! Pressure drop is too high.")
-            new_cool_visc = flp.viscosity(P=new_coolant_pressure, T=new_coolant_temp, fluid=fluid)
-            new_cool_cond = flp.conductivity(P=new_coolant_pressure, T=new_coolant_temp, fluid=fluid)
-            new_cool_cp = flp.cp(P=new_coolant_pressure, T=new_coolant_temp, fluid=fluid)
-            new_cool_dens = flp.density(P=new_coolant_pressure, T=new_coolant_temp, fluid=fluid)
-            new_cool_sound_spd = flp.sound_speed(P=new_coolant_pressure, T=new_coolant_temp, fluid=fluid)
+
+            if i > 0:
+                coolant_viscosity_list[i-1] = flp.viscosity(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
+                coolant_cond_list[i-1] = flp.conductivity(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
+                coolant_cp_list[i-1] = flp.cp(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
+                coolant_density_list[i-1] = flp.density(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
+                coolant_pressure_list[i-1] = new_coolant_pressure
+                coolant_temp_list[i-1] = new_coolant_temp
 
             # Store the results
-            hotgas_viscosity_list.append(hotgas_visc)
-            hotgas_cp_list.append(hotgas_cp)
-            hotgas_cond_list.append(hotgas_cond)
-            hotgas_prandtl_list.append(hotgas_prandtl)
-            hg_list.append(hg)
-            hl_normal_list.append(hl)
-            hl_corrected_list.append(hl_cor)
-            hl_corrected_list_2.append(hl_cor2)
-            hotwall_temp_list.append(hotwall_temp)
-            coldwall_temp_list.append(coldwall_temp)
-            flux_list.append(flux)
-            sigma_list.append(sigma)
-            wall_cond_list.append(wall_cond)
-            coolant_pressure_list.append(new_coolant_pressure)
-            coolant_temp_list.append(new_coolant_temp)
-            coolant_viscosity_list.append(new_cool_visc)
-            coolant_cond_list.append(new_cool_cond)
-            coolant_cp_list.append(new_cool_cp)
-            coolant_density_list.append(new_cool_dens)
-            sound_speed_list.append(new_cool_sound_spd)
-            qRad_list.append(qRad)
-            q_list_CO2.append(qC)
-            q_list_H2O.append(qW)
+            hg_list[i] = hg
+            hl_normal_list[i] = hl
+            hl_corrected_list[i] = hl_cor
+            hotwall_temp_list[i] = hotwall_temp
+            coldwall_temp_list[i] = coldwall_temp
+            q_conv_list[i] = q_conv
+            sigma_list[i] = sigma
+            q_rad_list[i] = q_rad
+            q_rad_list_CO2[i] = q_rad_CO2
+            q_rad_list_H2O[i] = q_rad_H2O
+
             pbar_main.update(1)
 
-        return hl_corrected_list, hl_corrected_list_2, hotgas_viscosity_list, \
-            hotgas_cp_list, hotgas_cond_list, hotgas_prandtl_list, hg_list, \
-            hotwall_temp_list, coldwall_temp_list, flux_list, sigma_list, \
-            coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
-            coolant_cond_list, coolant_cp_list, coolant_density_list, \
-            coolant_velocity_list, coolant_pressure_list, wall_cond_list, \
-            sound_speed_list, hl_normal_list, qRad_list, q_list_CO2, q_list_H2O
+    return hl_corrected_list, hg_list, \
+        hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
+        coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
+        coolant_cond_list, coolant_cp_list, coolant_density_list, \
+        coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
+        hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O
