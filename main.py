@@ -57,7 +57,7 @@ contour_data = np.genfromtxt(contour_file, delimiter=",", skip_header=1)
 z_coord_list = contour_data[0:, 0]/1000
 r_coord_list = contour_data[0:, 1]/1000
 nb_points_raw = len(z_coord_list)  # Number of points
-nb_points = 100
+nb_points = 500
 
 # Reduce the number of points using scipy 1D interpolation
 
@@ -124,7 +124,7 @@ exit_area = np.pi * exit_radius**2  # Area of the exit (in m²)
 
 contraction_ratio = chamber_area / throat_area  # Contraction ratio (A/A*)
 expansion_ratio = exit_area / throat_area  # Expansion ratio (Ae/A*)
-throat_curv_radius = 1.5 * chamber_radius  # Curvature radius before the throat (in m)
+throat_curv_radius = 1.5 * throat_radius  # Curvature radius before the throat (in m)
 
 i_throat = np.argmin(np.abs(r_coord_list))
 i_convergent = 0
@@ -287,8 +287,8 @@ heights = (ht_inj, ht_conv, ht_throat, ht_exit)
 angles = (beta_inj, beta_conv, beta_throat, beta_exit)
 
 # Generate the cooling channels
-channel_vertices, channel_centerline, channel_inclination, width_list, ht_list, \
-    effective_channel_cross_section, hydraulic_diameter, effective_fin_thickness, \
+channel_vertices, channel_centerline, channel_inclination, channel_width_list, channel_height_list, \
+    effective_channel_cross_section, hydraulic_diameter, effective_fin_thickness_list, \
     alpha_list, beta_list, channel_total_length = generate_channels(profile, widths, heights,
                                                                     angles, wall_thickness,
                                                                     nb_channels, x_chamber_throat_exit,
@@ -303,7 +303,7 @@ with open(file_name, "w", newline="") as file:
                      "Fin width", "Hydraulic diameter", "Channel cross-sectionnal area"))
     for i in range(nb_points):
         writer.writerow((z_coord_list[i], r_coord_list[i],
-                         width_list[i], ht_list[i], effective_fin_thickness[i],
+                         channel_width_list[i], channel_height_list[i], effective_fin_thickness_list[i],
                          hydraulic_diameter[i], effective_channel_cross_section[i]))
 
 end_init_time = time.perf_counter()  # End of the initialisation timer
@@ -319,7 +319,7 @@ data_hotgas = (hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_l
                hotgas_cp_list, hotgas_conv_list, MolWt, gamma_list, chamber_pressure,
                Cstar, PH2O_list, PCO2_list)
 data_coolant = (coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr)
-data_channel = (nb_channels, width_list, ht_list, effective_fin_thickness,
+data_channel = (nb_channels, channel_width_list, channel_height_list, effective_fin_thickness_list,
                 wall_thickness, hydraulic_diameter, effective_channel_cross_section,
                 channel_centerline, beta_list)
 data_chamber = (z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area,
@@ -380,6 +380,12 @@ if plot_detail >= 1:
     plt.plot(z_coord_list, coolant_pressure_list, color='orange')
     plt.title('Pressure drop in the cooling channels')
     plt.show()
+
+    plt.figure(dpi=figure_dpi)
+    plt.plot(z_coord_list, coolant_velocity_list, color='blue')
+    plt.title('Coolant velocity in the cooling channels')
+    plt.show()
+
 
 if plot_detail >= 2:
     plt.figure(dpi=figure_dpi)
@@ -470,28 +476,51 @@ if show_2D_temperature:
     start_d2 = time.perf_counter()  # Start of the display of 2D timer
     # At the beginning of the chamber
     print("█ Results at the beginning of the chamber :                                █")
-    dx = 0.00004  # *3.5
+    dx = 5e-5  # m
     location = " at the beginning of the chamber"
-    carto2D(eff[-1] + larg_canal[-1], larg_canal[-1], wall_thickness, ht_canal[-1], dx, hg_list[-1],
-            wallcond_list[-1], hotgas_recovery_temp_list[-1], hlcor_list[-1], tempcoolant_list[-1], 5, True, 1,
-            location,
-            False)
+    carto2D(effective_fin_thickness_list[0] + channel_width_list[0],
+            channel_width_list[0],
+            wall_thickness,
+            channel_height_list[0],
+            dx,
+            hg_list[0],
+            wall_cond_list[0],
+            hotgas_recovery_temp_list[0],
+            hl_corrected_list[0],
+            coolant_temp_list[0],
+            5, True, 1, location, False)
 
     # At the throat
     print("█ Results at the throat :                                                  █")
-    pos_col = ycanaux.index(min(ycanaux))
-    dx = 0.000025  # *3.5
+    pos_col = np.argmin(r_coord_list)
+    dx = 5e-5  # m
     location = " at the throat"
-    carto2D(larg_ailette_list[pos_col] + larg_canal[pos_col], larg_canal[pos_col], e_col, ht_canal[pos_col],
-            dx, hg_list[pos_col], wallcond_list[pos_col], hotgas_recovery_temp_list[pos_col], hlcor_list[pos_col],
-            tempcoolant_list[pos_col], 15, True, 2, location, False)
+    carto2D(effective_fin_thickness_list[pos_col] + channel_width_list[pos_col],
+            channel_width_list[pos_col],
+            wall_thickness,
+            channel_height_list[pos_col],
+            dx,
+            hg_list[pos_col],
+            wall_cond_list[pos_col],
+            hotgas_recovery_temp_list[pos_col],
+            hl_corrected_list[pos_col],
+            coolant_temp_list[pos_col],
+            15, True, 2, location, False)
     # At the end of the divergent
     print("█ Results at the manifold :                                                █")
-    dx = 0.00004
+    dx = 5e-5  # m
     location = " at the manifold"
-    carto2D(larg_ailette_list[0] + larg_canal[0], larg_canal[0], e_tore, ht_canal[0], dx, hg_list[0],
-            wallcond_list[0], hotgas_recovery_temp_list[0], hlcor_list[0], tempcoolant_list[0], 5, True, 1, location,
-            False)
+    carto2D(effective_fin_thickness_list[-1] + channel_width_list[-1],
+            channel_width_list[-1],
+            wall_thickness,
+            channel_height_list[-1],
+            dx,
+            hg_list[-1],
+            wall_cond_list[-1],
+            hotgas_recovery_temp_list[-1],
+            hl_corrected_list[-1],
+            coolant_temp_list[-1],
+            5, True, 1, location, False)
 
     end_d2 = time.perf_counter()  # End of the display of 2D timer
     time_elapsed = f"{round(end_d2 - start_d2, 2)}"  # 2D display elapsed time (in s)
@@ -513,19 +542,19 @@ if do_final_3d_plot:
     dx = 0.0001
 
     # Compute a (low-resolution) 2D slice for each point in the engine
-    with tqdm(total=nb_points_channel,
+    with tqdm(total=nb_points,
               desc="█ 3D graph computation         ",
               unit="|   █", bar_format="{l_bar}{bar}{unit}",
               ncols=76) as progressbar:
-        for i in range(0, nb_points_channel):
-            temperature_slice = carto2D(larg_ailette_list[i] + larg_canal[i], larg_canal[i], wall_thickness[i],
-                                        ht_canal[i], dx, hg_list[i], wallcond_list[i], hotgas_recovery_temp_list[i],
-                                        hlnormal_list[i], tempcoolant_list[i], 3, False, 1, "", True)
+        for i in range(0, nb_points):
+            temperature_slice = carto2D(effective_fin_thickness_list[i] + channel_width_list[i], channel_width_list[i], wall_thickness,
+                                        channel_height_list[i], dx, hg_list[i], wall_cond_list[i], hotgas_recovery_temp_list[i],
+                                        hl_corrected_list[i], coolant_temp_list[i], 3, False, 1, "", True)
             temperature_slice_list.append(temperature_slice)
             progressbar.update(1)
 
     # Stack all these slices in a final 3D plot
-    carto3d([0, 0, 0], z_coord_list, ycanaux, temperature_slice_list, plt.cm.Spectral_r,
+    carto3d([0, 0, 0], z_coord_list, r_coord_list, temperature_slice_list, plt.cm.Spectral_r,
             '3D view of wall temperatures (in K)', nb_channels, limitation)
     print("█                                                                          █")
     # End of the 3D display timer
@@ -548,9 +577,9 @@ gamma_list.reverse()
 mach_list.reverse()
 hotgas_recovery_temp_list.reverse()
 z_coord_list.reverse()
-ycanaux.reverse()
-larg_canal.reverse()
-ht_canal.reverse()
+r_coord_list.reverse()
+channel_width_list.reverse()
+channel_height_list.reverse()
 area_channel.reverse()
 hotgas_visc_list.reverse()
 hotgas_cp_list.reverse()
@@ -561,7 +590,7 @@ sigma_list.reverse()
 coldwall_temp_list.reverse()
 hotwall_temp_list.reverse()
 flux_list.reverse()
-tempcoolant_list.reverse()
+coolant_temp_list.reverse()
 velocitycoolant_list.reverse()
 coolant_reynolds_list.reverse()
 hlnormal_list.reverse()
@@ -579,22 +608,22 @@ y_coord_avec_canaux.reverse()
 
 angles = [0]
 newxhtre = [z_coord_list[0]]
-newyhtre = [ycanaux[0] + ht_canal[0]]
+newyhtre = [r_coord_list[0] + channel_height_list[0]]
 for i in range(1, nb_points_channel):
     if i == (nb_points_channel - 1):
         angle = angles[i - 1]
         angles.append(angle)
     else:
         vect1 = (z_coord_list[i] - z_coord_list[i - 1]) / (
-                (((ycanaux[i] - ycanaux[i - 1]) ** 2) + ((z_coord_list[i] - z_coord_list[i - 1]) ** 2)) ** 0.5)
+                (((r_coord_list[i] - r_coord_list[i - 1]) ** 2) + ((z_coord_list[i] - z_coord_list[i - 1]) ** 2)) ** 0.5)
         vect2 = (z_coord_list[i + 1] - z_coord_list[i]) / (
-                (((ycanaux[i + 1] - ycanaux[i]) ** 2) + ((z_coord_list[i + 1] - z_coord_list[i]) ** 2)) ** 0.5)
+                (((r_coord_list[i + 1] - r_coord_list[i]) ** 2) + ((z_coord_list[i + 1] - z_coord_list[i]) ** 2)) ** 0.5)
         angle1 = np.rad2deg(np.arccos(vect1))
         angle2 = np.rad2deg(np.arccos(vect2))
         angle = angle2
         angles.append(angle)
-    newx = z_coord_list[i] + ht_canal[i] * np.sin(np.deg2rad(angles[i]))
-    newy = ycanaux[i] + ht_canal[i] * np.cos(np.deg2rad(angles[i]))
+    newx = z_coord_list[i] + channel_height_list[i] * np.sin(np.deg2rad(angles[i]))
+    newy = r_coord_list[i] + channel_height_list[i] * np.cos(np.deg2rad(angles[i]))
     newxhtre.append(newx)
     newyhtre.append(newy)
 
@@ -602,13 +631,13 @@ for i in range(1, nb_points_channel):
 verification = []
 print("█ Checking and computing channel height                                    █")
 for i in range(0, nb_points_channel):
-    verifhtre = (((newxhtre[i] - z_coord_list[i]) ** 2) + ((newyhtre[i] - ycanaux[i]) ** 2)) ** 0.5
+    verifhtre = (((newxhtre[i] - z_coord_list[i]) ** 2) + ((newyhtre[i] - r_coord_list[i]) ** 2)) ** 0.5
     verification.append(verifhtre)
 
 if plot_detail >= 3:
     plt.figure(dpi=figure_dpi)
     plt.plot(newxhtre, newyhtre, color='blue', label='New height')
-    plt.plot(z_coord_list, ycanaux, color='chocolate', label='Former height')
+    plt.plot(z_coord_list, r_coord_list, color='chocolate', label='Former height')
     plt.title("Geometrical aspect of the channel (height as a function of the engine axis)")
     plt.axis("equal")
     plt.legend(loc='upper left')
@@ -644,19 +673,19 @@ if write_in_csv:
     for i in range(0, nb_points):
         if i < nb_points_channel:
             geometry1_writer.writerow((newxhtre[i] * (-1000), newyhtre[i] * 1000))
-            geometry2_writer.writerow((ycanaux[i] * 1000, newxhtre[i] * (-1000)))
+            geometry2_writer.writerow((r_coord_list[i] * 1000, newxhtre[i] * (-1000)))
             valuexport_writer.writerow((z_coord_list[i], r_coord_list[i], aire_saved[i], gamma_saved[i],
                                         mach_list_saved[i], static_pressure_list[i],
-                                        hotgas_temperature_saved[i], z_coord_list[i], ycanaux[i],
-                                        larg_canal[i], ht_canal[i], area_channel[i], hotgas_visc_list[i],
+                                        hotgas_temperature_saved[i], z_coord_list[i], r_coord_list[i],
+                                        channel_width_list[i], channel_height_list[i], area_channel[i], hotgas_visc_list[i],
                                         hotgas_cp_list[i], hotgas_cond_list[i], hotgas_prandtl_list[i],
                                         hg_list[i], sigma_list[i], coldwall_temp_list[i],
-                                        hotwall_temp_list[i], flux_list[i], tempcoolant_list[i],
+                                        hotwall_temp_list[i], flux_list[i], coolant_temp_list[i],
                                         coolant_reynolds_list[i], hlnormal_list[i], densitycoolant_list[i],
                                         visccoolant_list[i],
                                         condcoolant_list[i], cpcoolant_list[i], velocitycoolant_list[i],
                                         pcoolant_list[i],
-                                        wallcond_list[i], newxhtre[i], newyhtre[i]))
+                                        wall_cond_list[i], newxhtre[i], newyhtre[i]))
         else:
             valuexport_writer.writerow(
                 (z_coord_list[i], r_coord_list[i], aire_saved[i], gamma_saved[i],

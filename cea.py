@@ -1,3 +1,4 @@
+from rocketcea.cea_obj_w_units import CEA_Obj as CEA_Obj_units
 from rocketcea.cea_obj import CEA_Obj
 import numpy as np
 from scipy.interpolate import CubicSpline
@@ -17,16 +18,16 @@ def compute_Cstar_Tc_MolWt(Pc, MR, ox, fuel, exp_ratio):
     Returns:
     tuple: A tuple containing the computed CEA data.
     """
-    Pc = Pc * 14.5038  # Convert chamber pressure from bar to psi
-    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+    cea = CEA_Obj_units(oxName=ox, fuelName=fuel, cstar_units='m/s',
+                        density_units='kg/m^3', pressure_units='Pa',
+                        temperature_units='K', specific_heat_units='J/kg-K',
+                        sonic_velocity_units='m/s', enthalpy_units='J/kg')
 
     # Compute Cstar, Tc, and MolWt using CEA methods
     Cstar = cea.get_Cstar(Pc=Pc, MR=MR)
     Tc = cea.get_Tcomb(Pc=Pc, MR=MR)
     MolWt = cea.get_exit_MolWt_gamma(Pc=Pc, MR=MR, eps=exp_ratio)[0]
 
-    Cstar *= 0.3048  # Convert from ft/s to m/s
-    Tc *= 5/9  # Convert from Rankine to Kelvin
     return (Cstar, Tc, MolWt)
 
 
@@ -35,7 +36,7 @@ def get_hotgas_properties(Pc, MR, ox, fuel, exp_ratio):
     Compute the hot gas conductivity for a given set of parameters.
 
     Parameters:
-    Pc (float): Chamber pressure in bar.
+    Pc (float): Chamber pressure in Pa.
     MR (float): Mixture ratio.
     ox (str): Oxidizer name.
     fuel (str): Fuel name.
@@ -44,27 +45,26 @@ def get_hotgas_properties(Pc, MR, ox, fuel, exp_ratio):
     Returns:
     tuple: The hot gas properties
     """
-    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+    cea = CEA_Obj_units(oxName=ox, fuelName=fuel, cstar_units='m/s',
+                        density_units='kg/m^3', pressure_units='Pa',
+                        temperature_units='K', specific_heat_units='J/kg-K',
+                        sonic_velocity_units='m/s', enthalpy_units='J/kg',
+                        viscosity_units='millipoise', thermal_cond_units='W/cm-degC')
 
     # Get the properties of the hot gases
-    mu_chamber, cp_chamber, lambda_chamber, pr_chamber = cea.get_Chamber_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
-    mu_throat, cp_throat, lambda_throat, pr_throat = cea.get_Throat_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
-    mu_exit, cp_exit, lambda_exit, pr_exit = cea.get_Exit_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1,  frozenAtThroat=1)
+    cp_chamber, mu_chamber, lambda_chamber, pr_chamber = cea.get_Chamber_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
+    cp_throat, mu_throat, lambda_throat, pr_throat = cea.get_Throat_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1)
+    cp_exit, mu_exit,  lambda_exit, pr_exit = cea.get_Exit_Transport(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1,  frozenAtThroat=1)
 
     # Convert units from millipoise to Pa.s for viscosity
     mu_chamber /= 10000
     mu_throat /= 10000
     mu_exit /= 10000
 
-    # Convert specific heat from Btu/(lbm*R) to J/(kg*K)
-    cp_chamber *= 4186.8
-    cp_throat *= 4186.8
-    cp_exit *= 4186.8
-
-    # Convert thermal conductivity mcal/cm-s-K to W/(m*K)
-    lambda_chamber *= 0.41868
-    lambda_throat *= 0.41868
-    lambda_exit *= 0.41868
+    # Convert thermal conductivity W/cm-K to W/m-K
+    lambda_chamber *= 100
+    lambda_throat *= 100
+    lambda_exit *= 100
 
     return (mu_chamber, cp_chamber, lambda_chamber, pr_chamber,
             mu_throat, cp_throat, lambda_throat, pr_throat,
@@ -76,7 +76,7 @@ def compute_gamma(Pc, MR, ox, fuel, AovAt):
     Compute the adiabatic constant (gamma) for a given set of parameters.
 
     Parameters:
-    Pc (float): Chamber pressure in psi.
+    Pc (float): Chamber pressure in Pa.
     MR (float): Mixture ratio.
     ox (str): Oxidizer name.
     fuel (str): Fuel name.
@@ -85,35 +85,14 @@ def compute_gamma(Pc, MR, ox, fuel, AovAt):
     Returns:
     list: The adiabatic constant as a function of A/At (gamma).
     """
-    throat_index = np.argmin(np.abs(AovAt))  # Find the index of the throat
+    cea = CEA_Obj_units(oxName=ox, fuelName=fuel, cstar_units='m/s',
+                        density_units='kg/m^3', pressure_units='Pa',
+                        temperature_units='K', specific_heat_units='J/kg-K',
+                        sonic_velocity_units='m/s', enthalpy_units='J/kg')
+    gamma = np.ones_like(AovAt)
 
-    cea = CEA_Obj(oxName=ox, fuelName=fuel)
-    gamma = np.zeros_like(AovAt)
-
-    # Find the first index where AovAt starts to decrease (after being constant)
-    i_convergent = 0
-    for i in range(1, len(AovAt)):
-        if AovAt[i] < AovAt[i-1]:
-            i_convergent = i
-            break
-
-    # Compute gamma[0] and gamma[throat_index] using CEA
-    gamma[0] = cea.get_Chamber_MolWt_gamma(Pc=Pc, MR=MR, eps=AovAt[0])[1]
-    gamma[throat_index] = cea.get_exit_MolWt_gamma(Pc=Pc, MR=MR, eps=1)[1]
-
-    # Compute gamma for points before i_convergent (if any)
-    for i in range(1, i_convergent):
-        gamma[i] = cea.get_Chamber_MolWt_gamma(Pc=Pc, MR=MR, eps=AovAt[i])[1]
-
-    # Compute gamma for points after the throat
-    for i, exp_ratio in enumerate(AovAt[throat_index+1:]):
-        gamma[i+throat_index+1] = cea.get_exit_MolWt_gamma(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)[1]
-
-    # Spline interpolation for the convergent region
-    x_spline = np.arange(i_convergent, throat_index+1)
-    y_spline = np.array([gamma[i_convergent-1] if i_convergent > 0 else gamma[0], gamma[throat_index]])
-    cs = CubicSpline([x_spline[0], x_spline[-1]], y_spline, bc_type=((1, 0.0), 'natural'))
-    gamma[i_convergent:throat_index+1] = cs(x_spline)
+    # Compute gamma using CEA (assumed constant along the entire engine)
+    gamma = gamma*cea.get_Chamber_MolWt_gamma(Pc=Pc, MR=MR, eps=AovAt[0])[1]
 
     return gamma
 
@@ -123,7 +102,7 @@ def compute_mach(Pc, MR, ox, fuel, AovAt):
     Compute the Mach number for a given set of parameters.
 
     Parameters:
-    Pc (float): Chamber pressure in psi.
+    Pc (float): Chamber pressure in Pa.
     MR (float): Mixture ratio.
     ox (str): Oxidizer name.
     fuel (str): Fuel name.
@@ -132,6 +111,8 @@ def compute_mach(Pc, MR, ox, fuel, AovAt):
     Returns:
     list: The Mach number for every A/At.
     """
+    Pc = Pc/1e5 * 14.5038  # Convert chamber pressure from Pa to psi
+
     cea = CEA_Obj(oxName=ox, fuelName=fuel)
 
     mach = np.zeros_like(AovAt)  # Initialize Mach number array
@@ -159,7 +140,10 @@ def compute_CO2_molar_fractions(Pc, MR, ox, fuel, exp_ratio):
     Returns:
     tuple: Molar fractions of CO2 at injector, throat and exit.
     """
-    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+    cea = CEA_Obj_units(oxName=ox, fuelName=fuel, cstar_units='m/s',
+                        density_units='kg/m^3', pressure_units='Pa',
+                        temperature_units='K', specific_heat_units='J/kg-K',
+                        sonic_velocity_units='m/s', enthalpy_units='J/kg')
 
     molFracCO2 = cea.get_SpeciesMoleFractions(Pc=Pc, MR=MR, eps=exp_ratio)[1]['*CO2']
     return (molFracCO2[1], molFracCO2[2], molFracCO2[3])  # Return values for chamber, throat, and exit
@@ -179,7 +163,10 @@ def compute_H2O_molar_fractions(Pc, MR, ox, fuel, exp_ratio):
     Returns:
     tuple: Molar fractions of CO2 at injector, throat and exit.
     """
-    cea = CEA_Obj(oxName=ox, fuelName=fuel)
+    cea = CEA_Obj_units(oxName=ox, fuelName=fuel, cstar_units='m/s',
+                        density_units='kg/m^3', pressure_units='Pa',
+                        temperature_units='K', specific_heat_units='J/kg-K',
+                        sonic_velocity_units='m/s', enthalpy_units='J/kg')
 
     molFracH2O = cea.get_SpeciesMoleFractions(Pc=Pc, MR=MR, eps=exp_ratio)[1]['H2O']
     return (molFracH2O[1], molFracH2O[2], molFracH2O[3])  # Return values for chamber, throat, and exit

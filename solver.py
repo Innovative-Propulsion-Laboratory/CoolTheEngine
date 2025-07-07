@@ -67,16 +67,14 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     coldwall_temp_list = np.zeros(n_points)
     q_conv_list = np.zeros(n_points)
     coolant_velocity_list = np.zeros(n_points)
-    sound_speed_list = np.zeros(n_points)
     hl_normal_list = np.zeros(n_points)
     hl_corrected_list = np.zeros(n_points)
-    hl_corrected_list_2 = np.zeros(n_points)
     q_rad_list_H2O = np.zeros(n_points)
     q_rad_list_CO2 = np.zeros(n_points)
     q_rad_list = np.zeros(n_points)
 
     # This is to avoid oscillations near the inlet because of division by zero
-    length_from_inlet = 0.03
+    length_from_inlet = 0.0
 
     # Initial guess for the wall temperature
     coldwall_temp = 300

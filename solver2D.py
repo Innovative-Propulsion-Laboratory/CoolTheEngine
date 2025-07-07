@@ -4,7 +4,19 @@ import matplotlib.pyplot as plt
 import os
 
 
-def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, marker_size, display, legend_type,
+def carto2D(larg_wall,
+            larg_channel,
+            ep_wall,
+            ep_rib,
+            dx,
+            Hg,
+            lamb,
+            Tg,
+            Hl,
+            Tl,
+            marker_size,
+            display,
+            legend_type,
             location, return_temp, plot_dir=None):
     """
     This function compute temperature of each point of one wall and the rib next to it.
@@ -209,7 +221,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
             f'{moyT_coolant}') == 4 else f" {moyT_coolant}"
         t_max = f"{maxT}" if len(f'{maxT}') == 4 else f" {maxT}"
         print(
-            f"█ Mean wall temperature at hot gaz side = {tg_avg} K                           █")
+            f"█ Mean wall temperature at hot gas side = {tg_avg} K                           █")
         print(
             f"█ Mean wall temperature at coolant side = {tl_avg} K                           █")
         print(
@@ -235,7 +247,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
         title = "2D temperature distribution (in K)" + location
         plt.figure(dpi=200)
         p = plt.scatter(abcisse, ordonnee, c=temperature, marker='s', s=marker_size,
-                        cmap='rainbow')  # rainbow#prism#flag
+                        cmap='magma')  # rainbow#prism#flag
         plt.text(a1, a2, 'Rib', horizontalalignment='center',
                  verticalalignment='center')
         plt.text(a3, a4, 'Coolant', horizontalalignment='center',
@@ -244,7 +256,7 @@ def carto2D(larg_wall, larg_channel, ep_wall, ep_rib, dx, Hg, lamb, Tg, Hl, Tl, 
                  verticalalignment='center')
         plt.title(title, fontsize=15)
         plt.axis("equal")
-        plt.colorbar(p, shrink=0.4, aspect=15)
+        plt.colorbar(p, shrink=1, aspect=15)
 
         if plot_dir is not None:
             plot_dir = os.path.join(plot_dir, "2D temperature")
