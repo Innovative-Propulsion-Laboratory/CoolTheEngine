@@ -121,9 +121,9 @@ def one_plot(x, y,
 
     margin = 0.05
     if xmin is None:
-        xmin = min(x) - margin * min(x)
+        xmin = min(x)
     if xmax is None:
-        xmax = max(x) + margin * max(x)
+        xmax = max(x)
     if ymin is None:
         ymin = min(y) - margin * min(y)
     if ymax is None:
@@ -171,7 +171,6 @@ def n_plots(x, y_list,
             fmt='-', lw=1.5, dpi=150,
             label_loc='best', sci_notation=False, show=True, reverse=False):
     serif = {'fontname': 'DejaVu Serif'}
-
     margin = 0.05
     if xmin is None:
         xmin = min(x) - margin * min(x)
@@ -215,6 +214,49 @@ def n_plots(x, y_list,
         ax.grid(ls=':')
     if sci_notation:
         ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+
+    if show:
+        plt.show()
+
+    return fig
+
+
+def channel_around_engine_plot(x_center_list, y_center_list, z_coord_list,
+                               r_coord_list, dpi=150, show=True):
+    def set_axes_equal(ax):
+        '''Set 3D plot axes to equal scale (so 1mm is the same on all axes).'''
+        x_limits = ax.get_xlim3d()
+        y_limits = ax.get_ylim3d()
+        z_limits = ax.get_zlim3d()
+        x_range = abs(x_limits[1] - x_limits[0])
+        x_middle = np.mean(x_limits)
+        y_range = abs(y_limits[1] - y_limits[0])
+        y_middle = np.mean(y_limits)
+        z_range = abs(z_limits[1] - z_limits[0])
+        z_middle = np.mean(z_limits)
+        plot_radius = 0.5 * max([x_range, y_range, z_range])
+        ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
+        ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
+        ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
+
+    # 3D plot of channel centerline and surface of revolution
+    fig = plt.figure(dpi=dpi)
+    ax = fig.add_subplot(111, projection='3d')
+    # Plot channel centerline
+    ax.plot(x_center_list, y_center_list, z_coord_list, color='blue', label='Channel centerline')
+    # Plot surface of revolution
+    theta = np.linspace(0, 2 * np.pi, 60)
+    Z, Theta = np.meshgrid(np.flip(z_coord_list), theta)
+    R = np.tile(np.flip(r_coord_list), (len(theta), 1))
+    X = R * np.cos(Theta)
+    Y = R * np.sin(Theta)
+    ax.plot_surface(X, Y, Z, color='red', alpha=0.3, linewidth=0, antialiased=True)
+    ax.set_xlabel('x (radial) [m]')
+    ax.set_ylabel('y (radial) [m]')
+    ax.set_zlabel('z (engine axis) [m]')
+    ax.set_title('3D Channel Centerline and Engine Surface')
+    ax.legend()
+    set_axes_equal(ax)
 
     if show:
         plt.show()

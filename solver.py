@@ -142,10 +142,10 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 q_rad = q_rad_H2O + q_rad_CO2
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
-                q_conv = (hotgas_recovery_temp_list[i] - coolant_temp_list[i] + q_rad / hg) / (
+                q_tot = (hotgas_recovery_temp_list[i] - coolant_temp_list[i] + q_rad / hg) / (
                     1 / hg + 1 / hl_cor + wall_thickness / wall_cond_list[i])
-                new_hotwall_temp = hotgas_recovery_temp_list[i] + (q_rad - q_conv) / hg
-                new_coldwall_temp = coolant_temp_list[i] + q_conv / hl_cor
+                new_hotwall_temp = hotgas_recovery_temp_list[i] + (q_rad - q_tot) / hg
+                new_coldwall_temp = coolant_temp_list[i] + q_tot / hl_cor
 
                 # Compute new value of sigma (used in the Bartz equation)
                 sigma = (((new_hotwall_temp / (2 * hotgas_recovery_temp_list[i])) *
@@ -163,7 +163,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             dA = (np.pi * 2 * r_coord_list[i] * dl_chamber_list[i]) / (nb_channels * np.cos(np.deg2rad(beta_list[i])))
 
             # New temperature at previous point
-            delta_T_coolant = ((q_conv * dA) / ((coolant_mfr / nb_channels) * coolant_cp_list[i]))
+            delta_T_coolant = ((q_tot * dA) / ((coolant_mfr / nb_channels) * coolant_cp_list[i]))
             new_coolant_temp = coolant_temp_list[i] + delta_T_coolant
 
             # Computing pressure loss with the Darcy-Weisbach friction factor
@@ -188,7 +188,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             hl_corrected_list[i] = hl_cor
             hotwall_temp_list[i] = hotwall_temp
             coldwall_temp_list[i] = coldwall_temp
-            q_conv_list[i] = q_conv
+            q_conv_list[i] = q_tot
             sigma_list[i] = sigma
             q_rad_list[i] = q_rad
             q_rad_list_CO2[i] = q_rad_CO2
