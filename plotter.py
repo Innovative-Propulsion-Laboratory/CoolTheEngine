@@ -25,6 +25,7 @@ def plotter(parameters, data):
         cross_section_area_list, \
         initial_fin_thickness, \
         effective_fin_thickness_list, \
+        channel_ar_list, \
         channel_width_list, \
         channel_height_list, \
         hydraulic_diameter, \
@@ -89,6 +90,12 @@ def plotter(parameters, data):
                           title='Fin dimensions',
                           xlabel=r'Engine axis [$mm$]',
                           ylabel=r'Length [mm]', ymin=0, dpi=figure_dpi, show=show))
+
+    figs.append(t.one_plot(z_coord_list_mm, channel_ar_list,
+                           title=r'Channel aspect ratio',
+                           xlabel=r'Engine axis [$mm$]',
+                           ylabel=r'Aspect Ratio [-]',
+                           ymin=0, dpi=figure_dpi, show=show))
 
     figs.append(t.n_plots(z_coord_list_mm,
                           y_list=[channel_height_list * 1000,
@@ -313,7 +320,7 @@ def plotter(parameters, data):
                            ylabel=r'$\lambda_w$ [$\frac{W}{m \cdot K}$]',
                            dpi=figure_dpi, show=show))
 
-    if show_2D_temperature:
+    if show_2D_temperature and show:
         # At the beginning of the chamber
         print("█ 2D Results at the beginning of the chamber :                             █")
         dx = 5e-5  # m
@@ -363,7 +370,7 @@ def plotter(parameters, data):
                 10, True, 1, location, False)
 
     "Computation for 3D graph"
-    if do_final_3d_plot:
+    if do_final_3d_plot and show:
         nb_points = len(z_coord_list_mm)
         temperature_slice_list = []
         dx = 0.0001

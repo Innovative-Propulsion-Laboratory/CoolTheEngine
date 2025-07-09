@@ -262,3 +262,12 @@ def channel_around_engine_plot(x_center_list, y_center_list, z_coord_list,
         plt.show()
 
     return fig
+
+
+def compute_total_heat_output_hotwall(z_coord_list, r_coord_list, q_tot_list):
+    # This assumes q_tot_list is per unit actual wall area (not projected area)
+    dz = np.diff(z_coord_list, prepend=z_coord_list[0])
+    dr = np.diff(r_coord_list, prepend=r_coord_list[0])
+    dl = np.sqrt(dz**2 + dr**2)
+
+    return np.sum(q_tot_list*2*np.pi*r_coord_list*dl)

@@ -160,7 +160,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             hotwall_temp = new_hotwall_temp
 
             # Compute heat exchange area between two points
-            dA = (np.pi * 2 * r_coord_list[i] * dl_chamber_list[i]) / (nb_channels * np.cos(np.deg2rad(beta_list[i])))
+            dA = (np.pi * 2 * r_coord_list[i] * dl_chamber_list[i]) / (nb_channels)
 
             # New temperature at previous point
             delta_T_coolant = ((q_tot * dA) / ((coolant_mfr / nb_channels) * coolant_cp_list[i]))

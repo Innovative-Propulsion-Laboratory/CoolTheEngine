@@ -1,7 +1,7 @@
 from rocketcea.cea_obj_w_units import CEA_Obj as CEA_Obj_units
 from rocketcea.cea_obj import CEA_Obj
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 
 
 def compute_Cstar_Tc_MolWt(Pc, MR, ox, fuel, exp_ratio):
@@ -116,12 +116,28 @@ def compute_mach(Pc, MR, ox, fuel, AovAt):
     cea = CEA_Obj(oxName=ox, fuelName=fuel)
 
     mach = np.zeros_like(AovAt)  # Initialize Mach number array
-    throat_index = np.argmin(np.abs(AovAt))  # Find the index of the throat
+    i_t = np.argmin(np.abs(AovAt))  # Find the index of the throat
 
-    for i, cont_ratio in enumerate(AovAt[:throat_index]):
+    for i, cont_ratio in enumerate(AovAt[:i_t]):
         mach[i] = cea.get_Chamber_MachNumber(Pc=Pc, MR=MR, fac_CR=cont_ratio)
-    for i, exp_ratio in enumerate(AovAt[throat_index:]):
-        mach[i+throat_index] = cea.get_MachNumber(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)
+    for i, exp_ratio in enumerate(AovAt[i_t:]):
+        mach[i+i_t] = cea.get_MachNumber(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)
+
+    # We want to smooth out the region near the throat
+    i0 = i_t - 2
+    i1 = i_t + 2
+
+    x_old = np.array([i0, i1])
+    y_old = mach[x_old]
+
+    # x-coordinates to replace (inclusive of i0 and i1)
+    x_new = np.arange(i0, i1+1)
+
+    # linear interpolation
+    y_new = np.interp(x_new, x_old, y_old)
+
+    # overwrite that segment
+    mach[i0:i1+1] = y_new
 
     return mach
 
