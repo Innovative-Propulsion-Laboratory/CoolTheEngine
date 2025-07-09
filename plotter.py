@@ -50,10 +50,13 @@ def plotter(parameters, data):
         sigma_list, \
         hl_normal_list, \
         hl_corrected_list, \
+        h_tp_list, \
         molFracH2O, molFracCO2, \
         P_H2O_list, P_CO2_list, \
         q_rad_list_CO2, q_rad_list_H2O, \
         q_rad_list, q_tot_list, \
+        CHF_Meyer_list, \
+        CHF_Tong_list, \
         coolant_velocity_list, \
         coolant_reynolds_list, \
         coolant_density_list, \
@@ -212,12 +215,12 @@ def plotter(parameters, data):
                            dpi=figure_dpi, show=show))
 
     figs.append(t.n_plots(z_coord_list_mm,
-                          y_list=[hl_normal_list, hl_corrected_list],
-                          y_label_list=['No correction', 'Correction (Popp & Schmidt)'],
-                          colors_list=['b', 'r'],
-                          title=r'Cold-side convective coefficient $h_l$',
+                          y_list=[hl_normal_list, hl_corrected_list, h_tp_list],
+                          y_label_list=['Gnielinski', 'Fin effect correction (Popp & Schmidt)', 'Subcooled flow boiling (Lui & Winterton)'],
+                          colors_list=['b', 'r', 'g'],
+                          title=r'Cold-side convective coefficient $h_l$/$h_{tp}$',
                           xlabel=r'Engine axis [$mm$]',
-                          ylabel=r'$h_l$ [$\frac{W}{m^2 \cdot K}$]',
+                          ylabel=r'$h$ [$\frac{W}{m^2 \cdot K}$]',
                           ymin=0, dpi=figure_dpi, show=show))
 
     # Plot of molar fraction
@@ -250,10 +253,10 @@ def plotter(parameters, data):
                           ymin=0, dpi=figure_dpi, show=show))
 
     figs.append(t.n_plots(z_coord_list_mm,
-                          y_list=[q_tot_list, q_rad_list],
-                          y_label_list=['Total heat flux', 'Radiative Heat Flux'],
-                          colors_list=['r', 'k'],
-                          title=r'Total and radiative heat flux',
+                          y_list=[q_tot_list, q_rad_list, CHF_Meyer_list, CHF_Tong_list],
+                          y_label_list=['Total heat flux', 'Radiative Heat Flux', 'CHF Meyer', 'CHF Tong'],
+                          colors_list=['r', 'k', 'g', 'b'],
+                          title=r'Heat fluxes',
                           xlabel=r'Engine axis [$mm$]',
                           ylabel=r'$\dot q$ [$\frac{W}{m^2}$]',
                           dpi=figure_dpi, show=show))

@@ -274,12 +274,13 @@ data_chamber = (z_coord_list, r_coord_list, throat_diam, throat_curv_radius, thr
                 channel_roughness, cross_section_area_list, mach_list, wall_material)
 
 # Call the main solving loop
-hl_corrected_list, hg_list, \
+hl_corrected_list, h_tp_list, hg_list, \
     hotwall_temp_list, coldwall_temp_list, q_tot_list, sigma_list, \
     coolant_reynolds_list, coolant_temp_list, coolant_visc_list, \
     coolant_cond_list, coolant_cp_list, coolant_density_list, \
     coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
-    hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O \
+    hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
+    CHF_Meyer_list, CHF_Tong_list\
     = solver(data_hotgas, data_coolant, data_channel, data_chamber)
 
 
@@ -352,10 +353,12 @@ data_plotter = (  # Engine geometry
     sigma_list,
     hl_normal_list,
     hl_corrected_list,
+    h_tp_list,
     molFracH2O, molFracCO2,
     P_H2O_list, P_CO2_list,
     q_rad_list_CO2, q_rad_list_H2O,
     q_rad_list, q_tot_list,
+    CHF_Meyer_list, CHF_Tong_list,
 
     # Coolant properties
     coolant_velocity_list,
@@ -401,10 +404,11 @@ if write_in_csv:
         "nb_channels", "gamma_list", "mach_list", "static_pressure_list", "hotgas_total_temp_list",
         "hotgas_recovery_temp_list", "hotgas_static_temp_list", "hotgas_visc_list", "hotgas_cp_list",
         "hotgas_cond_list", "hotgas_pr_list", "hg_list", "sigma_list", "hl_normal_list", "hl_corrected_list",
+        "h_tp_list",
         "molFracH2O", "molFracCO2", "P_H2O_list", "P_CO2_list", "q_rad_list_CO2", "q_rad_list_H2O",
         "q_rad_list", "q_tot_list", "coolant_velocity_list", "coolant_reynolds_list", "coolant_density_list",
         "coolant_cond_list", "coolant_cp_list", "coolant_visc_list", "coolant_temp_list", "coolant_pressure_list",
-        "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "wall_material"
+        "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "CHF_Meyer_list", "CHF_Tong_list"
     ])
 
     # Collect all rows first
@@ -415,10 +419,11 @@ if write_in_csv:
             nb_channels, gamma_list[i], mach_list[i], static_pressure_list[i], hotgas_total_temp_list[i],
             hotgas_recovery_temp_list[i], hotgas_static_temp_list[i], hotgas_visc_list[i], hotgas_cp_list[i],
             hotgas_cond_list[i], hotgas_pr_list[i], hg_list[i], sigma_list[i], hl_normal_list[i], hl_corrected_list[i],
+            h_tp_list[i],
             molFracH2O[i], molFracCO2[i], P_H2O_list[i], P_CO2_list[i], q_rad_list_CO2[i], q_rad_list_H2O[i],
             q_rad_list[i], q_tot_list[i], coolant_velocity_list[i], coolant_reynolds_list[i], coolant_density_list[i],
             coolant_cond_list[i], coolant_cp_list[i], coolant_visc_list[i], coolant_temp_list[i], coolant_pressure_list[i],
-            hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], wall_material
+            hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], CHF_Meyer_list[i], CHF_Tong_list[i]
         ]
         for i in range(nb_points)
     ]

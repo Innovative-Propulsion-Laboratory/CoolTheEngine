@@ -1,6 +1,6 @@
 {
     "chamber_pressure": 50e5,
-    "P_coolant": 70e5,
+    "P_coolant": 60e5,
     "T_coolant": 298,
     "ox_mfr": 3.4,
     "fuel_mfr": 2.1,

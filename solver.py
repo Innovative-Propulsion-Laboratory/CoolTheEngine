@@ -69,9 +69,12 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     coolant_velocity_list = np.zeros(n_points)
     hl_normal_list = np.zeros(n_points)
     hl_corrected_list = np.zeros(n_points)
+    h_tp_list = np.zeros(n_points)
     q_rad_list_H2O = np.zeros(n_points)
     q_rad_list_CO2 = np.zeros(n_points)
     q_rad_list = np.zeros(n_points)
+    CHF_Meyer_list = np.zeros(n_points)
+    CHF_Tong_list = np.zeros(n_points)
 
     # This is to avoid oscillations near the inlet because of division by zero
     length_from_inlet = 0.0
@@ -123,7 +126,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 # Compute the Darcy-Weisbach friction factor
                 fD = t.darcy_weisbach(hydraulic_diameter[i], coolant_reynolds_list[i], channel_roughness)
 
-                # Coolant-side convective heat transfer coefficient from Petukhov (https://doi.org/10.1016/S0065-2717(08)70153-9)
+                # Coolant-side convective heat transfer coefficient from Petukhov (modified Gnielinski) (https://doi.org/10.1016/S0065-2717(08)70153-9)
                 k1 = 1 + 3.4*fD
                 k2 = 11.7 + 1.8*coolant_prandtl_list[i]**(-1.0/3.0)
                 Nu = (fD/8 * coolant_reynolds_list[i]*coolant_prandtl_list[i])/(k1*k2*(coolant_prandtl_list[i]**(2.0/3.0) - 1)*np.sqrt(fD/8))
@@ -131,21 +134,34 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 # Compute coolant-side convective heat-transfer coefficient
                 hl = Nu * (coolant_cond_list[i] / hydraulic_diameter[i])
 
-                # Correct for the fin effect (Luka Denies)
+                # Compute the pool boiling convective heat transfer coefficient from Cooper (https://doi.org/10.1016/B978-0-85295-175-0.50013-8)
+                p_reduced = coolant_pressure_list[i]/flp.Pcrit(coolant_name)  # Reduced pressure
+                h_pool = 55 * p_reduced**(0.12-0.2*np.log10(channel_roughness)) * (-np.log10(p_reduced))**(-0.55) * flp.molar_mass(coolant_name)**(-0.5)
+
+                # Correct for the fin effect (Popp & Schmidt - https://doi.org/10.2514/6.1996-3303)
                 intermediate_calc_1 = ((2 * hl * effective_fin_thickness[i]) / wall_cond_list[i]) ** 0.5 * channel_height_list[i] / effective_fin_thickness[i]
                 nf = np.tanh(intermediate_calc_1) / intermediate_calc_1
                 hl_cor = hl * (channel_width_list[i] + 2 * nf * channel_height_list[i]) / (channel_width_list[i] + effective_fin_thickness[i])
 
-                # Compute radiative heat transfer of H2O (W) and CO2 (C) (Luka Denies)
+                # We compute the two phase heat transfer coefficient from Lui-Winterton (https://doi.org/10.1016/0017-9310(91)90234-6)
+                F = 1.0  # for subcooled flow
+                S = 1/(1+0.055 * F**0.1 * coolant_reynolds_list[i]**0.16)
+                delta_Tb = coldwall_temp - coolant_temp_list[i]
+                delta_Ts = coldwall_temp - flp.Tsat(coolant_pressure_list[i], coolant_name)
+
+                # We can now compute the HTC taking into account subcooled nucleate flow boiling
+                h_tp = np.sqrt((F*hl_cor)**2 + (S*h_pool * delta_Ts/delta_Tb)**2)
+
+                # Compute radiative heat transfer of H2O (W) and CO2 (C) (C. Kirchberger)
                 q_rad_H2O = 5.74 * ((PH2O_list[i] * r_coord_list[i]) / 1e5) ** 0.3 * (hotgas_static_temp_list[i] / 100) ** 3.5
                 q_rad_CO2 = 4 * ((PCO2_list[i] * r_coord_list[i]) / 1e5) ** 0.3 * (hotgas_static_temp_list[i] / 100) ** 3.5
                 q_rad = q_rad_H2O + q_rad_CO2
 
                 # Computing the heat flux and wall temperatures (Luka Denies)
                 q_tot = (hotgas_recovery_temp_list[i] - coolant_temp_list[i] + q_rad / hg) / (
-                    1 / hg + 1 / hl_cor + wall_thickness / wall_cond_list[i])
+                    1 / hg + 1 / h_tp + wall_thickness / wall_cond_list[i])
                 new_hotwall_temp = hotgas_recovery_temp_list[i] + (q_rad - q_tot) / hg
-                new_coldwall_temp = coolant_temp_list[i] + q_tot / hl_cor
+                new_coldwall_temp = coolant_temp_list[i] + q_tot / h_tp
 
                 # Compute new value of sigma (used in the Bartz equation)
                 sigma = (((new_hotwall_temp / (2 * hotgas_recovery_temp_list[i])) *
@@ -155,6 +171,14 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
 
                 # Compute thermal conductivity of the solid at a given temperature
                 wall_cond_list[i] = t.conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=wall_material)
+
+                # Compute the Critical Heat Flux (CHF) from Meyer et al. (https://ntrs.nasa.gov/api/citations/19980017166/downloads/19980017166.pdf)
+                CHF_Meyer = (1.64e5 + 2.09e5 * np.sqrt(coolant_velocity_list[i] * (flp.Tsat(coolant_pressure_list[i], coolant_name) - coolant_temp_list[i])))\
+                    * (1.17 - 1.2416e-7 * coolant_pressure_list[i])
+                CHF_Tong = (0.216 + 0.0474e-5*coolant_pressure_list[i]) \
+                    * (coolant_mfr / (nb_channels * cross_section_area_list[i])) \
+                    * flp.latent_heat_vap(coolant_pressure_list[i], coolant_name) \
+                    * coolant_reynolds_list[i]**0.6
 
             coldwall_temp = new_coldwall_temp
             hotwall_temp = new_hotwall_temp
@@ -186,6 +210,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             hg_list[i] = hg
             hl_normal_list[i] = hl
             hl_corrected_list[i] = hl_cor
+            h_tp_list[i] = h_tp
             hotwall_temp_list[i] = hotwall_temp
             coldwall_temp_list[i] = coldwall_temp
             q_conv_list[i] = q_tot
@@ -193,12 +218,15 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             q_rad_list[i] = q_rad
             q_rad_list_CO2[i] = q_rad_CO2
             q_rad_list_H2O[i] = q_rad_H2O
+            CHF_Meyer_list[i] = CHF_Meyer
+            CHF_Tong_list[i] = CHF_Tong
 
             pbar_main.update(1)
 
-    return hl_corrected_list, hg_list, \
+    return hl_corrected_list, h_tp_list, hg_list, \
         hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
         coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
         coolant_cond_list, coolant_cp_list, coolant_density_list, \
         coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
-        hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O
+        hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
+        CHF_Meyer_list, CHF_Tong_list

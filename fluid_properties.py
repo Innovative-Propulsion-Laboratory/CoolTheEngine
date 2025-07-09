@@ -31,3 +31,23 @@ def pressure(S, T, fluid):
 
 def DeltaT(P, T, fluid):
     return PropsSI("T", "P", P, "Q", 0, fluid) - T
+
+
+def Pcrit(fluid):
+    return PropsSI("Pcrit", fluid)
+
+
+def Tcrit(fluid):
+    return PropsSI("Tcrit", fluid)
+
+
+def molar_mass(fluid):
+    return PropsSI("MOLARMASS", fluid)
+
+
+def Tsat(P, fluid):
+    return PropsSI("T", "P", P, "Q", 0, fluid)
+
+
+def latent_heat_vap(P, fluid):
+    return PropsSI('H', 'P', P, 'Q', 1, fluid) - PropsSI('H', 'P', P, 'Q', 0, fluid)
