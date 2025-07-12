@@ -98,45 +98,52 @@ def compute_gamma(Pc, MR, ox, fuel, AovAt):
 
 def compute_mach(Pc, MR, ox, fuel, AovAt):
     """
-    Compute the Mach number for a given set of parameters.
+    Compute the Mach number for a given set of parameters, with caching to reduce
+    redundant calls to RocketCEA functions.
 
     Parameters:
     Pc (float): Chamber pressure in Pa.
     MR (float): Mixture ratio.
     ox (str): Oxidizer name.
     fuel (str): Fuel name.
-    AovAt (list): Contraction/expansion ratio.
+    AovAt (list or np.ndarray): Contraction/expansion ratio.
 
     Returns:
-    list: The Mach number for every A/At.
+    np.ndarray: The Mach number for every A/At.
     """
-    Pc = Pc/1e5 * 14.5038  # Convert chamber pressure from Pa to psi
-
+    Pc_psi = Pc / 1e5 * 14.5038  # Convert chamber pressure from Pa to psi
     cea = CEA_Obj(oxName=ox, fuelName=fuel)
 
-    mach = np.zeros_like(AovAt)  # Initialize Mach number array
-    i_t = np.argmin(np.abs(AovAt))  # Find the index of the throat
+    mach = np.zeros_like(AovAt, dtype=float)  # Initialize Mach number array
+    i_t = np.argmin(np.abs(AovAt))  # Index of the throat (A/At close to 1)
 
+    # Use dictionaries to cache previously computed results
+    cr_cache = {}
+    eps_cache = {}
+
+    # Subsonic side (converging section)
     for i, cont_ratio in enumerate(AovAt[:i_t]):
-        mach[i] = cea.get_Chamber_MachNumber(Pc=Pc, MR=MR, fac_CR=cont_ratio)
-    for i, exp_ratio in enumerate(AovAt[i_t:]):
-        mach[i+i_t] = cea.get_MachNumber(Pc=Pc, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)
+        if cont_ratio not in cr_cache:
+            cr_cache[cont_ratio] = cea.get_Chamber_MachNumber(Pc=Pc_psi, MR=MR, fac_CR=cont_ratio)
+        mach[i] = cr_cache[cont_ratio]
 
-    # We want to smooth out the region near the throat
-    i0 = i_t - 2
-    i1 = i_t + 2
+    # Supersonic side (diverging section)
+    for i, exp_ratio in enumerate(AovAt[i_t:]):
+        if exp_ratio not in eps_cache:
+            eps_cache[exp_ratio] = cea.get_MachNumber(Pc=Pc_psi, MR=MR, eps=exp_ratio, frozen=1, frozenAtThroat=1)
+        mach[i + i_t] = eps_cache[exp_ratio]
+
+    # Smooth the region near the throat
+    i0 = max(i_t - 2, 0)
+    i1 = min(i_t + 2, len(AovAt) - 1)
 
     x_old = np.array([i0, i1])
     y_old = mach[x_old]
+    x_new = np.arange(i0, i1 + 1)
 
-    # x-coordinates to replace (inclusive of i0 and i1)
-    x_new = np.arange(i0, i1+1)
-
-    # linear interpolation
+    # Linear interpolation for smooth transition
     y_new = np.interp(x_new, x_old, y_old)
-
-    # overwrite that segment
-    mach[i0:i1+1] = y_new
+    mach[i0:i1 + 1] = y_new
 
     return mach
 

@@ -1,0 +1,83 @@
+{
+    "chamber_pressure": 50e5,
+    "P_coolant": 60e5,
+    "T_coolant": 298,
+    "ox_mfr": 3.4,
+    "fuel_mfr": 2.1,
+    "coolant_mfr": 2.1,
+    "oxidizer_name": "LOX",
+    "fuel_name": "Ethanol",
+    "coolant_name": "Ethanol",
+    "wall_material": "CuCrZr",
+    "use_TEOS_PDMS": [
+        true,
+        false
+    ],
+    "channel_roughness": 15e-6,
+    "nb_channels": 50,
+    "wall_thickness": 0.001,
+    "channel_widths": {
+        "inj": [
+            0.004,
+            0.005
+        ],
+        "conv": [
+            0.002,
+            0.003
+        ],
+        "throat": [
+            0.001,
+            0.003
+        ],
+        "exit": [
+            0.002,
+            0.003
+        ]
+    },
+    "channel_heights": {
+        "inj": [
+            0.003,
+            0.004
+        ],
+        "conv": [
+            0.003,
+            0.004
+        ],
+        "throat": [
+            0.0015,
+            0.002,
+            0.003
+        ],
+        "exit": [
+            0.003,
+            0.004
+        ]
+    },
+    "channel_angles": {
+        "inj": [
+            0.0,
+            30.0,
+            45.0
+        ],
+        "conv": [
+            0.0,
+            30.0,
+            45.0
+        ],
+        "throat": [
+            0.0
+        ],
+        "exit": [
+            0.0,
+            30.0,
+            45.0
+        ]
+    },
+    "nb_points": 500,
+    "figure_dpi": 150,
+    "show_1D": true,
+    "show_2D": true,
+    "show_3D": false,
+    "save_plots": true,
+    "write_in_csv": true
+}

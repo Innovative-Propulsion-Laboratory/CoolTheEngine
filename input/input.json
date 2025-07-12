@@ -31,11 +31,11 @@
         "throat": 0.0,
         "exit": 0.0
     },
-    "nb_points": 500,
+    "nb_points": 100,
     "figure_dpi": 150,
     "show_1D": false,
     "show_2D": false,
     "show_3D": false,
-    "save_plots": true,
-    "write_in_csv": true
+    "save_plots": false,
+    "write_in_csv": false
 }

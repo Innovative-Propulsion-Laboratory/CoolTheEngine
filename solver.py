@@ -63,6 +63,8 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     q_rad_list = np.zeros(n_points)
     CHF_Meyer_list = np.zeros(n_points)
     CHF_Tong_list = np.zeros(n_points)
+    critical_pressure = flp.Pcrit(coolant_name)
+    molar_mass_coolant = flp.molar_mass(coolant_name)
 
     # This is to avoid oscillations near the inlet because of division by zero
     length_from_inlet = 0.0
@@ -126,8 +128,8 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hl = Nu * (coolant_cond_list[i] / hydraulic_diameter[i])
 
                 # Compute the pool boiling convective heat transfer coefficient from Cooper (https://doi.org/10.1016/B978-0-85295-175-0.50013-8)
-                p_reduced = coolant_pressure_list[i]/flp.Pcrit(coolant_name)  # Reduced pressure
-                h_pool = 55 * p_reduced**(0.12-0.2*np.log10(channel_roughness)) * (-np.log10(p_reduced))**(-0.55) * flp.molar_mass(coolant_name)**(-0.5)
+                p_reduced = coolant_pressure_list[i]/critical_pressure  # Reduced pressure
+                h_pool = 55 * p_reduced**(0.12-0.2*np.log10(channel_roughness)) * (-np.log10(p_reduced))**(-0.55) * molar_mass_coolant**(-0.5)
 
                 # Correct for the fin effect (Popp & Schmidt - https://doi.org/10.2514/6.1996-3303)
                 intermediate_calc_1 = ((2 * hl * effective_fin_thickness[i]) / wall_cond_list[i]) ** 0.5 * channel_height_list[i] / effective_fin_thickness[i]
@@ -163,13 +165,15 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 # Compute thermal conductivity of the solid at a given temperature
                 wall_cond_list[i] = t.wall_conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=wall_material)
 
-                # Compute the Critical Heat Flux (CHF) from Meyer et al. (https://ntrs.nasa.gov/api/citations/19980017166/downloads/19980017166.pdf)
-                CHF_Meyer = (1.64e5 + 2.09e5 * np.sqrt(coolant_velocity_list[i] * (coolant_Tsat_list[i] - coolant_temp_list[i])))\
-                    * (1.17 - 1.2416e-7 * coolant_pressure_list[i])
-                CHF_Tong = (0.216 + 4.74e-8*coolant_pressure_list[i]) \
-                    * (coolant_mfr / (nb_channels * effective_channel_cross_section[i])) \
-                    * flp.latent_heat_vap(coolant_pressure_list[i], coolant_name) \
-                    * coolant_reynolds_list[i]**(-0.5)
+                # # Compute the Critical Heat Flux (CHF) from Meyer et al. (https://ntrs.nasa.gov/api/citations/19980017166/downloads/19980017166.pdf)
+                # CHF_Meyer = (1.64e5 + 2.09e5 * np.sqrt(coolant_velocity_list[i] * (coolant_Tsat_list[i] - coolant_temp_list[i])))\
+                #     * (1.17 - 1.2416e-7 * coolant_pressure_list[i])
+                # CHF_Tong = (0.216 + 4.74e-8*coolant_pressure_list[i]) \
+                #     * (coolant_mfr / (nb_channels * effective_channel_cross_section[i])) \
+                #     * flp.latent_heat_vap(coolant_pressure_list[i], coolant_name) \
+                #     * coolant_reynolds_list[i]**(-0.5)
+                CHF_Meyer = 0.0
+                CHF_Tong = 0.0
 
             coldwall_temp = new_coldwall_temp
             hotwall_temp = new_hotwall_temp
@@ -219,6 +223,6 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
         hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
         coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
         coolant_cond_list, coolant_cp_list, coolant_density_list, \
-        coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, hg_list, \
+        coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, \
         hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
         CHF_Meyer_list, CHF_Tong_list

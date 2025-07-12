@@ -36,7 +36,6 @@ print("█                                                                      
 print("█ Initialisation...                                                        █")
 
 # Initial definitions
-input_file = "input/input.txt"  # Engine parameters
 contour_file = "input/engine_contour.csv"  # Engine contour
 
 # Read input data from JSON file
@@ -244,7 +243,7 @@ hl_corrected_list, h_tp_list, hg_list, \
     hotwall_temp_list, coldwall_temp_list, q_tot_list, sigma_list, \
     coolant_reynolds_list, coolant_temp_list, coolant_visc_list, \
     coolant_cond_list, coolant_cp_list, coolant_density_list, \
-    coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, hg_list, \
+    coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, \
     hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
     CHF_Meyer_list, CHF_Tong_list\
     = solver(data_hotgas, data_coolant, data_channel, data_chamber)
@@ -255,13 +254,13 @@ hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_
                                                                                        coldwall_temp_list)
 
 end_main_time = time.perf_counter()  # End of the main solution timer
-time_elapsed = f"{round(end_main_time - start_main_time, 2)}"  # Main computation elapsed time (in s)
+time_elapsed = f"{round(end_main_time - start_main_time, 3)}"  # Main computation elapsed time (in s)
 if len(time_elapsed) <= 3:
-    time_elapsed_m = f"   {time_elapsed} s"
-elif len(time_elapsed) == 4:
     time_elapsed_m = f"  {time_elapsed} s"
-elif len(time_elapsed) == 5:
+elif len(time_elapsed) == 4:
     time_elapsed_m = f" {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_m = f"{time_elapsed} s"
 else:
     time_elapsed_m = f"{time_elapsed} s"
 
@@ -276,80 +275,80 @@ print(f"█ Total heat transfer to hotwall : {total_heat_transfer_hotwall:.1f} k
 print(f"█ Relative difference : {total_heat_transfer_reldif:.2f} %                                             █")
 print("█                                                                          █")
 
+if show_1D or show_2D:
+    # Display of the 1D analysis results
+    parameters_plotter = (show_1D, show_2D, show_3D,
+                          figure_dpi, save_plots)
 
-# Display of the 1D analysis results
-parameters_plotter = (show_1D, show_2D, show_3D,
-                      figure_dpi, save_plots)
+    # Store the data in a big tuple to send to the plotter
+    data_plotter = (  # Engine geometry
+        z_coord_list * 1000,
+        r_coord_list * 1000,
+        z_coord_list,
+        r_coord_list,
+        cross_section_area_list,
 
-# Store the data in a big tuple to send to the plotter
-data_plotter = (  # Engine geometry
-    z_coord_list * 1000,
-    r_coord_list * 1000,
-    z_coord_list,
-    r_coord_list,
-    cross_section_area_list,
+        # Channel geometry
+        initial_fin_thickness,
+        effective_fin_thickness_list,
+        channel_ar_list,
+        channel_width_list,
+        channel_height_list,
+        hydraulic_diameter,
+        initial_channel_cross_section,
+        effective_channel_cross_section,
+        nb_channels,
+        alpha_list,
+        beta_list,
+        channel_centerline[:, 0],
+        channel_centerline[:, 1],
 
-    # Channel geometry
-    initial_fin_thickness,
-    effective_fin_thickness_list,
-    channel_ar_list,
-    channel_width_list,
-    channel_height_list,
-    hydraulic_diameter,
-    initial_channel_cross_section,
-    effective_channel_cross_section,
-    nb_channels,
-    alpha_list,
-    beta_list,
-    channel_centerline[:, 0],
-    channel_centerline[:, 1],
+        # Hotgas properties
+        gamma_list,
+        mach_list,
+        static_pressure_list,
+        hotgas_total_temp_list,
+        hotgas_recovery_temp_list,
+        hotgas_static_temp_list,
+        hotgas_visc_list,
+        hotgas_cp_list,
+        hotgas_cond_list,
+        hotgas_pr_list,
 
-    # Hotgas properties
-    gamma_list,
-    mach_list,
-    static_pressure_list,
-    hotgas_total_temp_list,
-    hotgas_recovery_temp_list,
-    hotgas_static_temp_list,
-    hotgas_visc_list,
-    hotgas_cp_list,
-    hotgas_cond_list,
-    hotgas_pr_list,
+        # Convective and radiative heat flux
+        hg_list,
+        sigma_list,
+        hl_normal_list,
+        hl_corrected_list,
+        h_tp_list,
+        molFracH2O, molFracCO2,
+        P_H2O_list, P_CO2_list,
+        q_rad_list_CO2, q_rad_list_H2O,
+        q_rad_list, q_tot_list,
+        CHF_Meyer_list, CHF_Tong_list,
 
-    # Convective and radiative heat flux
-    hg_list,
-    sigma_list,
-    hl_normal_list,
-    hl_corrected_list,
-    h_tp_list,
-    molFracH2O, molFracCO2,
-    P_H2O_list, P_CO2_list,
-    q_rad_list_CO2, q_rad_list_H2O,
-    q_rad_list, q_tot_list,
-    CHF_Meyer_list, CHF_Tong_list,
+        # Coolant properties
+        coolant_velocity_list,
+        coolant_reynolds_list,
+        coolant_density_list,
+        coolant_cond_list,
+        coolant_cp_list,
+        coolant_visc_list,
+        coolant_temp_list,
+        coolant_pressure_list,
+        coolant_Tsat_list,
 
-    # Coolant properties
-    coolant_velocity_list,
-    coolant_reynolds_list,
-    coolant_density_list,
-    coolant_cond_list,
-    coolant_cp_list,
-    coolant_visc_list,
-    coolant_temp_list,
-    coolant_pressure_list,
-    coolant_Tsat_list,
+        # Wall properties
+        hotwall_temp_list,
+        coldwall_temp_list,
+        wall_cond_list,
+        wall_material,
+        wall_thickness,
+        hoop_stress_list,
+        thermal_stress_list,
+        max_wall_stress_list)
 
-    # Wall properties
-    hotwall_temp_list,
-    coldwall_temp_list,
-    wall_cond_list,
-    wall_material,
-    wall_thickness,
-    hoop_stress_list,
-    thermal_stress_list,
-    max_wall_stress_list)
-
-plotter(parameters_plotter, data_plotter)
+    plotter(parameters_plotter, data_plotter)
 
 #  Writing the results of the study in a CSV file
 if write_in_csv:
@@ -419,13 +418,13 @@ if write_in_csv:
 
 # Execution time display
 end_t = time.perf_counter()  # End of the total timer
-time_elapsed = f"{round(end_t - start_time, 2)}"  # Total elapsed time
+time_elapsed = f"{round(end_t - start_time, 3)}"  # Total elapsed time
 if len(time_elapsed) <= 3:
-    time_elapsed_t = f"   {time_elapsed} s"
-elif len(time_elapsed) == 4:
     time_elapsed_t = f"  {time_elapsed} s"
-elif len(time_elapsed) == 5:
+elif len(time_elapsed) == 4:
     time_elapsed_t = f" {time_elapsed} s"
+elif len(time_elapsed) == 5:
+    time_elapsed_t = f"{time_elapsed} s"
 else:
     time_elapsed_t = f"{time_elapsed} s"
 

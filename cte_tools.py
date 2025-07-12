@@ -176,13 +176,16 @@ def flux_equations(guess, *data):
 
 
 def darcy_weisbach(Dhy, Re, roughness):
-    def colebrook(f):
-        return 1.0 / (-2.0 * np.log10((roughness / (Dhy * 3.7)) + 2.51 / (Re * np.sqrt(f))))**2 - f
+    # def colebrook(f):
+    #     return 1.0 / (-2.0 * np.log10((roughness / (Dhy * 3.7)) + 2.51 / (Re * np.sqrt(f))))**2 - f
 
-    sol = root_scalar(colebrook, bracket=[1e-6, 0.1], method='brentq')
-    if not sol.converged:
-        raise RuntimeError("Colebrook equation did not converge")
-    return sol.root
+    # sol = root_scalar(colebrook, bracket=[1e-6, 0.1], method='brentq')
+    # if not sol.converged:
+    #     raise RuntimeError("Colebrook equation did not converge")
+    # return sol.root
+    A0 = -0.79638*np.log((roughness/Dhy)/8.208 + 7.3357/Re)
+    A1 = Re*(roughness/Dhy) + 9.3120665 * A0
+    return ((8.128943 + A1)/(8.128943*A0 - 0.86859209*A1*np.log(A1 / (3.7099535*Re))))**2
 
 
 def one_plot(x, y,
