@@ -1,7 +1,6 @@
 from rocketcea.cea_obj_w_units import CEA_Obj as CEA_Obj_units
 from rocketcea.cea_obj import CEA_Obj
 import numpy as np
-from scipy.interpolate import interp1d
 
 
 def compute_Cstar_Tc_MolWt(Pc, MR, ox, fuel, exp_ratio):

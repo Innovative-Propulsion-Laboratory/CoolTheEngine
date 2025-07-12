@@ -21,21 +21,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area, \
         channel_roughness, cross_section_area_list, mach_list, wall_material = chamber_data
 
-    # hotgas_recovery_temp_list = np.flip(hotgas_recovery_temp_list)
-    # gamma_list = np.flip(gamma_list)
-    # PH2O_list = np.flip(PH2O_list)
-    # PCO2_list = np.flip(PCO2_list)
-    # z_coord_list = np.flip(z_coord_list)
-    # r_coord_list = np.flip(r_coord_list)
-    # cross_section_area_list = np.flip(cross_section_area_list)
-    # mach_list = np.flip(mach_list)
-    # hotgas_visc_list = np.flip(hotgas_visc_list)
-    # hotgas_pr_list = np.flip(hotgas_pr_list)
-    # hotgas_cp_list = np.flip(hotgas_cp_list)
-    # hotgas_cond_list = np.flip(hotgas_cond_list)
-
     n_points = len(z_coord_list)
-    index_throat = np.argmin(np.abs(z_coord_list))
 
     # Compute the distance between consecutive points in the channel centerline
     dx_channels = np.diff(channel_centerline[:, 0], append=channel_centerline[:, 0][-1])

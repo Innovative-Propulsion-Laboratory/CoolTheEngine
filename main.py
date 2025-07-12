@@ -23,7 +23,6 @@ from channels import generate_channels
 import cea
 
 # Graphics
-from tqdm import tqdm  # For progress bars
 from plotter import plotter
 
 
@@ -34,42 +33,11 @@ print("█                                                                      
 print("█                  Innovative Propulsion Laboratory - IPL                  █")
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
-print("█ Initialisation                                                           █")
-print("█                                                                          █")
+print("█ Initialisation...                                                        █")
 
 # Initial definitions
-
 input_file = "input/input.txt"  # Engine parameters
 contour_file = "input/engine_contour.csv"  # Engine contour
-
-# Constant input_data_list
-
-nb_points = 500
-figure_dpi = 150
-show_1D = True
-show_2D = True
-show_3d = False
-save_plots = True
-write_in_csv = True
-
-# Reading input data
-contour_data = np.genfromtxt(contour_file, delimiter=",", skip_header=1)
-z_coord_list = contour_data[0:, 0]/1000
-r_coord_list = contour_data[0:, 1]/1000
-nb_points_raw = len(z_coord_list)  # Number of points
-
-# Reduce the number of points using scipy 1D interpolation
-
-# Create new x values evenly spaced between the min and max of the original x_coord_list
-x_new = np.linspace(z_coord_list[0], z_coord_list[-1], nb_points)
-
-# Interpolate y values at the new x positions
-interp_func = interp1d(z_coord_list, r_coord_list, kind='linear')
-y_new = interp_func(x_new)
-
-# Replace the original lists with the interpolated ones
-z_coord_list = x_new
-r_coord_list = y_new
 
 # Read input data from JSON file
 with open("input/input.json", "r") as f:
@@ -111,6 +79,34 @@ beta_conv = float(data["channel_angles"]["conv"])
 beta_throat = float(data["channel_angles"]["throat"])
 beta_exit = float(data["channel_angles"]["exit"])
 
+# General options
+nb_points = int(data["nb_points"])
+figure_dpi = int(data["figure_dpi"])
+show_1D = bool(data["show_1D"])
+show_2D = bool(data["show_2D"])
+show_3D = bool(data["show_3D"])
+save_plots = bool(data["save_plots"])
+write_in_csv = bool(data["write_in_csv"])
+
+# Reading input data
+contour_data = np.genfromtxt(contour_file, delimiter=",", skip_header=1)
+z_coord_list = contour_data[0:, 0]/1000
+r_coord_list = contour_data[0:, 1]/1000
+nb_points_raw = len(z_coord_list)  # Number of points
+
+# Reduce the number of points using scipy 1D interpolation
+# Create new x values evenly spaced between the min and max of the original x_coord_list
+x_new = np.linspace(z_coord_list[0], z_coord_list[-1], nb_points)
+# Interpolate y values at the new x positions
+interp_func = interp1d(z_coord_list, r_coord_list, kind='linear')
+y_new = interp_func(x_new)
+# Replace the original lists with the interpolated ones
+z_coord_list = x_new
+r_coord_list = y_new
+
+# Adiabatic constant (gamma) parametrization
+print("█ Computing chamber properties...                                          █")
+
 chamber_radius = r_coord_list[0]  # Radius of the chamber (in m)
 throat_radius = np.min(r_coord_list)  # Radius of the throat (in m)
 exit_radius = r_coord_list[-1]  # Radius of the exit (in m)
@@ -126,7 +122,9 @@ contraction_ratio = chamber_area / throat_area  # Contraction ratio (A/A*)
 expansion_ratio = exit_area / throat_area  # Expansion ratio (Ae/A*)
 throat_curv_radius = 1.5 * throat_radius  # Curvature radius before the throat (in m)
 
+# Find the index of the throat
 i_throat = np.argmin(np.abs(r_coord_list))
+# Find the index of the beginning of the convergent section
 i_convergent = 0
 for i in range(1, len(r_coord_list)):
     if r_coord_list[i] < r_coord_list[i-1]:
@@ -146,35 +144,35 @@ x_chamber_throat_exit = [z_coord_list[0], z_coord_list[i_convergent],
                          z_coord_list[i_throat], z_coord_list[-1]]
 
 hotgas_visc_list = PchipInterpolator(x_chamber_throat_exit,
-                                     [hotgas_mu_chamber, hotgas_mu_chamber, hotgas_mu_throat, hotgas_mu_exit])(z_coord_list)
+                                     [hotgas_mu_chamber, hotgas_mu_chamber,
+                                      hotgas_mu_throat, hotgas_mu_exit])(z_coord_list)
 hotgas_cp_list = PchipInterpolator(x_chamber_throat_exit,
-                                   [hotgas_cp_chamber, hotgas_cp_chamber, hotgas_cp_throat, hotgas_cp_exit])(z_coord_list)
+                                   [hotgas_cp_chamber, hotgas_cp_chamber,
+                                    hotgas_cp_throat, hotgas_cp_exit])(z_coord_list)
 hotgas_cond_list = PchipInterpolator(x_chamber_throat_exit,
-                                     [hotgas_lambda_chamber, hotgas_lambda_chamber, hotgas_lambda_throat, hotgas_lambda_exit])(z_coord_list)
+                                     [hotgas_lambda_chamber, hotgas_lambda_chamber,
+                                      hotgas_lambda_throat, hotgas_lambda_exit])(z_coord_list)
 hotgas_pr_list = PchipInterpolator(x_chamber_throat_exit,
-                                   [hotgas_pr_chamber, hotgas_pr_chamber, hotgas_pr_throat, hotgas_pr_exit])(z_coord_list)
-
+                                   [hotgas_pr_chamber, hotgas_pr_chamber,
+                                    hotgas_pr_throat, hotgas_pr_exit])(z_coord_list)
 
 # Computation of the cross-sectional area along the engine
 cross_section_area_list = np.pi*r_coord_list**2
 
-# Adiabatic constant (gamma) parametrization
-print("█ Computing gamma                                                          █")
-
 gamma_list = cea.compute_gamma(chamber_pressure, ox_mfr/fuel_mfr,
-                               ox_name, fuel_name, cross_section_area_list/throat_area)
+                               ox_name, fuel_name,
+                               cross_section_area_list/throat_area)
 
 # Computation of mach number of the hot gases
 mach_list = cea.compute_mach(chamber_pressure, ox_mfr/fuel_mfr,
-                             ox_name, fuel_name, cross_section_area_list/throat_area)
+                             ox_name, fuel_name,
+                             cross_section_area_list/throat_area)
 
 # Static pressure computation
 static_pressure_list = np.zeros_like(z_coord_list)  # (in Pa)
-
-
 for i in range(0, nb_points):
-    static_pressure_list[i] = t.pressure_solv(mach_list[i], gamma_list[i], chamber_pressure)
-
+    static_pressure_list[i] = t.pressure_solv(mach_list[i], gamma_list[i],
+                                              chamber_pressure)
 
 # Partial pressure computation and interpolation of the molar fraction
 molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit\
@@ -185,8 +183,14 @@ molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit\
                                       ox_name, fuel_name, expansion_ratio)
 
 # Linear interpolation of molar fractions for H2O and CO2
-molFracH2O = PchipInterpolator(x_chamber_throat_exit, [molFracH2O_chamber, molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit])(z_coord_list)
-molFracCO2 = PchipInterpolator(x_chamber_throat_exit, [molFracCO2_chamber, molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit])(z_coord_list)
+molFracH2O = PchipInterpolator(x_chamber_throat_exit, [molFracH2O_chamber,
+                                                       molFracH2O_chamber,
+                                                       molFracH2O_throat,
+                                                       molFracH2O_exit])(z_coord_list)
+molFracCO2 = PchipInterpolator(x_chamber_throat_exit, [molFracCO2_chamber,
+                                                       molFracCO2_chamber,
+                                                       molFracCO2_throat,
+                                                       molFracCO2_exit])(z_coord_list)
 
 # Partial pressure of H2O and CO2
 P_H2O_list = np.array([static_pressure_list[i] * molFracH2O[i] for i in range(0, nb_points)])
@@ -204,9 +208,7 @@ hotgas_total_temp_list = Tc*np.ones_like(z_coord_list)  # List of total hot gas 
 hotgas_recovery_temp_list = np.array([t.get_recovery_temperature(hotgas_total_temp_list[i], gamma_list[i], mach_list[i], hotgas_pr_list[i]) for i in
                                       range(0, nb_points)])
 
-# Dimensions
-print("█ Computing channel geometry                                               █")
-print("█                                                                          █")
+print("█ Computing channel geometry...                                            █")
 
 # Pack the data in tuples
 profile = (z_coord_list, r_coord_list)
@@ -223,33 +225,8 @@ channel_vertices, channel_centerline, channel_inclination, channel_ar_list, \
                                                                     angles, wall_thickness,
                                                                     nb_channels, x_chamber_throat_exit)
 
-# Write the dimensions of the channels in a CSV file
-file_name = "output/channel_data.csv"
-rows = []
-header = ["Engine z axis", "Engine radius", "Channel width", "Channel height",
-          "Fin width", "Hydraulic diameter", "Channel cross-sectionnal area",
-          "xA", "yA", "xB", "yB", "xC", "yC", "xD", "yD"]
-for i in range(nb_points):
-    rows.append([
-        z_coord_list[i], r_coord_list[i],
-        channel_width_list[i], channel_height_list[i], effective_fin_thickness_list[i],
-        hydraulic_diameter[i], effective_channel_cross_section[i],
-        channel_vertices['A'][i, 0], channel_vertices['A'][i, 1],
-        channel_vertices['B'][i, 0], channel_vertices['B'][i, 1],
-        channel_vertices['C'][i, 0], channel_vertices['C'][i, 1],
-        channel_vertices['D'][i, 0], channel_vertices['D'][i, 1]
-    ])
-with open(file_name, "w", newline="") as file:
-    writer = csv.writer(file)
-    writer.writerow(header)
-    writer.writerows(rows)
-
-end_init_time = time.perf_counter()  # End of the initialisation timer
-time_elapsed = f"{round(end_init_time - start_time, 2)}"  # Initialisation elapsed time (in s)
-time_elapsed_i = f"{time_elapsed} s"
 
 start_main_time = time.perf_counter()  # Start of the main solution timer
-
 
 # Main computation
 data_hotgas = (hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list,
@@ -277,8 +254,8 @@ hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_
                                                                                        coolant_pressure_list, hotwall_temp_list,
                                                                                        coldwall_temp_list)
 
-end_m = time.perf_counter()  # End of the main solution timer
-time_elapsed = f"{round(end_m - start_main_time, 2)}"  # Main computation elapsed time (in s)
+end_main_time = time.perf_counter()  # End of the main solution timer
+time_elapsed = f"{round(end_main_time - start_main_time, 2)}"  # Main computation elapsed time (in s)
 if len(time_elapsed) <= 3:
     time_elapsed_m = f"   {time_elapsed} s"
 elif len(time_elapsed) == 4:
@@ -288,8 +265,7 @@ elif len(time_elapsed) == 5:
 else:
     time_elapsed_m = f"{time_elapsed} s"
 
-start_p = time.perf_counter()  # Start of the end timer
-
+# Verify energy conservation (integrate heat flux density and coolant heating)
 total_heat_transfer_coolant = -np.trapz(coolant_cp_list*coolant_mfr, coolant_temp_list)/1000
 total_heat_transfer_hotwall = t.compute_total_heat_output_hotwall(z_coord_list, r_coord_list, q_tot_list)/1000
 total_heat_transfer_reldif = 100*max(abs(total_heat_transfer_coolant-total_heat_transfer_hotwall)/total_heat_transfer_coolant,
@@ -299,14 +275,13 @@ print(f"█ Total heat transfer to coolant : {total_heat_transfer_coolant:.1f} k
 print(f"█ Total heat transfer to hotwall : {total_heat_transfer_hotwall:.1f} kW                                █")
 print(f"█ Relative difference : {total_heat_transfer_reldif:.2f} %                                             █")
 print("█                                                                          █")
+
+
 # Display of the 1D analysis results
-print("█                                                                          █")
-
-
-parameters_plotter = (show_1D, show_2D, show_3d,
+parameters_plotter = (show_1D, show_2D, show_3D,
                       figure_dpi, save_plots)
 
-
+# Store the data in a big tuple to send to the plotter
 data_plotter = (  # Engine geometry
     z_coord_list * 1000,
     r_coord_list * 1000,
@@ -375,74 +350,75 @@ data_plotter = (  # Engine geometry
     max_wall_stress_list)
 
 plotter(parameters_plotter, data_plotter)
-end_p = time.perf_counter()
-time_elapsed = f"{round(end_p - start_p, 2)}"  # Total elapsed time
-if len(time_elapsed) <= 3:
-    time_elapsed_p = f"   {time_elapsed} s"
-elif len(time_elapsed) == 4:
-    time_elapsed_p = f"  {time_elapsed} s"
-elif len(time_elapsed) == 5:
-    time_elapsed_p = f" {time_elapsed} s"
-else:
-    time_elapsed_p = f"{time_elapsed} s"
 
-
-start_e = time.perf_counter()  # Start of the end timer
 #  Writing the results of the study in a CSV file
 if write_in_csv:
     print("█ Writing results in .csv files                                            █")
+
+    # Write the dimensions of the channels in a CSV file
+    file_name = "output/channel_data.csv"
+    rows = []
+    header = ["Engine z axis", "Engine radius", "Channel width", "Channel height",
+              "Fin width", "Hydraulic diameter", "Channel cross-sectionnal area",
+              "xA", "yA", "xB", "yB", "xC", "yC", "xD", "yD"]
+    for i in range(nb_points):
+        rows.append([
+            z_coord_list[i], r_coord_list[i],
+            channel_width_list[i], channel_height_list[i], effective_fin_thickness_list[i],
+            hydraulic_diameter[i], effective_channel_cross_section[i],
+            channel_vertices['A'][i, 0], channel_vertices['A'][i, 1],
+            channel_vertices['B'][i, 0], channel_vertices['B'][i, 1],
+            channel_vertices['C'][i, 0], channel_vertices['C'][i, 1],
+            channel_vertices['D'][i, 0], channel_vertices['D'][i, 1]
+        ])
+
+    with open(file_name, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerows(rows)
+
     valuexport = open("output/valuexport.csv", "w", newline="")
     valuexport_writer = csv.writer(valuexport)
 
-# Write header row
-valuexport_writer.writerow([
-    "z_coord_list", "r_coord_list", "cross_section_area_list", "effective_fin_thickness_list", "channel_ar_list",
-    "channel_width_list", "channel_height_list", "hydraulic_diameter", "effective_channel_cross_section",
-    "nb_channels", "gamma_list", "mach_list", "static_pressure_list", "hotgas_total_temp_list",
-    "hotgas_recovery_temp_list", "hotgas_static_temp_list", "hotgas_visc_list", "hotgas_cp_list",
-    "hotgas_cond_list", "hotgas_pr_list", "hg_list", "sigma_list", "hl_normal_list", "hl_corrected_list",
-    "h_tp_list",
-    "molFracH2O", "molFracCO2", "P_H2O_list", "P_CO2_list", "q_rad_list_CO2", "q_rad_list_H2O",
-    "q_rad_list", "q_tot_list", "coolant_velocity_list", "coolant_reynolds_list", "coolant_density_list",
-    "coolant_cond_list", "coolant_cp_list", "coolant_visc_list", "coolant_temp_list", "coolant_pressure_list",
-    "coolant_Tsat_list",
-    "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "CHF_Meyer_list", "CHF_Tong_list", "hoop_stress_list",
-    "thermal_stress_list", "max_wall_stress_list"
-])
+    # Write header row
+    valuexport_writer.writerow([
+        "z_coord_list", "r_coord_list", "cross_section_area_list", "effective_fin_thickness_list", "channel_ar_list",
+        "channel_width_list", "channel_height_list", "hydraulic_diameter", "effective_channel_cross_section",
+        "nb_channels", "gamma_list", "mach_list", "static_pressure_list", "hotgas_total_temp_list",
+        "hotgas_recovery_temp_list", "hotgas_static_temp_list", "hotgas_visc_list", "hotgas_cp_list",
+        "hotgas_cond_list", "hotgas_pr_list", "hg_list", "sigma_list", "hl_normal_list", "hl_corrected_list",
+        "h_tp_list",
+        "molFracH2O", "molFracCO2", "P_H2O_list", "P_CO2_list", "q_rad_list_CO2", "q_rad_list_H2O",
+        "q_rad_list", "q_tot_list", "coolant_velocity_list", "coolant_reynolds_list", "coolant_density_list",
+        "coolant_cond_list", "coolant_cp_list", "coolant_visc_list", "coolant_temp_list", "coolant_pressure_list",
+        "coolant_Tsat_list",
+        "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "CHF_Meyer_list", "CHF_Tong_list", "hoop_stress_list",
+        "thermal_stress_list", "max_wall_stress_list"
+    ])
 
-# Collect all rows first
-rows = [
-    [
-        z_coord_list[i], r_coord_list[i], cross_section_area_list[i], effective_fin_thickness_list[i], channel_ar_list[i],
-        channel_width_list[i], channel_height_list[i], hydraulic_diameter[i], effective_channel_cross_section[i],
-        nb_channels, gamma_list[i], mach_list[i], static_pressure_list[i], hotgas_total_temp_list[i],
-        hotgas_recovery_temp_list[i], hotgas_static_temp_list[i], hotgas_visc_list[i], hotgas_cp_list[i],
-        hotgas_cond_list[i], hotgas_pr_list[i], hg_list[i], sigma_list[i], hl_normal_list[i], hl_corrected_list[i],
-        h_tp_list[i],
-        molFracH2O[i], molFracCO2[i], P_H2O_list[i], P_CO2_list[i], q_rad_list_CO2[i], q_rad_list_H2O[i],
-        q_rad_list[i], q_tot_list[i], coolant_velocity_list[i], coolant_reynolds_list[i], coolant_density_list[i],
-        coolant_cond_list[i], coolant_cp_list[i], coolant_visc_list[i], coolant_temp_list[i], coolant_pressure_list[i],
-        coolant_Tsat_list[i],
-        hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], CHF_Meyer_list[i], CHF_Tong_list[i],
-        hoop_stress_list[i], thermal_stress_list[i], max_wall_stress_list[i]
+    # Collect all rows first
+    rows = [
+        [
+            z_coord_list[i], r_coord_list[i], cross_section_area_list[i], effective_fin_thickness_list[i], channel_ar_list[i],
+            channel_width_list[i], channel_height_list[i], hydraulic_diameter[i], effective_channel_cross_section[i],
+            nb_channels, gamma_list[i], mach_list[i], static_pressure_list[i], hotgas_total_temp_list[i],
+            hotgas_recovery_temp_list[i], hotgas_static_temp_list[i], hotgas_visc_list[i], hotgas_cp_list[i],
+            hotgas_cond_list[i], hotgas_pr_list[i], hg_list[i], sigma_list[i], hl_normal_list[i], hl_corrected_list[i],
+            h_tp_list[i],
+            molFracH2O[i], molFracCO2[i], P_H2O_list[i], P_CO2_list[i], q_rad_list_CO2[i], q_rad_list_H2O[i],
+            q_rad_list[i], q_tot_list[i], coolant_velocity_list[i], coolant_reynolds_list[i], coolant_density_list[i],
+            coolant_cond_list[i], coolant_cp_list[i], coolant_visc_list[i], coolant_temp_list[i], coolant_pressure_list[i],
+            coolant_Tsat_list[i],
+            hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], CHF_Meyer_list[i], CHF_Tong_list[i],
+            hoop_stress_list[i], thermal_stress_list[i], max_wall_stress_list[i]
+        ]
+        for i in range(nb_points)
     ]
-    for i in range(nb_points)
-]
-valuexport_writer.writerows(rows)
-valuexport.close()
+    valuexport_writer.writerows(rows)
+    valuexport.close()
 
 # Execution time display
 end_t = time.perf_counter()  # End of the total timer
-time_elapsed = f"{round(end_t - start_e, 2)}"  # End elapsed time (in s)
-if len(time_elapsed) <= 3:
-    time_elapsed_e = f"   {time_elapsed} s"
-elif len(time_elapsed) == 4:
-    time_elapsed_e = f"  {time_elapsed} s"
-elif len(time_elapsed) == 5:
-    time_elapsed_e = f" {time_elapsed} s"
-else:
-    time_elapsed_e = f"{time_elapsed} s"
-
 time_elapsed = f"{round(end_t - start_time, 2)}"  # Total elapsed time
 if len(time_elapsed) <= 3:
     time_elapsed_t = f"   {time_elapsed} s"
@@ -456,17 +432,7 @@ else:
 print("█                                                                          █")
 print("█__________________________________________________________________________█")
 print("█                                                                          █")
-print(f"█ Execution time for the initialisation       : {time_elapsed_i}                     █")
-print("█                                                                          █")
 print(f"█ Execution time for the main computation     : {time_elapsed_m}                   █")
-
-if show_1D >= 1:
-    print("█                                                                          █")
-    print(f"█ Execution time for the plotting             : {time_elapsed_p}                   █")
-
-print("█                                                                          █")
-print(f"█ Execution time for the end of the program   : {time_elapsed_e}                   █")
-print("█                                                                          █")
 print(f"█ Total execution time                        : {time_elapsed_t}                   █")
 print("█                                                                          █")
 print("███████████████████████████████████ END ████████████████████████████████████")
