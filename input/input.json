@@ -9,6 +9,7 @@
     "fuel_name": "Ethanol",
     "coolant_name": "Ethanol",
     "wall_material": "CuCrZr",
+    "use_TEOS_PDMS": true,
     "channel_roughness": 15e-6,
     "nb_channels": 50,
     "wall_thickness": 0.001,

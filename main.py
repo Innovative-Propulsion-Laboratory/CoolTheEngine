@@ -43,23 +43,20 @@ input_file = "input/input.txt"  # Engine parameters
 contour_file = "input/engine_contour.csv"  # Engine contour
 
 # Constant input_data_list
-figure_dpi = 150  # Dots Per Inch (DPI) for all figures (lower=faster)
-plot_detail = 3  # 0=No plots; 1=Important plots; 2=Less important plots: 3=All plots
-show_3d_plots = False
-show_2D_temperature = True
-do_final_3d_plot = False
-write_in_csv = True
-nb_points = 100
-lim_3D_plot = 0.05
-save_plots = False
-show_plots = True
 
-# %% Reading input data
+nb_points = 500
+figure_dpi = 150
+show_1D = True
+show_2D = True
+show_3d = False
+save_plots = True
+write_in_csv = True
+
+# Reading input data
 contour_data = np.genfromtxt(contour_file, delimiter=",", skip_header=1)
 z_coord_list = contour_data[0:, 0]/1000
 r_coord_list = contour_data[0:, 1]/1000
 nb_points_raw = len(z_coord_list)  # Number of points
-nb_points = 500
 
 # Reduce the number of points using scipy 1D interpolation
 
@@ -88,6 +85,7 @@ coolant_mfr = float(data["coolant_mfr"])
 ox_name = data["oxidizer_name"]
 fuel_name = data["fuel_name"]
 coolant_name = data["coolant_name"]
+use_TEOS_PDMS = data["use_TEOS_PDMS"]
 
 # Channel parameters
 wall_material = data["wall_material"]
@@ -173,13 +171,10 @@ mach_list = cea.compute_mach(chamber_pressure, ox_mfr/fuel_mfr,
 # Static pressure computation
 static_pressure_list = np.zeros_like(z_coord_list)  # (in Pa)
 
-with tqdm(total=nb_points,
-          desc="█ Computing static pressure    ",
-          unit="|   █", bar_format="{l_bar}{bar}{unit}",
-          ncols=76) as progressbar:
-    for i in range(0, nb_points):
-        static_pressure_list[i] = t.pressure_solv(mach_list[i], gamma_list[i], chamber_pressure)
-        progressbar.update(1)
+
+for i in range(0, nb_points):
+    static_pressure_list[i] = t.pressure_solv(mach_list[i], gamma_list[i], chamber_pressure)
+
 
 # Partial pressure computation and interpolation of the molar fraction
 molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit\
@@ -199,16 +194,11 @@ P_CO2_list = np.array([static_pressure_list[i] * molFracCO2[i] for i in range(0,
 
 # Hot gas temperature computation
 hotgas_static_temp_list = np.zeros_like(z_coord_list)  # List of static hot gas temperatures
-with tqdm(total=nb_points,
-          desc="█ Computing gas static_temperature    ",
-          unit="|   █", bar_format="{l_bar}{bar}{unit}",
-          ncols=76) as progressbar:
-    for i in range(0, nb_points):
-        hotgas_static_temp_list[i] = t.temperature_hotgas_solv(mach_list[i], gamma_list[i], Tc)
-        progressbar.update(1)
+for i in range(0, nb_points):
+    hotgas_static_temp_list[i] = t.temperature_hotgas_solv(mach_list[i], gamma_list[i], Tc)
 
-    # We assume that the total temperature is constant
-    hotgas_total_temp_list = Tc*np.ones_like(z_coord_list)  # List of total hot gas temperatures
+# We assume that the total temperature is constant
+hotgas_total_temp_list = Tc*np.ones_like(z_coord_list)  # List of total hot gas temperatures
 
 # Computation of adiabatic wall temperature (recovery temperature)
 hotgas_recovery_temp_list = np.array([t.get_recovery_temperature(hotgas_total_temp_list[i], gamma_list[i], mach_list[i], hotgas_pr_list[i]) for i in
@@ -262,11 +252,10 @@ start_main_time = time.perf_counter()  # Start of the main solution timer
 
 
 # Main computation
-
 data_hotgas = (hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list,
                hotgas_cp_list, hotgas_cond_list, MolWt, gamma_list, chamber_pressure,
                Cstar, P_H2O_list, P_CO2_list)
-data_coolant = (coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr)
+data_coolant = (coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr, use_TEOS_PDMS)
 data_channel = (nb_channels, channel_width_list, channel_height_list, effective_fin_thickness_list,
                 wall_thickness, hydraulic_diameter, effective_channel_cross_section,
                 channel_centerline, beta_list)
@@ -278,11 +267,15 @@ hl_corrected_list, h_tp_list, hg_list, \
     hotwall_temp_list, coldwall_temp_list, q_tot_list, sigma_list, \
     coolant_reynolds_list, coolant_temp_list, coolant_visc_list, \
     coolant_cond_list, coolant_cp_list, coolant_density_list, \
-    coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
+    coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, hg_list, \
     hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
     CHF_Meyer_list, CHF_Tong_list\
     = solver(data_hotgas, data_coolant, data_channel, data_chamber)
 
+hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_stress(wall_material, wall_thickness, z_coord_list,
+                                                                                       r_coord_list, static_pressure_list,
+                                                                                       coolant_pressure_list, hotwall_temp_list,
+                                                                                       coldwall_temp_list)
 
 end_m = time.perf_counter()  # End of the main solution timer
 time_elapsed = f"{round(end_m - start_main_time, 2)}"  # Main computation elapsed time (in s)
@@ -310,8 +303,8 @@ print("█                                                                      
 print("█                                                                          █")
 
 
-parameters_plotter = (plot_detail, show_2D_temperature, do_final_3d_plot,
-                      figure_dpi, show_plots, save_plots)
+parameters_plotter = (show_1D, show_2D, show_3d,
+                      figure_dpi, save_plots)
 
 
 data_plotter = (  # Engine geometry
@@ -369,13 +362,17 @@ data_plotter = (  # Engine geometry
     coolant_visc_list,
     coolant_temp_list,
     coolant_pressure_list,
+    coolant_Tsat_list,
 
     # Wall properties
     hotwall_temp_list,
     coldwall_temp_list,
     wall_cond_list,
     wall_material,
-    wall_thickness)
+    wall_thickness,
+    hoop_stress_list,
+    thermal_stress_list,
+    max_wall_stress_list)
 
 plotter(parameters_plotter, data_plotter)
 end_p = time.perf_counter()
@@ -397,38 +394,42 @@ if write_in_csv:
     valuexport = open("output/valuexport.csv", "w", newline="")
     valuexport_writer = csv.writer(valuexport)
 
-    # Write header row
-    valuexport_writer.writerow([
-        "z_coord_list", "r_coord_list", "cross_section_area_list", "effective_fin_thickness_list", "channel_ar_list",
-        "channel_width_list", "channel_height_list", "hydraulic_diameter", "effective_channel_cross_section",
-        "nb_channels", "gamma_list", "mach_list", "static_pressure_list", "hotgas_total_temp_list",
-        "hotgas_recovery_temp_list", "hotgas_static_temp_list", "hotgas_visc_list", "hotgas_cp_list",
-        "hotgas_cond_list", "hotgas_pr_list", "hg_list", "sigma_list", "hl_normal_list", "hl_corrected_list",
-        "h_tp_list",
-        "molFracH2O", "molFracCO2", "P_H2O_list", "P_CO2_list", "q_rad_list_CO2", "q_rad_list_H2O",
-        "q_rad_list", "q_tot_list", "coolant_velocity_list", "coolant_reynolds_list", "coolant_density_list",
-        "coolant_cond_list", "coolant_cp_list", "coolant_visc_list", "coolant_temp_list", "coolant_pressure_list",
-        "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "CHF_Meyer_list", "CHF_Tong_list"
-    ])
+# Write header row
+valuexport_writer.writerow([
+    "z_coord_list", "r_coord_list", "cross_section_area_list", "effective_fin_thickness_list", "channel_ar_list",
+    "channel_width_list", "channel_height_list", "hydraulic_diameter", "effective_channel_cross_section",
+    "nb_channels", "gamma_list", "mach_list", "static_pressure_list", "hotgas_total_temp_list",
+    "hotgas_recovery_temp_list", "hotgas_static_temp_list", "hotgas_visc_list", "hotgas_cp_list",
+    "hotgas_cond_list", "hotgas_pr_list", "hg_list", "sigma_list", "hl_normal_list", "hl_corrected_list",
+    "h_tp_list",
+    "molFracH2O", "molFracCO2", "P_H2O_list", "P_CO2_list", "q_rad_list_CO2", "q_rad_list_H2O",
+    "q_rad_list", "q_tot_list", "coolant_velocity_list", "coolant_reynolds_list", "coolant_density_list",
+    "coolant_cond_list", "coolant_cp_list", "coolant_visc_list", "coolant_temp_list", "coolant_pressure_list",
+    "coolant_Tsat_list",
+    "hotwall_temp_list", "coldwall_temp_list", "wall_cond_list", "CHF_Meyer_list", "CHF_Tong_list", "hoop_stress_list",
+    "thermal_stress_list", "max_wall_stress_list"
+])
 
-    # Collect all rows first
-    rows = [
-        [
-            z_coord_list[i], r_coord_list[i], cross_section_area_list[i], effective_fin_thickness_list[i], channel_ar_list[i],
-            channel_width_list[i], channel_height_list[i], hydraulic_diameter[i], effective_channel_cross_section[i],
-            nb_channels, gamma_list[i], mach_list[i], static_pressure_list[i], hotgas_total_temp_list[i],
-            hotgas_recovery_temp_list[i], hotgas_static_temp_list[i], hotgas_visc_list[i], hotgas_cp_list[i],
-            hotgas_cond_list[i], hotgas_pr_list[i], hg_list[i], sigma_list[i], hl_normal_list[i], hl_corrected_list[i],
-            h_tp_list[i],
-            molFracH2O[i], molFracCO2[i], P_H2O_list[i], P_CO2_list[i], q_rad_list_CO2[i], q_rad_list_H2O[i],
-            q_rad_list[i], q_tot_list[i], coolant_velocity_list[i], coolant_reynolds_list[i], coolant_density_list[i],
-            coolant_cond_list[i], coolant_cp_list[i], coolant_visc_list[i], coolant_temp_list[i], coolant_pressure_list[i],
-            hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], CHF_Meyer_list[i], CHF_Tong_list[i]
-        ]
-        for i in range(nb_points)
+# Collect all rows first
+rows = [
+    [
+        z_coord_list[i], r_coord_list[i], cross_section_area_list[i], effective_fin_thickness_list[i], channel_ar_list[i],
+        channel_width_list[i], channel_height_list[i], hydraulic_diameter[i], effective_channel_cross_section[i],
+        nb_channels, gamma_list[i], mach_list[i], static_pressure_list[i], hotgas_total_temp_list[i],
+        hotgas_recovery_temp_list[i], hotgas_static_temp_list[i], hotgas_visc_list[i], hotgas_cp_list[i],
+        hotgas_cond_list[i], hotgas_pr_list[i], hg_list[i], sigma_list[i], hl_normal_list[i], hl_corrected_list[i],
+        h_tp_list[i],
+        molFracH2O[i], molFracCO2[i], P_H2O_list[i], P_CO2_list[i], q_rad_list_CO2[i], q_rad_list_H2O[i],
+        q_rad_list[i], q_tot_list[i], coolant_velocity_list[i], coolant_reynolds_list[i], coolant_density_list[i],
+        coolant_cond_list[i], coolant_cp_list[i], coolant_visc_list[i], coolant_temp_list[i], coolant_pressure_list[i],
+        coolant_Tsat_list[i],
+        hotwall_temp_list[i], coldwall_temp_list[i], wall_cond_list[i], CHF_Meyer_list[i], CHF_Tong_list[i],
+        hoop_stress_list[i], thermal_stress_list[i], max_wall_stress_list[i]
     ]
-    valuexport_writer.writerows(rows)
-    valuexport.close()
+    for i in range(nb_points)
+]
+valuexport_writer.writerows(rows)
+valuexport.close()
 
 # Execution time display
 end_t = time.perf_counter()  # End of the total timer
@@ -459,7 +460,7 @@ print(f"█ Execution time for the initialisation       : {time_elapsed_i}      
 print("█                                                                          █")
 print(f"█ Execution time for the main computation     : {time_elapsed_m}                   █")
 
-if plot_detail >= 1:
+if show_1D >= 1:
     print("█                                                                          █")
     print(f"█ Execution time for the plotting             : {time_elapsed_p}                   █")
 

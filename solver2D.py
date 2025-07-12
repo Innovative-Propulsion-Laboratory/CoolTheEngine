@@ -2,6 +2,7 @@ import casthermo as ct
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from scipy.interpolate import griddata
 
 
 def carto2D(larg_wall,
@@ -257,6 +258,42 @@ def carto2D(larg_wall,
         plt.title(title, fontsize=15)
         plt.axis("equal")
         plt.colorbar(p, shrink=1, aspect=15)
+
+        # nx, ny = 200, 200   # tweak for resolution vs. speed
+        # abcisse = np.array(abcisse)
+        # ordonnee = np.array(ordonnee)
+        # x_min, x_max = abcisse.min(), abcisse.max()
+        # y_min, y_max = ordonnee.min(), ordonnee.max()
+
+        # xi = np.linspace(x_min, x_max, nx)
+        # yi = np.linspace(y_min, y_max, ny)
+        # X, Y = np.meshgrid(xi, yi)
+
+        # # 2) Interpolate scattered data onto the grid
+        # Z = griddata(
+        #     points=(abcisse, ordonnee),
+        #     values=temperature,
+        #     xi=(X, Y),
+        #     method='linear'
+        # )
+
+        # # 3) Mask out points where interpolation returned NaN (outside domain)
+        # Z_masked = np.ma.array(Z, mask=np.isnan(Z))
+
+        # # 4) Plot with contourf
+        # fig, ax = plt.subplots(figsize=(6, 6))
+        # cs = ax.contourf(
+        #     X, Y, Z_masked,
+        #     levels=20,               # or specify your contour levels
+        #     cmap='inferno',          # or your favorite cmap
+        #     antialiased=True
+        # )
+        # ax.set_aspect('equal')
+        # ax.set_xlabel('X')
+        # ax.set_ylabel('Y')
+        # fig.colorbar(cs, ax=ax, label='Temperature')
+
+        # plt.show()
 
         if plot_dir is not None:
             plot_dir = os.path.join(plot_dir, "2D temperature")

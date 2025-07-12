@@ -57,18 +57,94 @@ def get_recovery_temperature(total_temp, gamma, mach, Pr):
     return recovery_temp
 
 
-def conductivity(Twg: float, Twl: float, material_name: str):
+def wall_conductivity(Twg: float, Twl: float, material_name: str):
     """
     Compute the conductivity of the chamber wall, given temperature and material
+
+    Twg : Hot wall temperature [K]
+    Twl : Cold wall temperature [K]
     """
 
     T_avg = (Twg + Twl) / 2
-    if material_name == "pure copper":
-        return -0.065665 * T_avg + 421.82
+    if material_name == "AlSi10Mg":
+        return 155
     if material_name == "CuCrZr":
-        return -0.0269 * T_avg + 365.33
-    if material_name == "inconel":
+        return -0.0269 * T_avg + 350
+    if material_name == "Inconel_718":
         return 0.0138 * T_avg + 5.577
+
+
+def wall_cte(Twg: float, Twl: float, material_name: str):
+    """
+    Compute the Coefficient of Thermal Expansion, given temperature and material
+
+    Twg : Hot wall temperature [K]
+    Twl : Cold wall temperature [K]
+    """
+
+    T_avg = (Twg + Twl) / 2
+    if material_name == "AlSi10Mg":
+        return 1.13e-7 * T_avg - 2.08e-5
+    if material_name == "CuCrZr":
+        return 3e-9 * T_avg + 16.1e-6
+    if material_name == "Inconel_718":
+        return 7.33e-9 * T_avg + 9.07e-6
+
+
+def wall_temp_limit(material_name: str):
+    """
+    Return the maximum acceptable hotwall temperature as a function of material
+    """
+    if material_name == "AlSi10Mg":
+        return 473
+    if material_name == "CuCrZr":
+        return 750
+    if material_name == "Inconel_718":
+        return 1000
+
+
+def wall_young_modulus(Twg: float, Twl: float, material_name: str):
+    T_avg = (Twg + Twl) / 2
+
+    if material_name == "AlSi10Mg":
+        # Polynomial model valid between 20°C (293K) and 370°C (643K)
+        return (-5.11e-4 * T_avg**2 * 0.346 * T_avg + 13.4) * 1e9
+
+    if material_name == "CuCrZr":
+        # Polynomial valid from 0°C (273K) to 800°C (1073K)
+        return (-6e-5 * T_avg ** 2 + 1.47e-2 * T_avg + 130) * 1e9
+
+    if material_name == "Inconel_718":
+        # Polynomial valid from 20°C (293K) to 750°C (1023K)
+        return (-1.59e-4 * T_avg ** 2 + 0.1015 * T_avg + 185) * 1e9
+
+
+def wall_yield_strength(Twg: float, Twl: float, material_name: str):
+    T_avg = (Twg + Twl) / 2
+
+    if material_name == "AlSi10Mg":
+        # Bi-linear model valid between 20°C (293K) and 370°C (643K)
+        if T_avg <= 473:
+            return (-0.452 * T_avg + 421) * 1e6
+        elif T_avg > 473:
+            return (-0.963 * T_avg + 661) * 1e6
+        elif T_avg > 686:
+            return 0
+
+    if material_name == "CuCrZr":
+        # Polynomial valid from 0°C (273K) to 600°C (773K)
+        # Data from http://www.doi.org/10.2991/peee-15.2015.51
+        if T_avg < 890:
+            return (-1.0e-3 * T_avg**2 + 0.58 * T_avg + 277) * 1e6
+        else:
+            return 0
+
+    if material_name == "Inconel_718":
+        # Bi-linear model valid between 18°C (295K) and 765°C (1038K)
+        if T_avg <= 922:
+            return (-0.25 * T_avg + 1255) * 1e6
+        if T_avg > 922:
+            return (-2.4 * T_avg + 3239) * 1e6
 
 
 def hotgas_properties(gas_temp, molar_mass, gamma):
@@ -271,3 +347,25 @@ def compute_total_heat_output_hotwall(z_coord_list, r_coord_list, q_tot_list):
     dl = np.sqrt(dz**2 + dr**2)
 
     return np.sum(q_tot_list*2*np.pi*r_coord_list*dl)
+
+
+def compute_1D_wall_stress(material_name: str, wall_thickness, z_coord_list,
+                           r_coord_list, static_pressure_list,
+                           coolant_pressure_list, hotwall_temp_list,
+                           coldwall_temp_list):
+
+    conductivity_list = np.zeros_like(z_coord_list)
+    cte_list = np.zeros_like(z_coord_list)
+    young_modulus_list = np.zeros_like(z_coord_list)
+    nu = 0.33
+
+    for i in range(len(z_coord_list)):
+        conductivity_list[i] = wall_conductivity(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
+        cte_list[i] = wall_cte(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
+        young_modulus_list[i] = wall_young_modulus(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
+
+    hoop_stress_list = (static_pressure_list - coolant_pressure_list) * r_coord_list/wall_thickness
+    thermal_stress_list = (young_modulus_list * cte_list * (hotwall_temp_list - coldwall_temp_list))/(2*(1-nu))
+    max_wall_stress_list = np.abs(hoop_stress_list) + thermal_stress_list
+
+    return hoop_stress_list, thermal_stress_list, max_wall_stress_list

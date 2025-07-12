@@ -15,7 +15,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list, \
         hotgas_cp_list, hotgas_cond_list, MolWt, gamma_list, \
         chamber_pressure, Cstar, PH2O_list, PCO2_list = hotgas_data
-    coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr = coolant_data
+    coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr, use_TEOS_PDMS = coolant_data
     nb_channels, channel_width_list, channel_height_list, effective_fin_thickness, wall_thickness, \
         hydraulic_diameter, effective_channel_cross_section, channel_centerline, beta_list = channel_data
     z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area, \
@@ -58,6 +58,8 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
     coolant_cp_list[-1] = flp.cp(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
     coolant_density_list = np.zeros(n_points)
     coolant_density_list[-1] = flp.density(coolant_inlet_pressure, coolant_inlet_temp, coolant_name)
+    coolant_Tsat_list = np.zeros(n_points)
+    coolant_Tsat_list[-1] = flp.Tsat(coolant_inlet_pressure, coolant_name)
     coolant_reynolds_list = np.zeros(n_points)
     coolant_prandtl_list = np.zeros(n_points)
     hg_list = np.zeros(n_points)
@@ -102,7 +104,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
             length_from_inlet += dl_channel_list[i]
 
             # Reuse the value at previous point for a more accurate first guess (and faster convergence)
-            wall_cond_list[i] = t.conductivity(Twg=300, Twl=300, material_name=wall_material) if i == n_points - 1 else wall_cond_list[i + 1]
+            wall_cond_list[i] = t.wall_conductivity(Twg=300, Twl=300, material_name=wall_material) if i == n_points - 1 else wall_cond_list[i + 1]
             sigma = 1 if i == n_points - 1 else sigma_list[i + 1]
 
             # Arbitrarely create a difference to enter the loop
@@ -122,6 +124,9 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 hg = (0.026 / (throat_diam ** 0.2) * (((hotgas_visc_list[i] ** 0.2) * hotgas_cp_list[i]) / (hotgas_pr_list[i] ** 0.6)) * (
                     (chamber_pressure / Cstar) ** 0.8) * ((throat_diam / throat_curv_radius) ** 0.1) * (
                     (throat_area / cross_section_area_list[i]) ** 0.9)) * sigma
+
+                if use_TEOS_PDMS:
+                    hg *= 0.75
 
                 # Compute the Darcy-Weisbach friction factor
                 fD = t.darcy_weisbach(hydraulic_diameter[i], coolant_reynolds_list[i], channel_roughness)
@@ -147,7 +152,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                 F = 1.0  # for subcooled flow
                 S = 1/(1+0.055 * F**0.1 * coolant_reynolds_list[i]**0.16)
                 delta_Tb = coldwall_temp - coolant_temp_list[i]
-                delta_Ts = coldwall_temp - flp.Tsat(coolant_pressure_list[i], coolant_name)
+                delta_Ts = coldwall_temp - coolant_Tsat_list[i]
 
                 # We can now compute the HTC taking into account subcooled nucleate flow boiling
                 h_tp = np.sqrt((F*hl_cor)**2 + (S*h_pool * delta_Ts/delta_Tb)**2)
@@ -170,15 +175,15 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
                                                        * (mach_list[i] ** 2))) ** -0.12)
 
                 # Compute thermal conductivity of the solid at a given temperature
-                wall_cond_list[i] = t.conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=wall_material)
+                wall_cond_list[i] = t.wall_conductivity(Twg=new_hotwall_temp, Twl=new_coldwall_temp, material_name=wall_material)
 
                 # Compute the Critical Heat Flux (CHF) from Meyer et al. (https://ntrs.nasa.gov/api/citations/19980017166/downloads/19980017166.pdf)
-                CHF_Meyer = (1.64e5 + 2.09e5 * np.sqrt(coolant_velocity_list[i] * (flp.Tsat(coolant_pressure_list[i], coolant_name) - coolant_temp_list[i])))\
+                CHF_Meyer = (1.64e5 + 2.09e5 * np.sqrt(coolant_velocity_list[i] * (coolant_Tsat_list[i] - coolant_temp_list[i])))\
                     * (1.17 - 1.2416e-7 * coolant_pressure_list[i])
-                CHF_Tong = (0.216 + 0.0474e-5*coolant_pressure_list[i]) \
-                    * (coolant_mfr / (nb_channels * cross_section_area_list[i])) \
+                CHF_Tong = (0.216 + 4.74e-8*coolant_pressure_list[i]) \
+                    * (coolant_mfr / (nb_channels * effective_channel_cross_section[i])) \
                     * flp.latent_heat_vap(coolant_pressure_list[i], coolant_name) \
-                    * coolant_reynolds_list[i]**0.6
+                    * coolant_reynolds_list[i]**(-0.5)
 
             coldwall_temp = new_coldwall_temp
             hotwall_temp = new_hotwall_temp
@@ -196,13 +201,14 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
 
             # Computing the new properties of the coolant
             if new_coolant_pressure < 0:
-                raise ValueError("Negative pressure ! Pressure drop is too high.")
+                raise ValueError("Negative coolant pressure ! Pressure drop is too high.")
 
             if i > 0:
                 coolant_viscosity_list[i-1] = flp.viscosity(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
                 coolant_cond_list[i-1] = flp.conductivity(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
                 coolant_cp_list[i-1] = flp.cp(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
                 coolant_density_list[i-1] = flp.density(P=new_coolant_pressure, T=new_coolant_temp, fluid=coolant_name)
+                coolant_Tsat_list[i-1] = flp.Tsat(P=new_coolant_pressure, fluid=coolant_name)
                 coolant_pressure_list[i-1] = new_coolant_pressure
                 coolant_temp_list[i-1] = new_coolant_temp
 
@@ -227,6 +233,6 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data):
         hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
         coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
         coolant_cond_list, coolant_cp_list, coolant_density_list, \
-        coolant_velocity_list, coolant_pressure_list, wall_cond_list, hg_list, \
+        coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, hg_list, \
         hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
         CHF_Meyer_list, CHF_Tong_list
