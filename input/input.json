@@ -13,29 +13,18 @@
     "channel_roughness": 15e-6,
     "nb_channels": 50,
     "wall_thickness": 0.001,
-    "channel_widths": {
-        "inj": 0.004,
-        "conv": 0.002,
-        "throat": 0.001,
-        "exit": 0.002
-    },
-    "channel_heights": {
-        "inj": 0.003,
-        "conv": 0.003,
-        "throat": 0.0015,
-        "exit": 0.003
-    },
-    "channel_angles": {
-        "inj": 60.0,
-        "conv": 60.0,
-        "throat": 0.0,
-        "exit": 0.0
-    },
     "nb_points": 100,
     "figure_dpi": 150,
-    "show_1D": false,
-    "show_2D": false,
-    "show_3D": false,
-    "save_plots": false,
-    "write_in_csv": false
+    "channel_widths_inj": 0.003,
+    "channel_widths_conv": 0.003,
+    "channel_widths_throat": 0.002,
+    "channel_widths_exit": 0.003,
+    "channel_heights_inj": 0.004,
+    "channel_heights_conv": 0.004,
+    "channel_heights_throat": 0.002,
+    "channel_heights_exit": 0.004,
+    "channel_angles_inj": 30.0,
+    "channel_angles_conv": 30.0,
+    "channel_angles_throat": 0.0,
+    "channel_angles_exit": 0.0
 }

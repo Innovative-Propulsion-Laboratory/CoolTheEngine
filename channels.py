@@ -2,7 +2,7 @@
 """
 Created on Sat Dec 19 21:46:19 2020
 
-@author: julien
+@author: Paul M.
 """
 import numpy as np
 from scipy.interpolate import PchipInterpolator
@@ -133,6 +133,17 @@ def generate_channels(profile_data, width_data, height_data, angle_data, wall_th
     channel_centerline = np.column_stack((x_center_list, y_center_list, z_coord_list))
     channel_effective_width_list = channel_width_list * np.cos(np.deg2rad(beta_list))
     channel_ar_list = channel_height_list / channel_effective_width_list
+
+    if np.any(effective_fin_thickness <= 0):
+        raise ValueError("Negative fin thickness!")
+    if np.any(hydraulic_diameter <= 0):
+        raise ValueError("Negative hydraulic diameter!")
+    if np.any(effective_channel_cross_section <= 0):
+        raise ValueError("Negative channel cross-section!")
+    if np.any(channel_width_list <= 0):
+        raise ValueError("Negative channel width!")
+    if np.any(channel_height_list <= 0):
+        raise ValueError("Negative channel height!")
 
     return channel_vertices, channel_centerline, channel_inclination, channel_ar_list, \
         channel_effective_width_list, channel_height_list, \

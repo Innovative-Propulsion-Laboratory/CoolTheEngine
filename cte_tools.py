@@ -2,33 +2,61 @@ import numpy as np
 from skaero.gasdynamics import isentropic
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from scipy.optimize import root_scalar
+from scipy.optimize import brentq
+
+# def mach_solve(area_i, area_throat, gamma, subsonic):
+#     # if area_1 == area_2:
+#     #     solution_mach = mach_1
+#     # else:
+#     #     ome = (gamma + 1) / (2 * (gamma - 1))
+#     #     part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
+#     #     mach_2 = mach_1
+#     #     liste = []
+#     #     mach = []
+#     #     # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
+#     #     for i in range(0, 10000):
+#     #         mach_2 += 0.00001
+#     #         part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
+#     #         liste.append(abs(part_1 - part_2))
+#     #         mach.append(mach_2)
+#     #     solution_mach = mach[liste.index(min(liste))]
+#     # return solution_mach
+#     fl = isentropic.IsentropicFlow(gamma=gamma)
+#     area_ratio = area_i / area_throat
+#     solution_subsonic, solution_supersonic = isentropic.mach_from_area_ratio(fl, area_ratio)
+#     if subsonic:
+#         return solution_subsonic
+#     else:
+#         return solution_supersonic
 
 
-def mach_solv(area_i, area_throat, gamma, subsonic):
-    # if area_1 == area_2:
-    #     solution_mach = mach_1
-    # else:
-    #     ome = (gamma + 1) / (2 * (gamma - 1))
-    #     part_2 = (area_1 / area_2) * (mach_1 / ((1 + ((gamma - 1) / 2) * mach_1 * mach_1) ** ome))
-    #     mach_2 = mach_1
-    #     liste = []
-    #     mach = []
-    #     # Search of the mach_2 for which part_1 is minimum (750 iterations was ideal when tested)
-    #     for i in range(0, 10000):
-    #         mach_2 += 0.00001
-    #         part_1 = mach_2 * ((1 + (((gamma - 1) / 2) * mach_2 * mach_2)) ** (-ome))
-    #         liste.append(abs(part_1 - part_2))
-    #         mach.append(mach_2)
-    #     solution_mach = mach[liste.index(min(liste))]
-    # return solution_mach
-    fl = isentropic.IsentropicFlow(gamma=gamma)
-    area_ratio = area_i / area_throat
-    solution_subsonic, solution_supersonic = isentropic.mach_from_area_ratio(fl, area_ratio)
+def mach_from_area_ratio_analytic(area_ratio, gamma, subsonic=True):
+    """
+    Fast Mach number calculation from area ratio and gamma using isentropic relations.
+    Returns subsonic or supersonic solution.
+    """
+    def func(M):
+        return (1/M) * ((2/(gamma+1)*(1 + (gamma-1)/2*M**2))**((gamma+1)/(2*(gamma-1)))) - area_ratio
+
+    # Subsonic solution: M in (1e-6, 1)
+    # Supersonic solution: M in (1, 10)
     if subsonic:
-        return solution_subsonic
+        return brentq(func, 1e-6, 1)
     else:
-        return solution_supersonic
+        return brentq(func, 1, 10)
+
+
+def mach_list_from_area_ratios(area_ratios, gamma, throat_index):
+    """
+    Compute Mach number array for all area ratios, joining subsonic and supersonic branches at throat_index.
+    """
+    mach = np.zeros_like(area_ratios)
+    for i in range(throat_index):
+        mach[i] = mach_from_area_ratio_analytic(area_ratios[i], gamma, subsonic=True)
+    for i in range(throat_index, len(area_ratios)):
+        mach[i] = mach_from_area_ratio_analytic(area_ratios[i], gamma, subsonic=False)
+
+    return mach
 
 
 def pressure_solv(mach, gamma, stagnation_pressure):

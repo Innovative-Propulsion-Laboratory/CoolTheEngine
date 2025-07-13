@@ -7,6 +7,8 @@ Original author: Paul M
 from scipy.interpolate import interp1d, PchipInterpolator
 import csv
 import json
+from itertools import product
+import pandas as pd
 
 # Calculations
 import numpy as np
@@ -22,14 +24,65 @@ from plotter import plotter
 
 
 class TaskManager():
-    def __init__(self, json_path):
-        with open("input/input_bulk.json", "r") as f:
-            settings = json.load(f)
-            # parse json, list de config
-        self.CTE_instance_list = []
-        for config in configs:
-            instance = CoolTheEngine(params)
-            self.CTE_instance_list.append
+    def __init__(self, json_path: str):
+        with open(json_path, "r") as f:
+            self.settings = json.load(f)
+
+        # Check if any parameter is a list, then run bulk mode
+        if any(isinstance(param, list) for param in list(self.settings.values())):
+            self.bulk_run()
+
+        # Otherwise, run the single mode (no parameter is a list)
+        else:
+            self.single_run()
+
+    def bulk_run(self):
+        # Transform into singletons if not a list, and store all parameters in a list of lists
+        value_lists = [v if isinstance(v, list) else [v] for v in (self.settings.values())]
+
+        nb_configs = np.prod([len(lst) for lst in value_lists])
+        if nb_configs > 5000:
+            raise ValueError(f"Too many configurations ({nb_configs}>5000)")
+
+        print(f"Solving {nb_configs} unique configurations.")
+        # Generate every combination
+        combinations = list(product(*value_lists))
+
+        # Store every configuration in a dataframe
+        configurations_df = pd.DataFrame(combinations, columns=(self.settings.keys()))
+        configurations_df["cte_instance"] = pd.Series(dtype="object")
+        configurations_df["max_wall_temp"] = pd.Series(dtype="float")
+        configurations_df["avg_wall_temp"] = pd.Series(dtype="float")
+        configurations_df["max_stress"] = pd.Series(dtype="float")
+        configurations_df["coolant_pressure_drop"] = pd.Series(dtype="float")
+        configurations_df["coolant_temp_increase"] = pd.Series(dtype="float")
+        for i, row in configurations_df.iterrows():
+            # Create and store the instance of CoolTheEngine
+            cte = CoolTheEngine(dict(row))
+            configurations_df.loc[i, "cte_instance"] = cte
+
+            # Compute and unpack results
+            try:
+                (max_wall_temp, avg_wall_temp, max_stress,
+                    coolant_pressure_drop, coolant_temp_increase) = cte.compute_all()
+            except ValueError as err:
+                print(f"Failed computation for config {i}.\t Error: {err}")
+                (max_wall_temp, avg_wall_temp, max_stress,
+                    coolant_pressure_drop, coolant_temp_increase) = -1, -1, -1, -1, -1
+
+            # Assign results to respective columns
+            configurations_df.loc[i, "max_wall_temp"] = max_wall_temp
+            configurations_df.loc[i, "avg_wall_temp"] = avg_wall_temp
+            configurations_df.loc[i, "max_stress"] = max_stress
+            configurations_df.loc[i, "coolant_pressure_drop"] = coolant_pressure_drop
+            configurations_df.loc[i, "coolant_temp_increase"] = coolant_temp_increase
+
+        print(configurations_df)
+        configurations_df.to_csv("output/bulk_results.csv")
+
+    def single_run(self):
+        cte = CoolTheEngine(self.settings)
+        cte.compute_all(show_1D=True, show_2D=True, save_plot=True, write_in_csv=True)
 
 
 class CoolTheEngine():
@@ -53,22 +106,22 @@ class CoolTheEngine():
         self.wall_thickness = float(params["wall_thickness"])
 
         # Widths
-        self.width_inj = float(params["channel_widths"]["inj"])
-        self.width_conv = float(params["channel_widths"]["conv"])
-        self.width_throat = float(params["channel_widths"]["throat"])
-        self.width_exit = float(params["channel_widths"]["exit"])
+        self.width_inj = float(params["channel_widths_inj"])
+        self.width_conv = float(params["channel_widths_conv"])
+        self.width_throat = float(params["channel_widths_throat"])
+        self.width_exit = float(params["channel_widths_exit"])
 
         # Heights
-        self.ht_inj = float(params["channel_heights"]["inj"])
-        self.ht_conv = float(params["channel_heights"]["conv"])
-        self.ht_throat = float(params["channel_heights"]["throat"])
-        self.ht_exit = float(params["channel_heights"]["exit"])
+        self.ht_inj = float(params["channel_heights_inj"])
+        self.ht_conv = float(params["channel_heights_conv"])
+        self.ht_throat = float(params["channel_heights_throat"])
+        self.ht_exit = float(params["channel_heights_exit"])
 
         # Angles
-        self.beta_inj = float(params["channel_angles"]["inj"])
-        self.beta_conv = float(params["channel_angles"]["conv"])
-        self.beta_throat = float(params["channel_angles"]["throat"])
-        self.beta_exit = float(params["channel_angles"]["exit"])
+        self.beta_inj = float(params["channel_angles_inj"])
+        self.beta_conv = float(params["channel_angles_conv"])
+        self.beta_throat = float(params["channel_angles_throat"])
+        self.beta_exit = float(params["channel_angles_exit"])
 
         # General options
         self.nb_points = int(params["nb_points"])
@@ -78,7 +131,7 @@ class CoolTheEngine():
         self.contour_file = "input/engine_contour.csv"  # Engine contour
 
     def compute_all(self, show_1D=False, show_2D=False, save_plot=False,
-                    write_in_csv=False):
+                    write_in_csv=False, mach_list=None):
         # Reading input data
         contour_data = np.genfromtxt(self.contour_file, delimiter=",", skip_header=1)
         z_coord_list = contour_data[0:, 0]/1000
@@ -119,9 +172,8 @@ class CoolTheEngine():
 
         hotgas_mu_chamber, hotgas_cp_chamber, hotgas_lambda_chamber, hotgas_pr_chamber, \
             hotgas_mu_throat, hotgas_cp_throat, hotgas_lambda_throat, hotgas_pr_throat, \
-            hotgas_mu_exit, hotgas_cp_exit, hotgas_lambda_exit, hotgas_pr_exit\
-            = cea.get_hotgas_properties(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                        self.ox_name, self.fuel_name, expansion_ratio)
+            hotgas_mu_exit, hotgas_cp_exit, hotgas_lambda_exit, hotgas_pr_exit = cea.get_hotgas_properties(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
+                                                                                                           self.ox_name, self.fuel_name, expansion_ratio)
 
         x_chamber_throat_exit = [z_coord_list[0], z_coord_list[i_convergent],
                                  z_coord_list[i_throat], z_coord_list[-1]]
@@ -147,9 +199,8 @@ class CoolTheEngine():
                                        cross_section_area_list/throat_area)
 
         # Computation of mach number of the hot gases
-        mach_list = cea.compute_mach(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                     self.ox_name, self.fuel_name,
-                                     cross_section_area_list/throat_area)
+        mach_list = t.mach_list_from_area_ratios(cross_section_area_list/throat_area,
+                                                 gamma_list[0], i_throat)
 
         # Static pressure computation
         static_pressure_list = np.zeros_like(z_coord_list)  # (in Pa)
@@ -158,12 +209,10 @@ class CoolTheEngine():
                                                       self.chamber_pressure)
 
         # Partial pressure computation and interpolation of the molar fraction
-        molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit\
-            = cea.compute_H2O_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                              self.ox_name, self.fuel_name, self.expansion_ratio)
-        molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit\
-            = cea.compute_CO2_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                              self.ox_name, self.fuel_name, expansion_ratio)
+        molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit = cea.compute_H2O_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
+                                                                                                 self.ox_name, self.fuel_name, expansion_ratio)
+        molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit = cea.compute_CO2_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
+                                                                                                 self.ox_name, self.fuel_name, expansion_ratio)
 
         # Linear interpolation of molar fractions for H2O and CO2
         molFracH2O = PchipInterpolator(x_chamber_throat_exit, [molFracH2O_chamber,
@@ -227,8 +276,7 @@ class CoolTheEngine():
             coolant_cond_list, coolant_cp_list, coolant_density_list, \
             coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, \
             hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
-            CHF_Meyer_list, CHF_Tong_list\
-            = solver(data_hotgas, data_coolant, data_channel, data_chamber)
+            CHF_Meyer_list, CHF_Tong_list = solver(data_hotgas, data_coolant, data_channel, data_chamber)
 
         hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_stress(self.wall_material, self.wall_thickness, z_coord_list,
                                                                                                r_coord_list, static_pressure_list,
@@ -236,11 +284,10 @@ class CoolTheEngine():
                                                                                                coldwall_temp_list)
 
         max_wall_temp = np.max(hotwall_temp_list)
+        avg_wall_temp = np.average(hotwall_temp_list)
         max_stress = np.max(max_wall_stress_list)
         coolant_pressure_drop = coolant_pressure_list[-1] - coolant_pressure_list[0]
         coolant_temp_increase = coolant_temp_list[0] - coolant_temp_list[-1]
-
-        return max_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase
 
         # PLot the results
         if show_1D or show_2D:
@@ -264,7 +311,7 @@ class CoolTheEngine():
                 hydraulic_diameter,
                 initial_channel_cross_section,
                 effective_channel_cross_section,
-                nb_channels,
+                self.nb_channels,
                 alpha_list,
                 beta_list,
                 channel_centerline[:, 0],
@@ -309,8 +356,8 @@ class CoolTheEngine():
                 hotwall_temp_list,
                 coldwall_temp_list,
                 wall_cond_list,
-                wall_material,
-                wall_thickness,
+                self.wall_material,
+                self.wall_thickness,
                 hoop_stress_list,
                 thermal_stress_list,
                 max_wall_stress_list)
@@ -381,3 +428,8 @@ class CoolTheEngine():
             ]
             valuexport_writer.writerows(rows)
             valuexport.close()
+
+        return max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase
+
+
+tm = TaskManager("input/input_bulk.json")

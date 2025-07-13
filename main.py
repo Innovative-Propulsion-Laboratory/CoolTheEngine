@@ -35,6 +35,11 @@ print("█______________________________________________________________________
 print("█                                                                          █")
 print("█ Initialisation...                                                        █")
 
+show_1D = True
+show_2D = False
+save_plots = False
+write_in_csv = True
+
 # Initial definitions
 contour_file = "input/engine_contour.csv"  # Engine contour
 
@@ -61,31 +66,26 @@ nb_channels = int(data["nb_channels"])
 wall_thickness = float(data["wall_thickness"])
 
 # Widths
-width_inj = float(data["channel_widths"]["inj"])
-width_conv = float(data["channel_widths"]["conv"])
-width_throat = float(data["channel_widths"]["throat"])
-width_exit = float(data["channel_widths"]["exit"])
+width_inj = float(data["channel_widths_inj"])
+width_conv = float(data["channel_widths_conv"])
+width_throat = float(data["channel_widths_throat"])
+width_exit = float(data["channel_widths_exit"])
 
 # Heights
-ht_inj = float(data["channel_heights"]["inj"])
-ht_conv = float(data["channel_heights"]["conv"])
-ht_throat = float(data["channel_heights"]["throat"])
-ht_exit = float(data["channel_heights"]["exit"])
+ht_inj = float(data["channel_heights_inj"])
+ht_conv = float(data["channel_heights_conv"])
+ht_throat = float(data["channel_heights_throat"])
+ht_exit = float(data["channel_heights_exit"])
 
 # Angles
-beta_inj = float(data["channel_angles"]["inj"])
-beta_conv = float(data["channel_angles"]["conv"])
-beta_throat = float(data["channel_angles"]["throat"])
-beta_exit = float(data["channel_angles"]["exit"])
+beta_inj = float(data["channel_angles_inj"])
+beta_conv = float(data["channel_angles_conv"])
+beta_throat = float(data["channel_angles_throat"])
+beta_exit = float(data["channel_angles_exit"])
 
 # General options
 nb_points = int(data["nb_points"])
 figure_dpi = int(data["figure_dpi"])
-show_1D = bool(data["show_1D"])
-show_2D = bool(data["show_2D"])
-show_3D = bool(data["show_3D"])
-save_plots = bool(data["save_plots"])
-write_in_csv = bool(data["write_in_csv"])
 
 # Reading input data
 contour_data = np.genfromtxt(contour_file, delimiter=",", skip_header=1)
@@ -163,9 +163,8 @@ gamma_list = cea.compute_gamma(chamber_pressure, ox_mfr/fuel_mfr,
                                cross_section_area_list/throat_area)
 
 # Computation of mach number of the hot gases
-mach_list = cea.compute_mach(chamber_pressure, ox_mfr/fuel_mfr,
-                             ox_name, fuel_name,
-                             cross_section_area_list/throat_area)
+mach_list = t.mach_list_from_area_ratios(cross_section_area_list/throat_area,
+                                         gamma_list[0], i_throat)
 
 # Static pressure computation
 static_pressure_list = np.zeros_like(z_coord_list)  # (in Pa)
@@ -174,9 +173,8 @@ for i in range(0, nb_points):
                                               chamber_pressure)
 
 # Partial pressure computation and interpolation of the molar fraction
-molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit\
-    = cea.compute_H2O_molar_fractions(chamber_pressure, ox_mfr/fuel_mfr,
-                                      ox_name, fuel_name, expansion_ratio)
+molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit = cea.compute_H2O_molar_fractions(chamber_pressure, ox_mfr/fuel_mfr,
+                                                                                         ox_name, fuel_name, expansion_ratio)
 molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit\
     = cea.compute_CO2_molar_fractions(chamber_pressure, ox_mfr/fuel_mfr,
                                       ox_name, fuel_name, expansion_ratio)
@@ -277,8 +275,7 @@ print("█                                                                      
 
 if show_1D or show_2D:
     # Display of the 1D analysis results
-    parameters_plotter = (show_1D, show_2D, show_3D,
-                          figure_dpi, save_plots)
+    parameters_plotter = (show_1D, show_2D, figure_dpi, save_plots)
 
     # Store the data in a big tuple to send to the plotter
     data_plotter = (  # Engine geometry

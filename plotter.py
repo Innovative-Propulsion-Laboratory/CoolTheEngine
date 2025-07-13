@@ -17,7 +17,7 @@ def plotter(parameters, data):
     figs = []
 
     # Unpack parameters
-    show_1D, show_2D, show_3d, figure_dpi, save_plots = parameters
+    show_1D, show_2D, figure_dpi, save_plots = parameters
 
     # Unpack data (new variable names)
     z_coord_list_mm, r_coord_list_mm, \
@@ -391,29 +391,6 @@ def plotter(parameters, data):
                 hl_corrected_list[-1],
                 coolant_temp_list[-1],
                 10, True, 1, location, False)
-
-    "Computation for 3D graph"
-    if show_3d:
-        nb_points = len(z_coord_list_mm)
-        temperature_slice_list = []
-        dx = 0.0001
-
-        # Compute a (low-resolution) 2D slice for each point in the engine
-        with tqdm(total=nb_points,
-                  desc="█ 3D graph computation         ",
-                  unit="|   █", bar_format="{l_bar}{bar}{unit}",
-                  ncols=76) as progressbar:
-            for i in range(0, nb_points):
-                temperature_slice = carto2D(effective_fin_thickness_list[i] + channel_width_list[i], channel_width_list[i], wall_thickness,
-                                            channel_height_list[i], dx, hg_list[i], wall_cond_list[i], hotgas_recovery_temp_list[i],
-                                            hl_corrected_list[i], coolant_temp_list[i], 3, False, 1, "", True)
-                temperature_slice_list.append(temperature_slice)
-                progressbar.update(1)
-
-        # Stack all these slices in a final 3D plot
-        carto3d([0, 0, 0], z_coord_list, r_coord_list, temperature_slice_list, plt.cm.Spectral_r,
-                '3D view of wall temperatures (in K)', nb_channels, 0.05)
-        print("█                                                                          █")
 
     if save_plots:
         pdf = matplotlib.backends.backend_pdf.PdfPages("output/graphs.pdf")
