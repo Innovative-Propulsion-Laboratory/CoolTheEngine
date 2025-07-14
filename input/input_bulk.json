@@ -16,19 +16,27 @@
     "figure_dpi": 150,
     "nb_channels": 50,
     "channel_widths_inj": [
+        0.002,
+        0.0025,
         0.003,
-        0.004
+        0.0035
     ],
     "channel_widths_conv": [
-        0.003,
-        0.004
+        0.002,
+        0.0025,
+        0.003
     ],
     "channel_widths_throat": [
         0.001,
         0.0015,
         0.002
     ],
-    "channel_widths_exit": 0.003,
+    "channel_widths_exit": [
+        0.0015,
+        0.002,
+        0.0025,
+        0.003
+    ],
     "channel_heights_inj": [
         0.002,
         0.003,
@@ -41,17 +49,11 @@
     ],
     "channel_heights_throat": 0.003,
     "channel_heights_exit": [
-        0.03,
-        0.04
+        0.003,
+        0.004
     ],
-    "channel_angles_inj": [
-        0.0,
-        30
-    ],
-    "channel_angles_conv": [
-        0.0,
-        30
-    ],
-    "channel_angles_throat": 0,
-    "channel_angles_exit": 0
+    "channel_angles_inj": 0.0,
+    "channel_angles_conv": 0.0,
+    "channel_angles_throat": 0.0,
+    "channel_angles_exit": 0.0
 }

@@ -4,7 +4,6 @@ Created on Sat Jul 12 2025
 Original author: Paul M
 """
 
-from scipy.interpolate import interp1d, PchipInterpolator
 import csv
 import json
 from itertools import product
@@ -17,7 +16,6 @@ from solver import solver
 
 # Data
 from channels import generate_channels
-import cea
 
 # Graphics
 from plotter import plotter
@@ -49,40 +47,53 @@ class TaskManager():
         combinations = list(product(*value_lists))
 
         # Store every configuration in a dataframe
-        configurations_df = pd.DataFrame(combinations, columns=(self.settings.keys()))
-        configurations_df["cte_instance"] = pd.Series(dtype="object")
-        configurations_df["max_wall_temp"] = pd.Series(dtype="float")
-        configurations_df["avg_wall_temp"] = pd.Series(dtype="float")
-        configurations_df["max_stress"] = pd.Series(dtype="float")
-        configurations_df["coolant_pressure_drop"] = pd.Series(dtype="float")
-        configurations_df["coolant_temp_increase"] = pd.Series(dtype="float")
-        for i, row in configurations_df.iterrows():
-            # Create and store the instance of CoolTheEngine
+        self.configurations_df = pd.DataFrame(combinations, columns=(self.settings.keys()))
+        self.configurations_df["cte_instance"] = pd.Series(dtype="object")
+        self.configurations_df["max_wall_temp"] = pd.Series(dtype="float")
+        self.configurations_df["avg_wall_temp"] = pd.Series(dtype="float")
+        self.configurations_df["max_stress"] = pd.Series(dtype="float")
+        self.configurations_df["coolant_pressure_drop"] = pd.Series(dtype="float")
+        self.configurations_df["coolant_temp_increase"] = pd.Series(dtype="float")
+
+        # Compute the chamber flow first (it is assumed it is the same for every configuration)
+        cte = CoolTheEngine(dict(self.configurations_df.loc[0]))
+        chamber_flow_data = cte.compute_chamber_flow()
+
+        # Compute every configuration
+        for i, row in self.configurations_df.iterrows():
+            # Create and store the instance of CoolTheEngine in the dataframe
             cte = CoolTheEngine(dict(row))
-            configurations_df.loc[i, "cte_instance"] = cte
+            self.configurations_df.loc[i, "cte_instance"] = cte
 
             # Compute and unpack results
             try:
                 (max_wall_temp, avg_wall_temp, max_stress,
-                    coolant_pressure_drop, coolant_temp_increase) = cte.compute_all()
+                    coolant_pressure_drop, coolant_temp_increase) = cte.compute_all(chamber_flow_data)
             except ValueError as err:
                 print(f"Failed computation for config {i}.\t Error: {err}")
                 (max_wall_temp, avg_wall_temp, max_stress,
                     coolant_pressure_drop, coolant_temp_increase) = -1, -1, -1, -1, -1
 
             # Assign results to respective columns
-            configurations_df.loc[i, "max_wall_temp"] = max_wall_temp
-            configurations_df.loc[i, "avg_wall_temp"] = avg_wall_temp
-            configurations_df.loc[i, "max_stress"] = max_stress
-            configurations_df.loc[i, "coolant_pressure_drop"] = coolant_pressure_drop
-            configurations_df.loc[i, "coolant_temp_increase"] = coolant_temp_increase
+            self.configurations_df.loc[i, "max_wall_temp"] = max_wall_temp
+            self.configurations_df.loc[i, "avg_wall_temp"] = avg_wall_temp
+            self.configurations_df.loc[i, "max_stress"] = max_stress
+            self.configurations_df.loc[i, "coolant_pressure_drop"] = coolant_pressure_drop
+            self.configurations_df.loc[i, "coolant_temp_increase"] = coolant_temp_increase
 
-        print(configurations_df)
-        configurations_df.to_csv("output/bulk_results.csv")
+        print(self.configurations_df)
+        self.configurations_df.to_csv("output/bulk_results.csv")
 
     def single_run(self):
+        print("Single run")
         cte = CoolTheEngine(self.settings)
-        cte.compute_all(show_1D=True, show_2D=True, save_plot=True, write_in_csv=True)
+        chamber_flow_data = cte.compute_chamber_flow()
+        res = cte.compute_all(chamber_flow_data, show_1D=True, show_2D=True, save_plot=True, write_in_csv=True)
+        print(f"Maximum wall temperature : {res[0]:.1f} K")
+        print(f"Average wall temperature : {res[1]:.1f} K")
+        print(f"Maximum wall stress : {res[2]/1e6:.1f} MPa")
+        print(f"Coolant pressure drop : {res[3]/1e5:.2f} bar")
+        print(f"Coolant temperature increase : {res[4]:.1f} K")
 
 
 class CoolTheEngine():
@@ -130,115 +141,25 @@ class CoolTheEngine():
         # Initial definitions
         self.contour_file = "input/engine_contour.csv"  # Engine contour
 
-    def compute_all(self, show_1D=False, show_2D=False, save_plot=False,
+    def compute_chamber_flow(self):
+        return t.compute_hotgas_flow(self.contour_file,
+                                     self.nb_points,
+                                     self.chamber_pressure,
+                                     self.ox_mfr,
+                                     self.fuel_mfr,
+                                     self.ox_name,
+                                     self.fuel_name)
+
+    def compute_all(self, chamber_flow_data, show_1D=False, show_2D=False, save_plot=False,
                     write_in_csv=False, mach_list=None):
-        # Reading input data
-        contour_data = np.genfromtxt(self.contour_file, delimiter=",", skip_header=1)
-        z_coord_list = contour_data[0:, 0]/1000
-        r_coord_list = contour_data[0:, 1]/1000
-        nb_points_raw = len(z_coord_list)  # Number of points
 
-        # Reduce the number of points using scipy 1D interpolation
-        # Create new x values evenly spaced between the min and max of the original x_coord_list
-        x_new = np.linspace(z_coord_list[0], z_coord_list[-1], self.nb_points)
-        # Interpolate y values at the new x positions
-        interp_func = interp1d(z_coord_list, r_coord_list, kind='linear')
-        y_new = interp_func(x_new)
-        # Replace the original lists with the interpolated ones
-        z_coord_list = x_new
-        r_coord_list = y_new
-
-        throat_radius = np.min(r_coord_list)  # Radius of the throat (in m)
-        exit_radius = r_coord_list[-1]  # Radius of the exit (in m)
-        throat_diam = 2 * throat_radius  # Diameter of the throat (in m)
-
-        throat_area = np.pi * throat_radius**2  # Area of the throat (in m²)
-        exit_area = np.pi * exit_radius**2  # Area of the exit (in m²)
-
-        expansion_ratio = exit_area / throat_area  # Expansion ratio (Ae/A*)
-        throat_curv_radius = 1.5 * throat_radius  # Curvature radius before the throat (in m)
-
-        # Find the index of the throat
-        i_throat = np.argmin(np.abs(r_coord_list))
-        # Find the index of the beginning of the convergent section
-        i_convergent = 0
-        for i in range(1, len(r_coord_list)):
-            if r_coord_list[i] < r_coord_list[i-1]:
-                i_convergent = i
-                break
-
-        Cstar, Tc, MolWt = cea.compute_Cstar_Tc_MolWt(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                                      self.ox_name, self.fuel_name, expansion_ratio)
-
-        hotgas_mu_chamber, hotgas_cp_chamber, hotgas_lambda_chamber, hotgas_pr_chamber, \
-            hotgas_mu_throat, hotgas_cp_throat, hotgas_lambda_throat, hotgas_pr_throat, \
-            hotgas_mu_exit, hotgas_cp_exit, hotgas_lambda_exit, hotgas_pr_exit = cea.get_hotgas_properties(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                                                                                           self.ox_name, self.fuel_name, expansion_ratio)
-
-        x_chamber_throat_exit = [z_coord_list[0], z_coord_list[i_convergent],
-                                 z_coord_list[i_throat], z_coord_list[-1]]
-
-        hotgas_visc_list = PchipInterpolator(x_chamber_throat_exit,
-                                             [hotgas_mu_chamber, hotgas_mu_chamber,
-                                              hotgas_mu_throat, hotgas_mu_exit])(z_coord_list)
-        hotgas_cp_list = PchipInterpolator(x_chamber_throat_exit,
-                                           [hotgas_cp_chamber, hotgas_cp_chamber,
-                                            hotgas_cp_throat, hotgas_cp_exit])(z_coord_list)
-        hotgas_cond_list = PchipInterpolator(x_chamber_throat_exit,
-                                             [hotgas_lambda_chamber, hotgas_lambda_chamber,
-                                              hotgas_lambda_throat, hotgas_lambda_exit])(z_coord_list)
-        hotgas_pr_list = PchipInterpolator(x_chamber_throat_exit,
-                                           [hotgas_pr_chamber, hotgas_pr_chamber,
-                                            hotgas_pr_throat, hotgas_pr_exit])(z_coord_list)
-
-        # Computation of the cross-sectional area along the engine
-        cross_section_area_list = np.pi*r_coord_list**2
-
-        gamma_list = cea.compute_gamma(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                       self.ox_name, self.fuel_name,
-                                       cross_section_area_list/throat_area)
-
-        # Computation of mach number of the hot gases
-        mach_list = t.mach_list_from_area_ratios(cross_section_area_list/throat_area,
-                                                 gamma_list[0], i_throat)
-
-        # Static pressure computation
-        static_pressure_list = np.zeros_like(z_coord_list)  # (in Pa)
-        for i in range(0, self.nb_points):
-            static_pressure_list[i] = t.pressure_solv(mach_list[i], gamma_list[i],
-                                                      self.chamber_pressure)
-
-        # Partial pressure computation and interpolation of the molar fraction
-        molFracH2O_chamber, molFracH2O_throat, molFracH2O_exit = cea.compute_H2O_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                                                                                 self.ox_name, self.fuel_name, expansion_ratio)
-        molFracCO2_chamber, molFracCO2_throat, molFracCO2_exit = cea.compute_CO2_molar_fractions(self.chamber_pressure, self.ox_mfr/self.fuel_mfr,
-                                                                                                 self.ox_name, self.fuel_name, expansion_ratio)
-
-        # Linear interpolation of molar fractions for H2O and CO2
-        molFracH2O = PchipInterpolator(x_chamber_throat_exit, [molFracH2O_chamber,
-                                                               molFracH2O_chamber,
-                                                               molFracH2O_throat,
-                                                               molFracH2O_exit])(z_coord_list)
-        molFracCO2 = PchipInterpolator(x_chamber_throat_exit, [molFracCO2_chamber,
-                                                               molFracCO2_chamber,
-                                                               molFracCO2_throat,
-                                                               molFracCO2_exit])(z_coord_list)
-
-        # Partial pressure of H2O and CO2
-        P_H2O_list = np.array([static_pressure_list[i] * molFracH2O[i] for i in range(0, self.nb_points)])
-        P_CO2_list = np.array([static_pressure_list[i] * molFracCO2[i] for i in range(0, self.nb_points)])
-
-        # Hot gas temperature computation
-        hotgas_static_temp_list = np.zeros_like(z_coord_list)  # List of static hot gas temperatures
-        for i in range(0, self.nb_points):
-            hotgas_static_temp_list[i] = t.temperature_hotgas_solv(mach_list[i], gamma_list[i], Tc)
-
-        # We assume that the total temperature is constant
-        hotgas_total_temp_list = Tc*np.ones_like(z_coord_list)  # List of total hot gas temperatures
-
-        # Computation of adiabatic wall temperature (recovery temperature)
-        hotgas_recovery_temp_list = np.array([t.get_recovery_temperature(hotgas_total_temp_list[i], gamma_list[i], mach_list[i], hotgas_pr_list[i]) for i in
-                                              range(0, self.nb_points)])
+        # Unpack all the chamber flow data
+        (z_coord_list, r_coord_list, throat_diam, throat_area,
+            throat_curv_radius, Cstar, Tc, MolWt, hotgas_visc_list, hotgas_cp_list,
+            hotgas_cond_list, hotgas_pr_list, cross_section_area_list, gamma_list,
+            mach_list, static_pressure_list, molFracCO2, molFracH2O, P_CO2_list, P_H2O_list,
+            hotgas_static_temp_list, hotgas_total_temp_list, hotgas_recovery_temp_list,
+            x_chamber_throat_exit) = chamber_flow_data
 
         # Pack the data in tuples
         profile = (z_coord_list, r_coord_list)
