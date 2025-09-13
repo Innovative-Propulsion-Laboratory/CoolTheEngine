@@ -285,7 +285,7 @@ def plotter(parameters, data):
 
         figs.append(t.n_plots(z_coord_list_mm,
                               y_list=[coolant_velocity_list],
-                              y_label_list=['Coolant'],
+                              y_label_list=['Coolant'], fmt='-b',
                               colors_list=['b'],
                               title=r'Coolant velocity',
                               xlabel=r'Engine axis [$mm$]',

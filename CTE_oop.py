@@ -6,19 +6,22 @@ Original author: Paul M
 
 import csv
 import json
-from itertools import product
 import pandas as pd
+from tqdm import tqdm
 
 # Calculations
 import numpy as np
 import cte_tools as t
 from solver import solver
+from itertools import product
+import fluid_properties as flp
 
 # Data
 from channels import generate_channels
 
 # Graphics
 from plotter import plotter
+import matplotlib.pyplot as plt
 
 
 class TaskManager():
@@ -39,8 +42,8 @@ class TaskManager():
         value_lists = [v if isinstance(v, list) else [v] for v in (self.settings.values())]
 
         nb_configs = np.prod([len(lst) for lst in value_lists])
-        if nb_configs > 5000:
-            raise ValueError(f"Too many configurations ({nb_configs}>5000)")
+        # if nb_configs > 5000:
+        #     raise ValueError(f"Too many configurations ({nb_configs}>5000)")
 
         print(f"Solving {nb_configs} unique configurations.")
         # Generate every combination
@@ -55,31 +58,138 @@ class TaskManager():
         self.configurations_df["coolant_pressure_drop"] = pd.Series(dtype="float")
         self.configurations_df["coolant_temp_increase"] = pd.Series(dtype="float")
 
+        print(f"Generating fluid data tables for {self.settings['coolant_name']}")
+        (T_grid, logP_grid, P_grid, Tsat1D, dens_table, cp_table, cond_table,
+         visc_table) = flp.build_tables(Tmin=273, Tmax=600, Pmin_bar=1,
+                                        Pmax_bar=60, dT=2, nP=100, fluid=self.settings["coolant_name"])
+
+        interpolation_functions = flp.make_interpolators(T_grid, logP_grid, P_grid,
+                                                         Tsat1D, dens_table,
+                                                         cp_table, cond_table,
+                                                         visc_table)
+
+        print("Computing chamber flow")
         # Compute the chamber flow first (it is assumed it is the same for every configuration)
         cte = CoolTheEngine(dict(self.configurations_df.loc[0]))
         chamber_flow_data = cte.compute_chamber_flow()
 
-        # Compute every configuration
-        for i, row in self.configurations_df.iterrows():
-            # Create and store the instance of CoolTheEngine in the dataframe
-            cte = CoolTheEngine(dict(row))
-            self.configurations_df.loc[i, "cte_instance"] = cte
+        # Prepare lists to collect results
+        n = len(self.configurations_df)
+        cte_instances = [None] * n
+        max_wall_temps = [None] * n
+        avg_wall_temps = [None] * n
+        max_stresses = [None] * n
+        coolant_pressure_drops = [None] * n
+        coolant_temp_increases = [None] * n
 
-            # Compute and unpack results
-            try:
-                (max_wall_temp, avg_wall_temp, max_stress,
-                    coolant_pressure_drop, coolant_temp_increase) = cte.compute_all(chamber_flow_data)
-            except ValueError as err:
-                print(f"Failed computation for config {i}.\t Error: {err}")
-                (max_wall_temp, avg_wall_temp, max_stress,
-                    coolant_pressure_drop, coolant_temp_increase) = -1, -1, -1, -1, -1
+        # Loop only fills Python lists
+        with tqdm(total=self.configurations_df.shape[0], ncols=100) as pbar:
+            for i, row in enumerate(self.configurations_df.itertuples(index=False)):
+                params = row._asdict()  # convert namedtuple to dict
+                cte = CoolTheEngine(params)
+                cte_instances[i] = cte
 
-            # Assign results to respective columns
-            self.configurations_df.loc[i, "max_wall_temp"] = max_wall_temp
-            self.configurations_df.loc[i, "avg_wall_temp"] = avg_wall_temp
-            self.configurations_df.loc[i, "max_stress"] = max_stress
-            self.configurations_df.loc[i, "coolant_pressure_drop"] = coolant_pressure_drop
-            self.configurations_df.loc[i, "coolant_temp_increase"] = coolant_temp_increase
+                try:
+                    res = cte.compute_all(chamber_flow_data, interp_funcs=interpolation_functions)
+                except ValueError as err:
+                    print(f"Failed computation for config {i}.\t Error: {err}")
+                    res = (-1, -1, -1, -1, -1)
+
+                (max_wall_temps[i], avg_wall_temps[i], max_stresses[i],
+                 coolant_pressure_drops[i], coolant_temp_increases[i]) = res
+                pbar.update(1)
+
+        # One-time bulk assignment (faster)
+        self.configurations_df["cte_instance"] = cte_instances
+        self.configurations_df["max_wall_temp"] = max_wall_temps
+        self.configurations_df["avg_wall_temp"] = avg_wall_temps
+        self.configurations_df["max_stress"] = max_stresses
+        self.configurations_df["coolant_pressure_drop"] = coolant_pressure_drops
+        self.configurations_df["coolant_temp_increase"] = coolant_temp_increases
+
+        fig, axs = plt.subplots(2, 2, dpi=150)
+        scatter_data = [
+            (coolant_pressure_drops, max_stresses, "Coolant pressure drop [Pa]", "Maximum wall stress [MPa]"),
+            (coolant_pressure_drops, avg_wall_temps, "Coolant pressure drop [Pa]", "Average wall temperature [K]"),
+            (coolant_pressure_drops, max_wall_temps, "Coolant pressure drop [Pa]", "Maximum wall temperature [K]"),
+            (coolant_pressure_drops, coolant_temp_increases, "Coolant pressure drop [Pa]", "Coolant temperature increase [K]")
+        ]
+
+        scatters = []
+        annots = []
+        axes = [axs[0, 0], axs[0, 1], axs[1, 0], axs[1, 1]]
+        for i, (ax, (x, y, xlabel, ylabel)) in enumerate(zip(axes, scatter_data)):
+            sc = ax.scatter(x, y, s=1, color="k")
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            # Annotation only shows config number
+            annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                bbox=dict(boxstyle="round", fc="w"),
+                                arrowprops=dict(arrowstyle="->"), fontsize=8)
+            annot.set_visible(False)
+            scatters.append(sc)
+            annots.append(annot)
+
+        # Add a text box in the top left corner of axs[0,0] for detailed info
+        info_text = axs[0, 0].text(0.01, 0.99, "", transform=axs[0, 0].transAxes, va='top', ha='left', fontsize=9,
+                                   bbox=dict(boxstyle="round", fc="w", alpha=0.7))
+        info_text.set_visible(False)
+
+        def update_all_annots(idx):
+            # Update all annotations to the same index
+            for sc, annot in zip(scatters, annots):
+                pos = sc.get_offsets()[idx]
+                annot.xy = pos
+                # Only show config number in annotation
+                annot.set_text(f"Config {idx}")
+                annot.get_bbox_patch().set_facecolor('0.8')
+                annot.get_bbox_patch().set_alpha(0.4)
+
+            # Update the info text in the top left of axs[0,0]
+            info = (
+                f"Config {idx}\n"
+                f"Channel width injection : {self.configurations_df.loc[idx, 'channel_widths_inj']*1000:.1f}mm\n"
+                f"Channel width converging : {self.configurations_df.loc[idx, 'channel_widths_conv']*1000:.1f}mm\n"
+                f"Channel width throat : {self.configurations_df.loc[idx, 'channel_widths_throat']*1000:.1f}mm\n"
+                f"Channel width exit : {self.configurations_df.loc[idx, 'channel_widths_exit']*1000:.1f}mm\n"
+                f"Channel height injection : {self.configurations_df.loc[idx, 'channel_heights_inj']*1000:.1f}mm\n"
+                f"Channel height converging : {self.configurations_df.loc[idx, 'channel_heights_conv']*1000:.1f}mm\n"
+                f"Channel height throat : {self.configurations_df.loc[idx, 'channel_heights_throat']*1000:.1f}mm\n"
+                f"Channel height exit : {self.configurations_df.loc[idx, 'channel_heights_exit']*1000:.1f}mm\n"
+                f"Channel angle injection : {self.configurations_df.loc[idx, 'channel_angles_inj']:.1f}°\n"
+                f"Channel angle converging : {self.configurations_df.loc[idx, 'channel_angles_conv']:.1f}°"
+            )
+            info_text.set_text(info)
+            info_text.set_visible(True)
+
+        def set_all_annots_visible(visible):
+            for annot in annots:
+                annot.set_visible(visible)
+            # Also hide/show the info text box
+            info_text.set_visible(visible)
+
+        def hover(event):
+            found = False
+            idx = None
+            # Check all axes for a hovered point
+            for sc, ax in zip(scatters, axes):
+                if event.inaxes == ax:
+                    cont, ind = sc.contains(event)
+                    if cont:
+                        idx = ind["ind"][0]
+                        found = True
+                        break
+            if found and idx is not None:
+                update_all_annots(idx)
+                set_all_annots_visible(True)
+                fig.canvas.draw_idle()
+            else:
+                set_all_annots_visible(False)
+                fig.canvas.draw_idle()
+
+        fig.canvas.mpl_connect("motion_notify_event", hover)
+
+        plt.show()
 
         print(self.configurations_df)
         self.configurations_df.to_csv("output/bulk_results.csv")
@@ -139,7 +249,7 @@ class CoolTheEngine():
         self.figure_dpi = int(params["figure_dpi"])
 
         # Initial definitions
-        self.contour_file = "input/engine_contour.csv"  # Engine contour
+        self.contour_file = "input/engine_contour_8kN.csv"  # Engine contour
 
     def compute_chamber_flow(self):
         return t.compute_hotgas_flow(self.contour_file,
@@ -151,7 +261,7 @@ class CoolTheEngine():
                                      self.fuel_name)
 
     def compute_all(self, chamber_flow_data, show_1D=False, show_2D=False, save_plot=False,
-                    write_in_csv=False, mach_list=None):
+                    write_in_csv=False, mach_list=None, interp_funcs=None):
 
         # Unpack all the chamber flow data
         (z_coord_list, r_coord_list, throat_diam, throat_area,
@@ -197,7 +307,7 @@ class CoolTheEngine():
             coolant_cond_list, coolant_cp_list, coolant_density_list, \
             coolant_velocity_list, coolant_pressure_list, coolant_Tsat_list, wall_cond_list, \
             hl_normal_list, hl_corrected_list, q_rad_list, q_rad_list_CO2, q_rad_list_H2O, \
-            CHF_Meyer_list, CHF_Tong_list = solver(data_hotgas, data_coolant, data_channel, data_chamber)
+            CHF_Meyer_list, CHF_Tong_list = solver(data_hotgas, data_coolant, data_channel, data_chamber, interp_funcs)
 
         hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_stress(self.wall_material, self.wall_thickness, z_coord_list,
                                                                                                r_coord_list, static_pressure_list,
@@ -353,4 +463,4 @@ class CoolTheEngine():
         return max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase
 
 
-tm = TaskManager("input/input_bulk.json")
+tm = TaskManager("input/input.json")

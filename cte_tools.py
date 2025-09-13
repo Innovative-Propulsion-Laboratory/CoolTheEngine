@@ -72,7 +72,7 @@ def wall_conductivity(Twg: float, Twl: float, material_name: str):
 
     T_avg = (Twg + Twl) / 2
     if material_name == "AlSi10Mg":
-        return 155
+        return 170
     if material_name == "CuCrZr":
         return -0.0269 * T_avg + 350
     if material_name == "Inconel_718":
@@ -89,7 +89,7 @@ def wall_cte(Twg: float, Twl: float, material_name: str):
 
     T_avg = (Twg + Twl) / 2
     if material_name == "AlSi10Mg":
-        return 1.13e-7 * T_avg - 2.08e-5
+        return 27e-6
     if material_name == "CuCrZr":
         return 3e-9 * T_avg + 16.1e-6
     if material_name == "Inconel_718":
@@ -113,7 +113,7 @@ def wall_young_modulus(Twg: float, Twl: float, material_name: str):
 
     if material_name == "AlSi10Mg":
         # Polynomial model valid between 20°C (293K) and 370°C (643K)
-        return (-5.11e-4 * T_avg**2 * 0.346 * T_avg + 13.4) * 1e9
+        return (-5.11e-4 * T_avg**2 + 0.346 * T_avg + 13.4) * 1e9
 
     if material_name == "CuCrZr":
         # Polynomial valid from 0°C (273K) to 800°C (1073K)

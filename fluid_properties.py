@@ -1,6 +1,7 @@
 from CoolProp.CoolProp import PropsSI
 from scipy.interpolate import RegularGridInterpolator
 import numpy as np
+import numba as nb
 
 
 def interpolated_Tsat(P, Tsat_1D_table):
@@ -90,48 +91,112 @@ def latent_heat_vap(P, fluid):
     return PropsSI('H', 'P', P, 'Q', 1, fluid) - PropsSI('H', 'P', P, 'Q', 0, fluid)
 
 
-def build_fluid_property_tables(Tmin, Tmax, Pmin, Pmax, fluid):
+@nb.njit
+def interp1D(x, xg, yg):
+    n = xg.shape[0]
+    if x <= xg[0]:
+        return yg[0]
+    if x >= xg[-1]:
+        return yg[-1]
+    for i in range(n-1):
+        if xg[i] <= x < xg[i+1]:
+            t = (x-xg[i])/(xg[i+1]-xg[i])
+            return yg[i] + t*(yg[i+1]-yg[i])
+    return yg[-1]
+
+
+@nb.njit
+def interp2D(lp, T, lp_g, T_g, tab):
+    np_, nT = lp_g.shape[0], T_g.shape[0]
+    # find i
+    if lp <= lp_g[0]:
+        i = 0
+    elif lp >= lp_g[np_-1]:
+        i = np_-2
+    else:
+        for k in range(np_-1):
+            if lp_g[k] <= lp < lp_g[k+1]:
+                i = k
+                break
+    # find j
+    if T <= T_g[0]:
+        j = 0
+    elif T >= T_g[nT-1]:
+        j = nT-2
+    else:
+        for k in range(nT-1):
+            if T_g[k] <= T < T_g[k+1]:
+                j = k
+                break
+
+    x1, x2 = lp_g[i], lp_g[i+1]
+    y1, y2 = T_g[j], T_g[j+1]
+    Q11, Q21 = tab[i,  j], tab[i+1, j]
+    Q12, Q22 = tab[i,  j+1], tab[i+1, j+1]
+    tx = (lp-x1)/(x2-x1)
+    ty = (T-y1)/(y2-y1)
+    return (Q11*(1-tx)*(1-ty) + Q21*tx*(1-ty)
+            + Q12*(1-tx)*ty + Q22*tx*ty)
+
+
+def build_tables(Tmin, Tmax, Pmin_bar, Pmax_bar, dT, nP, fluid):
     """
-    Builds:
-      * Tsat_1D_table = (P_grid, Tsat_values)
-      * prop_2D_tables = {
-          'density': (P_grid, T_grid, density_values),
-          'cp':       (P_grid, T_grid, cp_values),
-          'cond':     (P_grid, T_grid, conductivity_values),
-          'visc':     (P_grid, T_grid, viscosity_values)
-        }
-    All pressures are in Pa, Temperatures in K.
+    Vectorized build of:
+      - T_grid [K]
+      - logP_grid = log(P_grid) [for interp]
+      - P_grid [Pa]
+      - Tsat1D[P] → T_sat [K]
+      - dens, cp, cond, visc: shape (nP, nT)
     """
+    # 1) define grids
+    T_grid = np.arange(Tmin, Tmax + 1e-9, dT)               # (nT,)
+    P_grid = np.logspace(np.log10(Pmin_bar*1e5),
+                         np.log10(Pmax_bar*1e5),
+                         num=nP)                           # (nP,)
+    logP_grid = np.log(P_grid)
 
-    # Grids
-    T_grid = np.linspace(Tmin, Tmax, 100)
-    # convert bar→Pa
-    P_grid = np.linspace(Pmin * 1e5, Pmax * 1e5, 100)
+    # 2) vectorized Tsat (will return shape (nP,))
+    Tsat1D = PropsSI("T", "P", P_grid, "Q", 0, fluid)
 
-    # 1D saturation‐temperature
-    Tsat_values = np.array([PropsSI("T", "P", P, "Q", 0, fluid)
-                            for P in P_grid])
+    # 3) build the full mesh as flat arrays
+    #    P_flat = [P0,P0,...,P0, P1,P1,...,P1, ..., Pn]
+    #    T_flat = [T0,T1,...,Tn, T0,T1,...,Tn, ..., Tn]
+    nT = T_grid.size
+    P_flat = np.repeat(P_grid, nT)
+    T_flat = np.tile(T_grid, nP)
 
-    # initialize 2D arrays
-    shape = (len(P_grid), len(T_grid))
-    density_values = np.empty(shape)
-    cp_values = np.empty(shape)
-    conductivity_values = np.empty(shape)
-    viscosity_values = np.empty(shape)
+    # 4) single vectorized calls for each property
+    dens_flat = PropsSI("D", "P", P_flat, "T", T_flat, fluid)
+    cp_flat = PropsSI("C", "P", P_flat, "T", T_flat, fluid)
+    cond_flat = PropsSI("L", "T", T_flat, "P", P_flat, fluid)
+    visc_flat = PropsSI("V", "T", T_flat, "P", P_flat, fluid)
 
-    # fill tables
-    for i, P in enumerate(P_grid):
-        for j, T in enumerate(T_grid):
-            density_values[i, j] = PropsSI("D", "T", T, "P", P, fluid)
-            cp_values[i, j] = PropsSI("C", "P", P, "T", T, fluid)
-            conductivity_values[i, j] = PropsSI("L", "T", T, "P", P, fluid)
-            viscosity_values[i, j] = PropsSI("V", "T", T, "P", P, fluid)
+    # 5) reshape back into (nP, nT) tables
+    dens_table = dens_flat.reshape(nP, nT)
+    cp_table = cp_flat.reshape(nP, nT)
+    cond_table = cond_flat.reshape(nP, nT)
+    visc_table = visc_flat.reshape(nP, nT)
 
-    Tsat_1D_table = (P_grid, Tsat_values)
-    prop_2D_tables = {
-        'density':      (P_grid, T_grid, density_values),
-        'cp':           (P_grid, T_grid, cp_values),
-        'conductivity': (P_grid, T_grid, conductivity_values),
-        'viscosity':    (P_grid, T_grid, viscosity_values),
-    }
-    return Tsat_1D_table, prop_2D_tables
+    return T_grid, logP_grid, P_grid, Tsat1D, dens_table, cp_table, cond_table, visc_table
+
+
+def make_interpolators(T_grid, logP_grid, P_lin, Tsat1D, dens, cp_tab, cond, visc):
+    def interp_rho(P, T):
+        return interp2D(np.log(P), T, logP_grid, T_grid, dens)
+
+    def interp_mu(P, T):
+        return interp2D(np.log(P), T, logP_grid, T_grid, visc)
+
+    def interp_cp(P, T):
+        return interp2D(np.log(P), T, logP_grid, T_grid, cp_tab)
+
+    def interp_k(P, T):
+        return interp2D(np.log(P), T, logP_grid, T_grid, cond)
+
+    def interp_Tsat(P):
+        return np.interp(P, P_lin, Tsat1D)
+
+        # Prime compilation
+    _ = interp_rho(5e6, 350.0)
+
+    return interp_rho, interp_mu, interp_cp, interp_k, interp_Tsat
