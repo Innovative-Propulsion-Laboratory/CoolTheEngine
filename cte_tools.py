@@ -250,9 +250,9 @@ def n_plots(x, y_list,
     serif = {'fontname': 'DejaVu Serif'}
     margin = 0.05
     if xmin is None:
-        xmin = min(x) - margin * min(x)
+        xmin = min(x)
     if xmax is None:
-        xmax = max(x) + margin * max(x)
+        xmax = max(x)
     if ymin is None:
         ymin = np.min(y_list)
         ymin = ymin - margin * ymin

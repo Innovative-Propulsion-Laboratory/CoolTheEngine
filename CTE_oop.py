@@ -406,13 +406,13 @@ class CoolTheEngine():
                       "xA", "yA", "xB", "yB", "xC", "yC", "xD", "yD"]
             for i in range(self.nb_points):
                 rows.append([
-                    z_coord_list[i], r_coord_list[i],
-                    channel_width_list[i], channel_height_list[i], effective_fin_thickness_list[i],
-                    hydraulic_diameter[i], effective_channel_cross_section[i],
-                    channel_vertices['A'][i, 0], channel_vertices['A'][i, 1],
-                    channel_vertices['B'][i, 0], channel_vertices['B'][i, 1],
-                    channel_vertices['C'][i, 0], channel_vertices['C'][i, 1],
-                    channel_vertices['D'][i, 0], channel_vertices['D'][i, 1]
+                    z_coord_list[i]*1000, r_coord_list[i]*1000,
+                    channel_width_list[i]*1000, channel_height_list[i]*1000, effective_fin_thickness_list[i]*1000,
+                    hydraulic_diameter[i]*1000, effective_channel_cross_section[i],
+                    channel_vertices['A'][i, 0]*1000, channel_vertices['A'][i, 1]*1000,
+                    channel_vertices['B'][i, 0]*1000, channel_vertices['B'][i, 1]*1000,
+                    channel_vertices['C'][i, 0]*1000, channel_vertices['C'][i, 1]*1000,
+                    channel_vertices['D'][i, 0]*1000, channel_vertices['D'][i, 1]*1000
                 ])
 
             with open(file_name, "w", newline="") as file:
