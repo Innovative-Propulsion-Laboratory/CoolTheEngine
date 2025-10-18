@@ -2,7 +2,6 @@ import casthermo as ct
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from scipy.interpolate import griddata
 
 
 def carto2D(larg_wall,

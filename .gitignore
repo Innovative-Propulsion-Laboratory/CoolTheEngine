@@ -130,9 +130,5 @@ dmypy.json
 
 .idea/*
 *.bak
-valuexport.csv
-geometry1.csv
-geometry2.csv
 *.prof
 *.zip
-*.csv

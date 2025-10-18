@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import cte_tools as t
 import matplotlib.backends.backend_pdf
 from solver2D import carto2D
-from volume3d import carto3d
 from tqdm import tqdm
 import numpy as np
 

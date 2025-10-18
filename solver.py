@@ -1,6 +1,5 @@
 import numpy as np
 import fluid_properties as flp
-from tqdm import tqdm
 import cte_tools as t
 
 
