@@ -14,7 +14,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
     hotgas_recovery_temp_list, hotgas_static_temp_list, hotgas_visc_list, hotgas_pr_list, \
         hotgas_cp_list, hotgas_cond_list, MolWt, gamma_list, \
         chamber_pressure, Cstar, PH2O_list, PCO2_list = hotgas_data
-    coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr, use_TEOS_PDMS = coolant_data
+    coolant_inlet_temp, coolant_inlet_pressure, coolant_name, coolant_mfr, TBC_thickness = coolant_data
     nb_channels, channel_width_list, channel_height_list, effective_fin_thickness, wall_thickness, \
         hydraulic_diameter, effective_channel_cross_section, channel_centerline, beta_list = channel_data
     z_coord_list, r_coord_list, throat_diam, throat_curv_radius, throat_area, \
@@ -48,6 +48,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
     hg_list = np.zeros(n_points)
     sigma_list = np.zeros(n_points)
     wall_cond_list = np.zeros(n_points)
+    tbc_temp_list = np.zeros(n_points)
     hotwall_temp_list = np.zeros(n_points)
     coldwall_temp_list = np.zeros(n_points)
     q_conv_list = np.zeros(n_points)
@@ -120,9 +121,6 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
                 (chamber_pressure / Cstar) ** 0.8) * ((throat_diam / throat_curv_radius) ** 0.1) * (
                 (throat_area / cross_section_area_list[i]) ** 0.9)) * sigma
 
-            if use_TEOS_PDMS:  # Reduce hg by 20% to account for the PDMS layer
-                hg *= 0.8
-
             # Compute the Darcy-Weisbach friction factor
             fD = t.darcy_weisbach(hydraulic_diameter[i], coolant_reynolds_list[i], channel_roughness)
 
@@ -130,6 +128,8 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
             k1 = 1 + 3.4*fD
             k2 = 11.7 + 1.8*coolant_prandtl_list[i]**(-1.0/3.0)
             Nu = (fD/8 * coolant_reynolds_list[i]*coolant_prandtl_list[i])/(k1*k2*(coolant_prandtl_list[i]**(2.0/3.0) - 1)*np.sqrt(fD/8))
+
+            # Nu = 0.023 * coolant_reynolds_list[i]**0.8 * coolant_prandtl_list[i]**0.4  # Dittus-Boelter
 
             # Compute coolant-side convective heat-transfer coefficient
             hl = Nu * (coolant_cond_list[i] / hydraulic_diameter[i])
@@ -159,8 +159,10 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
 
             # Computing the heat flux and wall temperatures (Luka Denies)
             q_tot = (hotgas_recovery_temp_list[i] - coolant_temp_list[i] + q_rad / hg) / (
-                1 / hg + 1 / h_tp + wall_thickness / wall_cond_list[i])
-            new_hotwall_temp = hotgas_recovery_temp_list[i] + (q_rad - q_tot) / hg
+                1 / hg + 1 / h_tp + wall_thickness / wall_cond_list[i] + TBC_thickness / 1.5)  # Assuming TBC conductivity of 1.5 W/mK (SiO2)
+
+            tbc_temp = hotgas_recovery_temp_list[i] + (q_rad - q_tot) / hg
+            new_hotwall_temp = tbc_temp + (q_rad - q_tot) * TBC_thickness / 1.5
             new_coldwall_temp = coolant_temp_list[i] + q_tot / h_tp
 
             # Compute new value of sigma (used in the Bartz equation)
@@ -222,6 +224,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
         hl_normal_list[i] = hl
         hl_corrected_list[i] = hl_cor
         h_tp_list[i] = h_tp
+        tbc_temp_list[i] = tbc_temp
         hotwall_temp_list[i] = hotwall_temp
         coldwall_temp_list[i] = coldwall_temp
         q_conv_list[i] = q_tot
@@ -232,7 +235,7 @@ def solver(hotgas_data, coolant_data, channel_data, chamber_data, interp_funcs=N
         CHF_Meyer_list[i] = CHF_Meyer
         CHF_Tong_list[i] = CHF_Tong
 
-    return hl_corrected_list, h_tp_list, hg_list, \
+    return hl_corrected_list, h_tp_list, hg_list, tbc_temp_list, \
         hotwall_temp_list, coldwall_temp_list, q_conv_list, sigma_list, \
         coolant_reynolds_list, coolant_temp_list, coolant_viscosity_list, \
         coolant_cond_list, coolant_cp_list, coolant_density_list, \

@@ -16,8 +16,139 @@ def plotter(parameters, data):
     figs = []
 
     # Unpack parameters
-    show_1D, show_2D, figure_dpi, save_plots = parameters
+    show_1D, show_2D, figure_dpi, save_plots, cte_config = parameters
+    # Create configuration summary page (first page of PDF)
+    if save_plots:
+        config_fig = plt.figure(figsize=(6.4, 4.8), dpi=figure_dpi)
+        config_fig.text(0.5, 0.96, 'CoolTheEngine - Configuration Summary',
+                        ha='center', va='top', fontsize=14, weight='bold')
 
+        y_pos = 0.88
+        line_height = 0.035
+        section_gap = 0.05
+        left_margin = 0.08
+        fontsize_section = 10
+        fontsize_item = 9
+
+        # Engine Parameters
+        config_fig.text(left_margin, y_pos, 'Engine Parameters',
+                        fontsize=fontsize_section, weight='bold')
+        y_pos -= line_height * 1.2
+        config_fig.text(left_margin + 0.02, y_pos, f'Chamber Pressure: {cte_config.chamber_pressure/1e5:.2f} bar',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Oxidizer: {cte_config.ox_name}',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Oxidizer Mass Flow Rate: {cte_config.ox_mfr:.3f} kg/s',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Fuel: {cte_config.fuel_name}',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Fuel Mass Flow Rate: {cte_config.fuel_mfr:.3f} kg/s',
+                        fontsize=fontsize_item)
+        y_pos -= section_gap
+
+        # Coolant Properties
+        config_fig.text(left_margin, y_pos, 'Coolant Properties',
+                        fontsize=fontsize_section, weight='bold')
+        y_pos -= line_height * 1.2
+        config_fig.text(left_margin + 0.02, y_pos, f'Coolant: {cte_config.coolant_name}',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Coolant Inlet Temperature: {cte_config.coolant_inlet_temp:.1f} K',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Coolant Inlet Pressure: {cte_config.coolant_inlet_pressure/1e5:.2f} bar',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Coolant Mass Flow Rate: {cte_config.coolant_mfr:.3f} kg/s',
+                        fontsize=fontsize_item)
+        y_pos -= section_gap
+
+        # Wall Material Properties
+        config_fig.text(left_margin, y_pos, 'Wall Material Properties',
+                        fontsize=fontsize_section, weight='bold')
+        y_pos -= line_height * 1.2
+        config_fig.text(left_margin + 0.02, y_pos, f'Wall Material: {cte_config.wall_material}',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'TBC Thickness: {cte_config.TBC_thickness*1e6:.1f} µm',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Channel Roughness: {cte_config.channel_roughness*1e6:.1f} µm',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Wall Thickness: {cte_config.wall_thickness*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos -= line_height
+        config_fig.text(left_margin + 0.02, y_pos, f'Total Wall Thickness: {cte_config.total_wall_thickness*1000:.2f} mm',
+                        fontsize=fontsize_item)
+
+        # Channel Configuration - Second Column (Right side)
+        right_margin = 0.54
+        y_pos_right = 0.88
+
+        config_fig.text(right_margin, y_pos_right, 'Channel Configuration',
+                        fontsize=fontsize_section, weight='bold')
+        y_pos_right -= line_height * 1.2
+        config_fig.text(right_margin + 0.02, y_pos_right, f'Number of Channels: {cte_config.nb_channels}',
+                        fontsize=fontsize_item)
+        y_pos_right -= section_gap
+
+        # Channel Widths
+        config_fig.text(right_margin + 0.02, y_pos_right, 'Channel Widths:', weight='bold',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Injection: {cte_config.width_inj*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Converging: {cte_config.width_conv*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Throat: {cte_config.width_throat*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Exit: {cte_config.width_exit*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= section_gap
+
+        # Channel Heights
+        config_fig.text(right_margin + 0.02, y_pos_right, 'Channel Heights:', weight='bold',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Injection: {cte_config.ht_inj*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Converging: {cte_config.ht_conv*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Throat: {cte_config.ht_throat*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Exit: {cte_config.ht_exit*1000:.2f} mm',
+                        fontsize=fontsize_item)
+        y_pos_right -= section_gap
+
+        # Channel Angles
+        config_fig.text(right_margin + 0.02, y_pos_right, 'Channel Angles:', weight='bold',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Injection: {cte_config.beta_inj:.1f}°',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Converging: {cte_config.beta_conv:.1f}°',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Throat: {cte_config.beta_throat:.1f}°',
+                        fontsize=fontsize_item)
+        y_pos_right -= line_height
+        config_fig.text(right_margin + 0.04, y_pos_right, f'Exit: {cte_config.beta_exit:.1f}°',
+                        fontsize=fontsize_item)
+
+        plt.axis('off')
+        figs.insert(0, config_fig)  # Insert as first page
     # Unpack data (new variable names)
     z_coord_list_mm, r_coord_list_mm, \
         z_coord_list, r_coord_list, \
@@ -65,6 +196,7 @@ def plotter(parameters, data):
         coolant_temp_list, \
         coolant_pressure_list, \
         coolant_Tsat_list, \
+        tbc_temp_list, \
         hotwall_temp_list, \
         coldwall_temp_list, \
         wall_cond_list, \
@@ -321,18 +453,18 @@ def plotter(parameters, data):
                                dpi=figure_dpi, show=show_1D))
 
         figs.append(t.n_plots(z_coord_list_mm,
-                              y_list=[hotwall_temp_list, coldwall_temp_list, material_temp_limit],
-                              y_label_list=['Hot wall', 'Cold wall', "Maximum allowable temperature"],
-                              colors_list=['r', 'b', 'k'],
-                              title=r'Wall temperatures $T_{wg}$ and $T_{wl}$',
+                              y_list=[tbc_temp_list, hotwall_temp_list, coldwall_temp_list, material_temp_limit],
+                              y_label_list=['TBC temperature', 'Hot wall', 'Cold wall', "Maximum allowable temperature"],
+                              colors_list=['m', 'r', 'b', 'k'],
+                              title=r'Wall temperatures $T_{tbc}$, $T_{wg}$ and $T_{wl}$',
                               xlabel=r'Engine axis [$mm$]',
                               ylabel=r'$T$ [K]', dpi=figure_dpi, show=show_1D))
 
         figs.append(t.n_plots(z_coord_list_mm,
-                              y_list=[hoop_stress_list/1e6, thermal_stress_list/1e6, max_wall_stress_list/1e6, yield_strength_list/1e6],
-                              y_label_list=['Hoop stress', 'Thermal stress', "Maximum wall stress", "Yield strength"],
-                              colors_list=['g', 'b', "r", 'k'],
-                              title=r'Wall stress',
+                              y_list=[hoop_stress_list/1e6, thermal_stress_list/1e6, max_wall_stress_list/1e6, yield_strength_list/1e6, -yield_strength_list/1e6],
+                              y_label_list=['Hoop stress', 'Thermal stress', "Total wall stress", "Yield strength (tensile)", "Yield strength (compressive)"],
+                              colors_list=['g', 'b', "r", 'k', 'k'],
+                              title=r'Stress at the inner side of the hotwall (stresses are positive in tension)',
                               xlabel=r'Engine axis [$mm$]',
                               ylabel=r'$\sigma$ [MPa]', dpi=figure_dpi, show=show_1D))
 

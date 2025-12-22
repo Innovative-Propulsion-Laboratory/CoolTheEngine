@@ -74,7 +74,8 @@ def wall_conductivity(Twg: float, Twl: float, material_name: str):
     if material_name == "AlSi10Mg":
         return 170
     if material_name == "CuCrZr":
-        return -0.0269 * T_avg + 350
+        # return -0.0269 * T_avg + 300
+        return 300
     if material_name == "Inconel_718":
         return 0.0138 * T_avg + 5.577
 
@@ -103,7 +104,7 @@ def wall_temp_limit(material_name: str):
     if material_name == "AlSi10Mg":
         return 473
     if material_name == "CuCrZr":
-        return 750
+        return 800
     if material_name == "Inconel_718":
         return 1000
 
@@ -139,8 +140,14 @@ def wall_yield_strength(Twg: float, Twl: float, material_name: str):
     if material_name == "CuCrZr":
         # Polynomial valid from 0°C (273K) to 600°C (773K)
         # Data from http://www.doi.org/10.2991/peee-15.2015.51
-        if T_avg < 890:
-            return (-1.0e-3 * T_avg**2 + 0.58 * T_avg + 277) * 1e6
+        # if T_avg < 890:
+        #     return (-1.0e-3 * T_avg**2 + 0.58 * T_avg + 277) * 1e6
+        # else:
+        #     return 0
+
+        if T_avg < 873:
+            return (-1.17e-6*T_avg**2 + 5.5e-4*T_avg + 0.921) * 300e6  # Yield strength
+            # return (-1.27e-6*T_avg**2 + 4.5e-4*T_avg + 0.952) * 420e6 # Ultimate strength
         else:
             return 0
 
@@ -255,10 +262,10 @@ def n_plots(x, y_list,
         xmax = max(x)
     if ymin is None:
         ymin = np.min(y_list)
-        ymin = ymin - margin * ymin
+        ymin = ymin - abs(margin * ymin)
     if ymax is None:
         ymax = np.max(y_list)
-        ymax = ymax + margin * ymax
+        ymax = ymax + abs(margin * ymax)
 
     plt.rcParams["mathtext.fontset"] = 'dejavuserif'
     plt.rcParams['xtick.direction'] = 'inout'
@@ -350,24 +357,38 @@ def compute_total_heat_output_hotwall(z_coord_list, r_coord_list, q_tot_list):
     return np.sum(q_tot_list*2*np.pi*r_coord_list*dl)
 
 
-def compute_1D_wall_stress(material_name: str, wall_thickness, z_coord_list,
-                           r_coord_list, static_pressure_list,
+def compute_1D_wall_stress(material_name: str, hotwall_thickness, z_coord_list,
+                           r_coord_list, hotgas_static_pressure_list,
                            coolant_pressure_list, hotwall_temp_list,
-                           coldwall_temp_list):
+                           coldwall_temp_list, nb_channels,
+                           effective_fin_thickness_list, channel_height_list,
+                           channel_width_list, total_wall_thickness):
 
     conductivity_list = np.zeros_like(z_coord_list)
     cte_list = np.zeros_like(z_coord_list)
     young_modulus_list = np.zeros_like(z_coord_list)
-    nu = 0.33
+    cold_wall_thickness_list = np.zeros_like(z_coord_list)
+    alpha_list = np.zeros_like(z_coord_list)
+    equivalent_thickness_list = np.zeros_like(z_coord_list)
+    membrane_stress_list = np.zeros_like(z_coord_list)
+    bending_stress_list = np.zeros_like(z_coord_list)
+    nu = 0.27
+    Keff = 0.12
 
     for i in range(len(z_coord_list)):
         conductivity_list[i] = wall_conductivity(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
         cte_list[i] = wall_cte(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
         young_modulus_list[i] = wall_young_modulus(hotwall_temp_list[i], coldwall_temp_list[i], material_name)
+        cold_wall_thickness_list[i] = total_wall_thickness - hotwall_thickness - channel_height_list[i]
+        alpha_list[i] = effective_fin_thickness_list[i] / (effective_fin_thickness_list[i] + channel_width_list[i])
+        equivalent_thickness_list[i] = hotwall_thickness + alpha_list[i] * cold_wall_thickness_list[i]
+        membrane_stress_list[i] = hotgas_static_pressure_list[i] * r_coord_list[i] / equivalent_thickness_list[i]
+        bending_stress_list[i] = Keff * (hotgas_static_pressure_list[i] - coolant_pressure_list[i]) * \
+            (channel_width_list[i]+effective_fin_thickness_list[i])**2 / (hotwall_thickness**2)
 
-    hoop_stress_list = (static_pressure_list - coolant_pressure_list) * r_coord_list/wall_thickness
-    thermal_stress_list = (young_modulus_list * cte_list * (hotwall_temp_list - coldwall_temp_list))/(2*(1-nu))
-    max_wall_stress_list = np.abs(hoop_stress_list) + thermal_stress_list
+    hoop_stress_list = membrane_stress_list + bending_stress_list  # Hoop stress at the inner side of the hot wall
+    thermal_stress_list = -(young_modulus_list * cte_list * (hotwall_temp_list - coldwall_temp_list))/(2*(1-nu))  # Compressive stress is negative
+    max_wall_stress_list = hoop_stress_list + thermal_stress_list
 
     return hoop_stress_list, thermal_stress_list, max_wall_stress_list
 

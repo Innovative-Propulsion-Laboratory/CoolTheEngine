@@ -218,13 +218,14 @@ class CoolTheEngine():
         self.ox_name = params["oxidizer_name"]
         self.fuel_name = params["fuel_name"]
         self.coolant_name = params["coolant_name"]
-        self.use_TEOS_PDMS = params["use_TEOS_PDMS"]
+        self.TBC_thickness = float(params["tbc_thickness"])
 
         # Channel parameters
         self.wall_material = params["wall_material"]
         self.channel_roughness = float(params["channel_roughness"])
         self.nb_channels = int(params["nb_channels"])
         self.wall_thickness = float(params["wall_thickness"])
+        self.total_wall_thickness = float(params["total_wall_thickness"])
 
         # Widths
         self.width_inj = float(params["channel_widths_inj"])
@@ -249,7 +250,7 @@ class CoolTheEngine():
         self.figure_dpi = int(params["figure_dpi"])
 
         # Initial definitions
-        self.contour_file = "input/engine_contour_8kN.csv"  # Engine contour
+        self.contour_file = "input/redwing_contour.csv"  # Engine contour
 
     def compute_chamber_flow(self):
         return t.compute_hotgas_flow(self.contour_file,
@@ -291,7 +292,7 @@ class CoolTheEngine():
                        hotgas_cp_list, hotgas_cond_list, MolWt, gamma_list, self.chamber_pressure,
                        Cstar, P_H2O_list, P_CO2_list)
         data_coolant = (self.coolant_inlet_temp, self.coolant_inlet_pressure,
-                        self.coolant_name, self.coolant_mfr, self.use_TEOS_PDMS)
+                        self.coolant_name, self.coolant_mfr, self.TBC_thickness)
         data_channel = (self.nb_channels, channel_width_list,
                         channel_height_list, effective_fin_thickness_list,
                         self.wall_thickness, hydraulic_diameter,
@@ -301,7 +302,7 @@ class CoolTheEngine():
                         self.channel_roughness, cross_section_area_list, mach_list, self.wall_material)
 
         # Call the main solving loop
-        hl_corrected_list, h_tp_list, hg_list, \
+        hl_corrected_list, h_tp_list, hg_list, tbc_temp_list, \
             hotwall_temp_list, coldwall_temp_list, q_tot_list, sigma_list, \
             coolant_reynolds_list, coolant_temp_list, coolant_visc_list, \
             coolant_cond_list, coolant_cp_list, coolant_density_list, \
@@ -312,7 +313,9 @@ class CoolTheEngine():
         hoop_stress_list, thermal_stress_list, max_wall_stress_list = t.compute_1D_wall_stress(self.wall_material, self.wall_thickness, z_coord_list,
                                                                                                r_coord_list, static_pressure_list,
                                                                                                coolant_pressure_list, hotwall_temp_list,
-                                                                                               coldwall_temp_list)
+                                                                                               coldwall_temp_list, self.nb_channels,
+                                                                                               effective_fin_thickness_list, channel_height_list,
+                                                                                               channel_width_list, self.total_wall_thickness)
 
         max_wall_temp = np.max(hotwall_temp_list)
         avg_wall_temp = np.average(hotwall_temp_list)
@@ -323,7 +326,7 @@ class CoolTheEngine():
         # PLot the results
         if show_1D or show_2D:
             # Display of the 1D analysis results
-            parameters_plotter = (show_1D, show_2D, self.figure_dpi, save_plot)
+            parameters_plotter = (show_1D, show_2D, self.figure_dpi, save_plot, self)
 
             # Store the data in a big tuple to send to the plotter
             data_plotter = (  # Engine geometry
@@ -384,6 +387,7 @@ class CoolTheEngine():
                 coolant_Tsat_list,
 
                 # Wall properties
+                tbc_temp_list,
                 hotwall_temp_list,
                 coldwall_temp_list,
                 wall_cond_list,
