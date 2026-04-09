@@ -132,3 +132,11 @@ dmypy.json
 *.bak
 *.prof
 *.zip
+input/input_bulk.json
+input/input.json
+input/input_bulk.json
+input/input.json
+output/bulk_results.csv
+output/channel_data.csv
+output/graphs.pdf
+output/valuexport.csv

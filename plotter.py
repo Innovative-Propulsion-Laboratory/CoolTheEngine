@@ -345,7 +345,7 @@ def plotter(parameters, data):
         figs.append(t.one_plot(z_coord_list_mm, hg_list,
                                title=r'Hot-side convection coefficient $h_g$',
                                xlabel=r'Engine axis [$mm$]',
-                               ylabel=r'$P$ [Pa]', dpi=figure_dpi, show=show_1D))
+                               ylabel=r'$h_g$ [$\frac{W}{m^2 \cdot K}$]', dpi=figure_dpi, show=show_1D))
 
         figs.append(t.one_plot(z_coord_list_mm, sigma_list,
                                title=r'Bartz equation coefficient $\sigma$',
