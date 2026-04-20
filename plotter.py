@@ -1,13 +1,136 @@
 import matplotlib.pyplot as plt
 import cte_tools as t
 import matplotlib.backends.backend_pdf
+from pathlib import Path
+import textwrap
 from solver2D import carto2D
 from tqdm import tqdm
 import numpy as np
 
 
-def plotter(parameters, data):
+def append_run_log_figure(figures: list, log_text: str) -> list:
+    """Return a new list with data-summary page(s) inserted as the second figure(s)."""
+    if not log_text.strip():
+        return list(figures)
+
+    raw_lines = [line.strip() for line in log_text.strip().splitlines() if line.strip()]
+    cleaned_lines: list[str] = []
+    for line in raw_lines:
+        cleaned = line.replace('█', ' ').strip()
+        cleaned = ' '.join(cleaned.split())
+        if cleaned:
+            cleaned_lines.append(cleaned)
+
+    section_patterns = [
+        ("2d results at the injection plate", "2D Results at the injection plate:"),
+        ("2d results at the throat", "2D Results at the throat:"),
+        ("2d results at the nozzle exit", "2D Results at the nozzle exit:"),
+    ]
+    detail_prefixes = (
+        "mean wall temperature at hot gas side",
+        "mean wall temperature at coolant side",
+        "maximum temperature in the wall",
+    )
+    global_prefixes = (
+        "maximum wall temperature",
+        "average wall temperature",
+        "maximum wall stress",
+        "coolant pressure drop",
+        "coolant temperature increase",
+    )
+
+    section_data: dict[str, list[str]] = {display: [] for _, display in section_patterns}
+    global_data: list[str] = []
+    current_section: str | None = None
+
+    for line in cleaned_lines:
+        lower_line = line.lower()
+
+        matched_section = None
+        for pattern, display in section_patterns:
+            if pattern in lower_line:
+                matched_section = display
+                break
+        if matched_section is not None:
+            current_section = matched_section
+            continue
+
+        if current_section is not None and any(lower_line.startswith(prefix) for prefix in detail_prefixes):
+            if "=" in line:
+                key, value = line.split("=", 1)
+                section_data[current_section].append(f"{key.strip()} = {value.strip()}")
+            else:
+                section_data[current_section].append(line)
+            continue
+
+        if any(lower_line.startswith(prefix) for prefix in global_prefixes):
+            if ":" in line:
+                key, value = line.split(":", 1)
+                global_data.append(f"{key.strip()}: {value.strip()}")
+            else:
+                global_data.append(line)
+
+    render_rows: list[tuple[str, str]] = []
+    for _, display in section_patterns:
+        details = section_data[display]
+        if len(details) == 0:
+            continue
+        render_rows.append((display, "header"))
+        for detail_line in details:
+            render_rows.append((detail_line, "detail"))
+        render_rows.append(("", "spacer"))
+
+    if len(global_data) > 0:
+        render_rows.append(("Global metrics:", "header"))
+        for line in global_data:
+            render_rows.append((line, "detail"))
+
+    if len(render_rows) == 0:
+        return list(figures)
+
+    lines_per_page = 22
+    log_pages: list = []
+    for page_start in range(0, len(render_rows), lines_per_page):
+        page_rows = render_rows[page_start:page_start + lines_per_page]
+
+        summary_fig = plt.figure(figsize=(6.4, 4.8), dpi=150)
+        summary_fig.text(0.5, 0.96, 'CoolTheEngine - Run Data Summary',
+                         ha='center', va='top', fontsize=14, weight='bold')
+
+        if len(render_rows) > lines_per_page:
+            page_idx = page_start // lines_per_page + 1
+            page_total = (len(render_rows) + lines_per_page - 1) // lines_per_page
+            summary_fig.text(0.92, 0.96, f'Page {page_idx}/{page_total}', ha='right', va='top', fontsize=9)
+
+        y_pos = 0.88
+        line_height = 0.03
+        left_margin = 0.08
+
+        for line, row_kind in page_rows:
+            if row_kind == "header":
+                summary_fig.text(left_margin, y_pos, line, fontsize=10, weight='bold')
+            elif row_kind == "detail":
+                summary_fig.text(left_margin + 0.04, y_pos, line, fontsize=9)
+            else:
+                # spacer row
+                pass
+            y_pos -= line_height
+
+        plt.axis('off')
+        log_pages.append(summary_fig)
+
+    merged = list(figures)
+    insert_at = 1 if len(merged) >= 1 else 0
+    for i, log_fig in enumerate(log_pages):
+        merged.insert(insert_at + i, log_fig)
+    return merged
+
+
+def plotter(parameters, data, output_dir: str | Path = "output"):
     """Plotting function for the engine cooling analysis."""
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Disable warning about too many figure objects in memory.
     plt.rcParams.update({'figure.max_open_warning': 0})
@@ -524,7 +647,11 @@ def plotter(parameters, data):
                 10, True, 1, location, False)
 
     if save_plots:
-        pdf = matplotlib.backends.backend_pdf.PdfPages("output/graphs.pdf")
+        pdf = matplotlib.backends.backend_pdf.PdfPages(output_dir / "graphs.pdf")
         for fig in figs:
             fig.savefig(pdf, format='pdf')
         pdf.close()
+
+    return figs
+
+

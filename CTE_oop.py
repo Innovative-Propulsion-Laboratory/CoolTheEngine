@@ -6,8 +6,9 @@ Original author: Paul M
 
 import csv
 import json
+from pathlib import Path
+from typing import Callable
 import pandas as pd
-from tqdm import tqdm
 
 # Calculations
 import numpy as np
@@ -24,19 +25,47 @@ from plotter import plotter
 import matplotlib.pyplot as plt
 
 
+
 class TaskManager():
-    def __init__(self, json_path: str):
+    def __init__(
+        self,
+        json_path: str,
+        contour_path: str,
+        output_dir: str = "output",
+        progress_callback: Callable[[int, int], None] | None = None,
+        log_callback: Callable[[str], None] | None = None,
+    ):
         with open(json_path, "r") as f:
             self.settings = json.load(f)
 
+        self.contour_path = contour_path
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.progress_callback = progress_callback
+        self.log_callback = log_callback
+
+    def _log(self, message: str) -> None:
+        print(message)
+        if self.log_callback is not None:
+            self.log_callback(message)
+
+    def _report_progress(self, current: int, total: int) -> None:
+        if self.progress_callback is not None:
+            self.progress_callback(current, total)
+
+    def run(self):
         # Check if any parameter is a list, then run bulk mode
         if any(isinstance(param, list) for param in list(self.settings.values())):
-            self.bulk_run()
+            figs = self.bulk_run()
+            bulk_run = True
 
         # Otherwise, run the single mode (no parameter is a list)
         else:
-            self.single_run()
+            figs = self.single_run()
+            bulk_run = False
 
+        return bulk_run, figs
+    
     def bulk_run(self):
         # Transform into singletons if not a list, and store all parameters in a list of lists
         value_lists = [v if isinstance(v, list) else [v] for v in (self.settings.values())]
@@ -45,7 +74,7 @@ class TaskManager():
         # if nb_configs > 5000:
         #     raise ValueError(f"Too many configurations ({nb_configs}>5000)")
 
-        print(f"Solving {nb_configs} unique configurations.")
+        self._log(f"Solving {nb_configs} unique configurations.")
         # Generate every combination
         combinations = list(product(*value_lists))
 
@@ -58,19 +87,33 @@ class TaskManager():
         self.configurations_df["coolant_pressure_drop"] = pd.Series(dtype="float")
         self.configurations_df["coolant_temp_increase"] = pd.Series(dtype="float")
 
-        print(f"Generating fluid data tables for {self.settings['coolant_name']}")
-        (T_grid, logP_grid, P_grid, Tsat1D, dens_table, cp_table, cond_table,
-         visc_table) = flp.build_tables(Tmin=273, Tmax=600, Pmin_bar=1,
-                                        Pmax_bar=60, dT=2, nP=100, fluid=self.settings["coolant_name"])
+        interp_cache: dict[str, tuple] = {}
 
-        interpolation_functions = flp.make_interpolators(T_grid, logP_grid, P_grid,
-                                                         Tsat1D, dens_table,
-                                                         cp_table, cond_table,
-                                                         visc_table)
+        def get_interpolation_functions(coolant_name: str):
+            coolant_key = str(coolant_name)
+            if coolant_key in interp_cache:
+                return interp_cache[coolant_key]
 
-        print("Computing chamber flow")
+            self._log(f"Generating fluid data tables for {coolant_key}")
+            (T_grid, logP_grid, P_grid, Tsat1D, dens_table, cp_table, cond_table,
+             visc_table) = flp.build_tables(Tmin=273, Tmax=600, Pmin_bar=1,
+                                            Pmax_bar=60, dT=2, nP=100, fluid=coolant_key)
+
+            interp_cache[coolant_key] = flp.make_interpolators(
+                T_grid,
+                logP_grid,
+                P_grid,
+                Tsat1D,
+                dens_table,
+                cp_table,
+                cond_table,
+                visc_table,
+            )
+            return interp_cache[coolant_key]
+
+        self._log("Computing chamber flow")
         # Compute the chamber flow first (it is assumed it is the same for every configuration)
-        cte = CoolTheEngine(dict(self.configurations_df.loc[0]))
+        cte = CoolTheEngine(dict(self.configurations_df.loc[0]), self.contour_path)
         chamber_flow_data = cte.compute_chamber_flow()
 
         # Prepare lists to collect results
@@ -83,23 +126,24 @@ class TaskManager():
         coolant_temp_increases = [None] * n
 
         # Loop only fills Python lists
-        with tqdm(total=self.configurations_df.shape[0], ncols=100) as pbar:
-            for i, row in enumerate(self.configurations_df.itertuples(index=False)):
-                params = row._asdict()  # convert namedtuple to dict
-                cte = CoolTheEngine(params)
-                cte_instances[i] = cte
+        total_configs = int(self.configurations_df.shape[0])
+        self._report_progress(0, total_configs)
+        for i, row in enumerate(self.configurations_df.itertuples(index=False)):
+            params = row._asdict()  # convert namedtuple to dict
+            cte = CoolTheEngine(params, self.contour_path)
+            cte_instances[i] = cte
 
-                try:
-                    res = cte.compute_all(chamber_flow_data, interp_funcs=interpolation_functions)
-                except ValueError as err:
-                    print(f"Failed computation for config {i}.\t Error: {err}")
-                    res = (-1, -1, -1, -1, -1)
+            try:
+                interpolation_functions = get_interpolation_functions(params["coolant_name"])
+                res = cte.compute_all(chamber_flow_data, interp_funcs=interpolation_functions)
+            except ValueError as err:
+                self._log(f"Failed computation for config {i}.\t Error: {err}")
+                res = (-1, -1, -1, -1, -1, None)
 
-                (max_wall_temps[i], avg_wall_temps[i], max_stresses[i],
-                 coolant_pressure_drops[i], coolant_temp_increases[i]) = res
-                pbar.update(1)
+            (max_wall_temps[i], avg_wall_temps[i], max_stresses[i],
+             coolant_pressure_drops[i], coolant_temp_increases[i]) = res
+            self._report_progress(i + 1, total_configs)
 
-        # One-time bulk assignment (faster)
         self.configurations_df["cte_instance"] = cte_instances
         self.configurations_df["max_wall_temp"] = max_wall_temps
         self.configurations_df["avg_wall_temp"] = avg_wall_temps
@@ -189,25 +233,36 @@ class TaskManager():
 
         fig.canvas.mpl_connect("motion_notify_event", hover)
 
-        plt.show()
+        # plt.show()
 
-        print(self.configurations_df)
-        self.configurations_df.to_csv("output/bulk_results.csv")
+        self._log(str(self.configurations_df))
+        self.configurations_df.to_csv(self.output_dir / "bulk_results.csv", index=False)
+    
+        return fig
 
     def single_run(self):
-        print("Single run")
-        cte = CoolTheEngine(self.settings)
+        self._log("Single run")
+        cte = CoolTheEngine(self.settings, self.contour_path)
         chamber_flow_data = cte.compute_chamber_flow()
-        res = cte.compute_all(chamber_flow_data, show_1D=True, show_2D=True, save_plot=True, write_in_csv=True)
-        print(f"Maximum wall temperature : {res[0]:.1f} K")
-        print(f"Average wall temperature : {res[1]:.1f} K")
-        print(f"Maximum wall stress : {res[2]/1e6:.1f} MPa")
-        print(f"Coolant pressure drop : {res[3]/1e5:.2f} bar")
-        print(f"Coolant temperature increase : {res[4]:.1f} K")
-
+        max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase, figs = cte.compute_all(
+            chamber_flow_data,
+            show_1D=True,
+            show_2D=True,
+            save_plot=True,
+            write_in_csv=True,
+            return_figs=True,
+            output_dir=self.output_dir,
+        )
+        self._log(f"Maximum wall temperature : {max_wall_temp:.1f} K")
+        self._log(f"Average wall temperature : {avg_wall_temp:.1f} K")
+        self._log(f"Maximum wall stress : {max_stress/1e6:.1f} MPa")
+        self._log(f"Coolant pressure drop : {coolant_pressure_drop/1e5:.2f} bar")
+        self._log(f"Coolant temperature increase : {coolant_temp_increase:.1f} K")
+        
+        return figs
 
 class CoolTheEngine():
-    def __init__(self, params: dict):
+    def __init__(self, params: dict, contour_path: str):
         # Engine parameters
         self.chamber_pressure = float(params["chamber_pressure"])
         self.coolant_inlet_pressure = float(params["P_coolant"])
@@ -250,7 +305,7 @@ class CoolTheEngine():
         self.figure_dpi = int(params["figure_dpi"])
 
         # Initial definitions
-        self.contour_file = "input/redwing_contour.csv"  # Engine contour
+        self.contour_file = contour_path  # Engine contour
 
     def compute_chamber_flow(self):
         return t.compute_hotgas_flow(self.contour_file,
@@ -262,7 +317,11 @@ class CoolTheEngine():
                                      self.fuel_name)
 
     def compute_all(self, chamber_flow_data, show_1D=False, show_2D=False, save_plot=False,
-                    write_in_csv=False, mach_list=None, interp_funcs=None):
+                    write_in_csv=False, mach_list=None, interp_funcs=None, return_figs=False,
+                    output_dir: str | Path = "output"):
+
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         # Unpack all the chamber flow data
         (z_coord_list, r_coord_list, throat_diam, throat_area,
@@ -397,13 +456,13 @@ class CoolTheEngine():
                 thermal_stress_list,
                 max_wall_stress_list)
 
-            plotter(parameters_plotter, data_plotter)
+            figs = plotter(parameters_plotter, data_plotter, output_dir=output_dir)
 
         #  Writing the results of the study in a CSV file
         if write_in_csv:
 
             # Write the dimensions of the channels in a CSV file
-            file_name = "output/channel_data.csv"
+            file_name = output_dir / "channel_data.csv"
             rows = []
             header = ["Engine z axis", "Engine radius", "Channel width", "Channel height",
                       "Fin width", "Hydraulic diameter", "Channel cross-sectionnal area",
@@ -424,7 +483,7 @@ class CoolTheEngine():
                 writer.writerow(header)
                 writer.writerows(rows)
 
-            valuexport = open("output/valuexport.csv", "w", newline="")
+            valuexport = open(output_dir / "valuexport.csv", "w", newline="")
             valuexport_writer = csv.writer(valuexport)
 
             # Write header row
@@ -464,7 +523,12 @@ class CoolTheEngine():
             valuexport_writer.writerows(rows)
             valuexport.close()
 
-        return max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase
+        if return_figs:
+            return max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase, figs
+        else:
+            return max_wall_temp, avg_wall_temp, max_stress, coolant_pressure_drop, coolant_temp_increase
 
 
-tm = TaskManager("input/input.json")
+if __name__ == "__main__":
+    tm = TaskManager("input/input.json", "input/redwing_contour.csv", output_dir="output")
+    bulk_run, figs = tm.run()
