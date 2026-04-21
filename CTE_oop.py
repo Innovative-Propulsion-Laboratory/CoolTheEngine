@@ -16,6 +16,7 @@ import cte_tools as t
 from solver import solver
 from itertools import product
 import fluid_properties as flp
+from config_ui_specs import FIELD_SPECS
 
 # Data
 from channels import generate_channels
@@ -151,6 +152,14 @@ class TaskManager():
         self.configurations_df["coolant_pressure_drop"] = coolant_pressure_drops
         self.configurations_df["coolant_temp_increase"] = coolant_temp_increases
 
+        varying_keys = [k for k, v in self.settings.items() if isinstance(v, list)]
+        label_by_key = {spec.key: spec.label for spec in FIELD_SPECS}
+
+        def _format_info_value(key: str, value):
+            if isinstance(value, (int, float, np.floating)):
+                return f"{float(value):.6g}"
+            return str(value)
+
         fig, axs = plt.subplots(2, 2, dpi=150)
         scatter_data = [
             (coolant_pressure_drops, max_stresses, "Coolant pressure drop [Pa]", "Maximum wall stress [MPa]"),
@@ -190,19 +199,17 @@ class TaskManager():
                 annot.get_bbox_patch().set_alpha(0.4)
 
             # Update the info text in the top left of axs[0,0]
-            info = (
-                f"Config {idx}\n"
-                f"Channel width injection : {self.configurations_df.loc[idx, 'channel_widths_inj']*1000:.1f}mm\n"
-                f"Channel width converging : {self.configurations_df.loc[idx, 'channel_widths_conv']*1000:.1f}mm\n"
-                f"Channel width throat : {self.configurations_df.loc[idx, 'channel_widths_throat']*1000:.1f}mm\n"
-                f"Channel width exit : {self.configurations_df.loc[idx, 'channel_widths_exit']*1000:.1f}mm\n"
-                f"Channel height injection : {self.configurations_df.loc[idx, 'channel_heights_inj']*1000:.1f}mm\n"
-                f"Channel height converging : {self.configurations_df.loc[idx, 'channel_heights_conv']*1000:.1f}mm\n"
-                f"Channel height throat : {self.configurations_df.loc[idx, 'channel_heights_throat']*1000:.1f}mm\n"
-                f"Channel height exit : {self.configurations_df.loc[idx, 'channel_heights_exit']*1000:.1f}mm\n"
-                f"Channel angle injection : {self.configurations_df.loc[idx, 'channel_angles_inj']:.1f}°\n"
-                f"Channel angle converging : {self.configurations_df.loc[idx, 'channel_angles_conv']:.1f}°"
-            )
+            info_lines = [f"Config {idx}"]
+            for key in varying_keys:
+                if key in self.configurations_df.columns:
+                    value = self.configurations_df.loc[idx, key]
+                    display_name = label_by_key.get(key, key)
+                    info_lines.append(f"{display_name}: {_format_info_value(key, value)}")
+
+            if len(info_lines) == 1:
+                info_lines.append("No varying parameters")
+
+            info = "\n".join(info_lines)
             info_text.set_text(info)
             info_text.set_visible(True)
 
