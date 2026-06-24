@@ -200,14 +200,27 @@ class TaskManager():
 
             # Update the info text in the top left of axs[0,0]
             info_lines = [f"Config {idx}"]
+            last_subgroup = None
             for key in varying_keys:
                 if key in self.configurations_df.columns:
                     value = self.configurations_df.loc[idx, key]
                     display_name = label_by_key.get(key, key)
-                    info_lines.append(f"{display_name}: {_format_info_value(key, value)}")
+                    subgroup = subgroup_by_key.get(key)
+                    if subgroup and subgroup != last_subgroup:
+                        info_lines.append(f"--- {subgroup} ---")
+                        last_subgroup = subgroup
+                    info_lines.append(f"  {display_name}: {_format_info_value(key, value)}")
 
             if len(info_lines) == 1:
                 info_lines.append("No varying parameters")
+
+            row = self.configurations_df.loc[idx]
+            info_lines.append("--- Results ---")
+            info_lines.append(f"Max wall temp:   {row['max_wall_temp']:.1f} K")
+            info_lines.append(f"Avg wall temp:   {row['avg_wall_temp']:.1f} K")
+            info_lines.append(f"Max stress:      {row['max_stress']/1e6:.2f} MPa")
+            info_lines.append(f"Pressure drop:   {row['coolant_pressure_drop']/1e5:.3f} bar")
+            info_lines.append(f"Coolant ΔT:      {row['coolant_temp_increase']:.1f} K")
 
             info = "\n".join(info_lines)
             info_text.set_text(info)
