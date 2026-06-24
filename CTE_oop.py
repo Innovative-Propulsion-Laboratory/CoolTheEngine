@@ -240,7 +240,7 @@ class TaskManager():
 
         fig.canvas.mpl_connect("motion_notify_event", hover)
 
-        # plt.show()
+        plt.show()
 
         self._log(str(self.configurations_df))
         self.configurations_df.to_csv(self.output_dir / "bulk_results.csv", index=False)
